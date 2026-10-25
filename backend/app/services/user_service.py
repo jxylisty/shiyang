@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS constitution_record (
     combined TEXT,           -- JSON 兼夹codes
     transformed TEXT,        -- JSON 全维度转化分
     answers TEXT,            -- JSON 原始作答（复现用）
+    member_id INTEGER,       -- 家庭成员（T2-8；NULL=本人）
     created_at TEXT DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_cr_user ON constitution_record(user_id);
@@ -52,6 +53,16 @@ CREATE TABLE IF NOT EXISTS checkin (
     UNIQUE(user_id, recipe_id, day)
 );
 CREATE INDEX IF NOT EXISTS idx_ck_user_day ON checkin(user_id, day);
+CREATE TABLE IF NOT EXISTS family_member (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES user(id),
+    name TEXT NOT NULL,
+    relation TEXT,                -- 妈妈/爸爸/孩子/伴侣/自定义
+    color TEXT,                   -- 头像底色
+    created_at TEXT DEFAULT (datetime('now')),
+    UNIQUE(user_id, name)
+);
+CREATE INDEX IF NOT EXISTS idx_fm_user ON family_member(user_id);
 """
 
 
@@ -61,7 +72,16 @@ def db():
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA foreign_keys=ON")
     conn.executescript(_SCHEMA)
+    _migrate(conn)
     return conn
+
+
+def _migrate(conn):
+    """存量库增量迁移：老 constitution_record 无 member_id 列（T2-8 家庭档案）"""
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(constitution_record)")}
+    if "member_id" not in cols:
+        conn.execute("ALTER TABLE constitution_record ADD COLUMN member_id INTEGER")
+        conn.commit()
 
 
 # ---------- 认证 ----------
@@ -122,16 +142,17 @@ def login(username: str, password: str) -> dict:
 
 # ---------- 体质档案 ----------
 
-def save_record(uid: int, judged: dict, transformed: dict, answers: dict) -> int:
+def save_record(uid: int, judged: dict, transformed: dict, answers: dict,
+                member_id: int | None = None) -> int:
     conn = db()
     try:
         cur = conn.execute(
-            "INSERT INTO constitution_record(user_id,main_code,main_name,combined,transformed,answers) "
-            "VALUES (?,?,?,?,?,?)",
+            "INSERT INTO constitution_record(user_id,main_code,main_name,combined,transformed,answers,member_id) "
+            "VALUES (?,?,?,?,?,?,?)",
             (uid, judged.get("main"), judged.get("main_name"),
              json.dumps(judged.get("combined", []), ensure_ascii=False),
              json.dumps(transformed, ensure_ascii=False),
-             json.dumps(answers, ensure_ascii=False)))
+             json.dumps(answers, ensure_ascii=False), member_id))
         conn.commit()
         return cur.lastrowid
     finally:
@@ -142,8 +163,9 @@ def list_records(uid: int, limit: int = 20) -> list[dict]:
     conn = db()
     try:
         rows = conn.execute(
-            "SELECT id, main_code, combined, transformed, created_at "
-            "FROM constitution_record WHERE user_id=? ORDER BY id DESC LIMIT ?",
+            "SELECT r.id, r.main_code, r.combined, r.transformed, r.created_at, r.member_id, m.name AS member_name "
+            "FROM constitution_record r LEFT JOIN family_member m ON m.id=r.member_id "
+            "WHERE r.user_id=? ORDER BY r.id DESC LIMIT ?",
             (uid, limit)).fetchall()
         out = []
         for r in rows:
@@ -151,8 +173,50 @@ def list_records(uid: int, limit: int = 20) -> list[dict]:
                         "main_name": NAME_BY_CODE.get(r["main_code"], r["main_code"]),
                         "combined": [NAME_BY_CODE.get(c, c) for c in json.loads(r["combined"] or "[]")],
                         "transformed": json.loads(r["transformed"] or "{}"),
-                        "created_at": r["created_at"]})
+                        "created_at": r["created_at"],
+                        "member_id": r["member_id"], "member_name": r["member_name"]})
         return out
+    finally:
+        conn.close()
+
+
+# ---------- 家庭成员（T2-8） ----------
+
+def add_member(uid: int, name: str, relation: str | None = None, color: str | None = None) -> dict:
+    name = (name or "").strip()
+    if not (1 <= len(name) <= 12):
+        raise ValueError("成员名需1-12字")
+    conn = db()
+    try:
+        cur = conn.execute(
+            "INSERT INTO family_member(user_id,name,relation,color) VALUES (?,?,?,?)",
+            (uid, name, relation, color))
+        conn.commit()
+        return {"id": cur.lastrowid, "name": name, "relation": relation, "color": color}
+    except sqlite3.IntegrityError:
+        raise ValueError("同名成员已存在")
+    finally:
+        conn.close()
+
+
+def list_members(uid: int) -> list[dict]:
+    conn = db()
+    try:
+        rows = conn.execute(
+            "SELECT id,name,relation,color,created_at FROM family_member WHERE user_id=? ORDER BY id",
+            (uid,)).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        conn.close()
+
+
+def remove_member(uid: int, member_id: int) -> bool:
+    conn = db()
+    try:
+        # 成员的历史测评保留（member_id 悬挂引用时 member_name 显示为空），不级联删除
+        cur = conn.execute("DELETE FROM family_member WHERE id=? AND user_id=?", (member_id, uid))
+        conn.commit()
+        return cur.rowcount > 0
     finally:
         conn.close()
 

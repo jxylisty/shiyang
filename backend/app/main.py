@@ -358,12 +358,13 @@ class SaveRecordBody(BaseModel):
     judged: dict
     transformed: dict
     answers: dict
+    member_id: int | None = None
 
 
 @app.post("/api/v1/constitution/records")
 def save_constitution_record(body: SaveRecordBody, authorization: str | None = Header(None)):
     uid = auth_uid(authorization)
-    rid = us.save_record(uid, body.judged, body.transformed, body.answers)
+    rid = us.save_record(uid, body.judged, body.transformed, body.answers, body.member_id)
     return ok({"id": rid})
 
 
@@ -371,6 +372,37 @@ def save_constitution_record(body: SaveRecordBody, authorization: str | None = H
 def list_constitution_records(authorization: str | None = Header(None), limit: int = 20):
     uid = auth_uid(authorization)
     return ok(us.list_records(uid, max(1, min(limit, 100))))
+
+
+# ---------- 家庭成员档案（T2-8） ----------
+
+class MemberBody(BaseModel):
+    name: str
+    relation: str | None = None
+    color: str | None = None
+
+
+@app.get("/api/v1/family/members")
+def family_list(authorization: str | None = Header(None)):
+    uid = auth_uid(authorization)
+    return ok(us.list_members(uid))
+
+
+@app.post("/api/v1/family/members")
+def family_add(body: MemberBody, authorization: str | None = Header(None)):
+    uid = auth_uid(authorization)
+    try:
+        return ok(us.add_member(uid, body.name, body.relation, body.color))
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+
+@app.delete("/api/v1/family/members/{member_id}")
+def family_remove(member_id: int, authorization: str | None = Header(None)):
+    uid = auth_uid(authorization)
+    if not us.remove_member(uid, member_id):
+        raise HTTPException(404, "成员不存在")
+    return ok({"removed": True})
 
 
 # ---------- 收藏 ----------

@@ -2,7 +2,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { showConfirmDialog, showSuccessToast } from 'vant'
-import { currentUser, logout, listRecords, listFavorites, isLoggedIn, getHistory, clearHistory, listCheckins } from '../api'
+import { currentUser, logout, listRecords, listFavorites, isLoggedIn, getHistory, clearHistory, listCheckins, listFamilyMembers, addFamilyMember, removeFamilyMember } from '../api'
 
 const router = useRouter()
 const user = currentUser()
@@ -10,6 +10,36 @@ const records = ref([])
 const favorites = ref([])
 const loading = ref(true)
 const checkins = ref(null)   // {records, streak, total, today}
+
+// ---- 家庭成员档案（T2-8） ----
+const members = ref([])
+const newMemberName = ref('')
+const newMemberRelation = ref('')
+const RELATIONS = ['母亲', '父亲', '孩子', '伴侣', '其他']
+async function loadMembers() {
+  if (!isLoggedIn()) return
+  try { members.value = (await listFamilyMembers()).data.data } catch { /* 静默 */ }
+}
+async function addMember() {
+  const name = newMemberName.value.trim()
+  if (!name) return
+  try {
+    await addFamilyMember(name, newMemberRelation.value || null)
+    newMemberName.value = ''; newMemberRelation.value = ''
+    showSuccessToast('已添加成员')
+    loadMembers()
+  } catch (e) { showFailToastSafe(e) }
+}
+async function delMember(m) {
+  try {
+    await showConfirmDialog({ title: '移除成员', message: `移除「${m.name}」？其历史测评记录会保留。` })
+  } catch { return }
+  try { await removeFamilyMember(m.id); loadMembers() } catch (e) { showFailToastSafe(e) }
+}
+function showFailToastSafe(e) {
+  import('vant').then(({ showFailToast }) =>
+    showFailToast(e?.response?.data?.detail || '操作失败'))
+}
 
 // ---- 设置（纯本地，未登录可用） ----
 const FONT_KEYS = ['standard', 'large', 'xlarge']
@@ -77,6 +107,7 @@ onMounted(async () => {
     document.documentElement.dataset.theme = 'dark'
   }
   if (!isLoggedIn()) { router.push('/login'); return }
+  loadMembers()
   try {
     const [r1, r2, r3] = await Promise.all([listRecords(), listFavorites(), listCheckins()])
     records.value = r1.data.data
@@ -151,6 +182,7 @@ function buzz(ms) {
       <div class="card" v-else>
         <div v-for="(r, i) in records" :key="r.id" class="rec-row">
           <span class="rec-badge" v-if="i === 0">最新</span>
+          <span class="rec-badge member" v-if="r.member_name">{{ r.member_name }}</span>
           <b>{{ r.main_name }}</b>
           <span v-if="r.combined.length > 1" class="combined">兼夹{{ r.combined.join('、') }}</span>
           <span class="date">{{ fmtDate(r.created_at) }}</span>
@@ -172,8 +204,36 @@ function buzz(ms) {
         </template>
       </div>
 
+      <!-- 家庭体质档案（T2-8） -->
+      <div class="section-title">家庭成员
+        <router-link to="/quiz" style="margin-left: auto; font-size: 12px; font-weight: 400; color: var(--green-700); text-decoration: none;">替家人测评 →</router-link>
+      </div>
+      <div class="card">
+        <div v-if="members.length" class="fam-list">
+          <div v-for="m in members" :key="m.id" class="fam-row">
+            <span class="fam-avatar" :style="{ background: m.color || 'var(--green-100)' }">{{ m.name[0] }}</span>
+            <div class="fam-info">
+              <b>{{ m.name }}</b>
+              <span v-if="m.relation" class="fam-rel">{{ m.relation }}</span>
+            </div>
+            <button class="fam-del" @click="delMember(m)">移除</button>
+          </div>
+        </div>
+        <p v-else class="empty" style="padding:8px 0 12px">还没有家庭成员，添加后可在测评页替他们答题</p>
+        <div class="fam-add">
+          <input v-model="newMemberName" placeholder="称呼，如：妈妈" maxlength="12" class="fam-input" />
+          <select v-model="newMemberRelation" class="fam-input fam-sel">
+            <option value="">关系（可选）</option>
+            <option v-for="r in RELATIONS" :key="r" :value="r">{{ r }}</option>
+          </select>
+          <button class="btn" :disabled="!newMemberName.trim()" @click="addMember">添加</button>
+        </div>
+      </div>
+
       <!-- 饮用打卡 -->
-      <div class="section-title">饮用打卡</div>
+      <div class="section-title">饮用打卡
+        <router-link to="/report" style="margin-left: auto; font-size: 12px; font-weight: 400; color: var(--green-700); text-decoration: none;">周期报告 →</router-link>
+      </div>
       <div class="card" v-if="checkins">
         <div class="ck-head">
           <span class="ck-streak">连续 <b>{{ checkins.streak }}</b> 天</span>
@@ -267,6 +327,20 @@ function buzz(ms) {
 .rec-row { display: flex; align-items: center; gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--green-50); }
 .rec-row:last-of-type { border-bottom: none; }
 .rec-badge { font-size: 10px; background: var(--green-700); color: #fff; padding: 1px 7px; border-radius: 8px; }
+.rec-badge.member { background: var(--amber-600); }
+.fam-list { margin-bottom: 10px; }
+.fam-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--green-50); }
+.fam-avatar { width: 36px; height: 36px; border-radius: 50%; color: #fff; font-size: 15px; font-weight: 700;
+              display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.fam-info { flex: 1; min-width: 0; }
+.fam-info b { font-size: 14px; }
+.fam-rel { font-size: 11px; color: var(--ink-400); margin-left: 6px; }
+.fam-del { border: none; background: none; color: var(--red-500); font-size: 12px; cursor: pointer; }
+.fam-add { display: flex; gap: 6px; }
+.fam-input { flex: 1; min-width: 0; border: 1.5px solid var(--green-100); border-radius: 10px; padding: 8px 10px;
+             font-size: 13px; background: var(--green-50); outline: none; }
+.fam-input:focus { border-color: var(--green-600); }
+.fam-sel { flex: 0 0 92px; }
 .rec-row b { font-size: 15px; }
 .combined { font-size: 12px; color: var(--amber-600); }
 .date { margin-left: auto; font-size: 12px; color: var(--ink-400); }
@@ -310,8 +384,8 @@ function buzz(ms) {
 .set-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--green-50); }
 .set-row:last-of-type { border-bottom: none; }
 .set-label { font-size: 14px; color: var(--ink-900); }
-/* 字号分段控件：滑块随 --seg-i 平移（三档等宽） */
-.seg { position: relative; display: grid; grid-template-columns: repeat(3, auto); background: var(--green-50); border-radius: 10px; padding: 3px; }
+/* 字号分段控件：三档等宽（1fr），滑块按 --seg-i 平移一格 */
+.seg { position: relative; display: grid; grid-template-columns: repeat(3, 1fr); background: var(--green-50); border-radius: 10px; padding: 3px; }
 .seg-slider {
   position: absolute; top: 3px; bottom: 3px; left: 3px; border-radius: 8px;
   background: var(--green-700);

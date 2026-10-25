@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { getQuestionnaire, submitQuiz, saveRecord, isLoggedIn } from '../api'
+import { getQuestionnaire, submitQuiz, saveRecord, isLoggedIn, listFamilyMembers } from '../api'
 
 const items = ref({})          // {code: [题...]}
 const order = ref([])          // 维度顺序
@@ -75,6 +75,33 @@ function choose(v) {
 function nextQ() { qDir.value = 1; idx.value = Math.min(idx.value + 1, flat.value.length - 1) }
 function prevQ() { qDir.value = -1; idx.value = Math.max(idx.value - 1, 0) }
 
+// 题目卡过渡的 JS 钩子（setTimeout 收尾，隐藏页签不卡死）：
+// qDir=1 前进：新卡从右侧滑入；qDir=-1 后退：从左侧滑入
+function qEnter(el, done) {
+  const dx = qDir.value === 1 ? 28 : -28
+  el.style.opacity = '0'
+  el.style.transform = `translateX(${dx}px)`
+  // rAF 冻结环境下 50ms 内由 setTimeout 兜底起播
+  let started = false
+  const start = () => {
+    if (started) return
+    started = true
+    el.style.transition = 'opacity .18s ease, transform .2s cubic-bezier(0.22, 1, 0.36, 1)'
+    el.style.opacity = '1'
+    el.style.transform = 'translateX(0)'
+  }
+  requestAnimationFrame(start)
+  setTimeout(start, 50)
+  setTimeout(() => { el.style.transition = ''; el.style.opacity = ''; el.style.transform = ''; done() }, 280)
+}
+function qLeave(el, done) {
+  const dx = qDir.value === 1 ? -20 : 20
+  el.style.transition = 'opacity .15s ease, transform .16s cubic-bezier(0.22, 1, 0.36, 1)'
+  el.style.opacity = '0'
+  el.style.transform = `translateX(${dx}px)`
+  setTimeout(done, 180)
+}
+
 // ---- 进度本地暂存：误关/崩溃后不丢 67 题的作答 ----
 const STORE_KEY = 'shiyang_quiz_v1'
 function saveProgress() {
@@ -107,19 +134,20 @@ function restart() {
   clearProgress()
 }
 
-// 九维分数滚动：单条 rAF 时间轴同步推所有维度
+// 九维分数滚动：单条 setTimeout 时间轴同步推所有维度
+// （不用 rAF：页面隐藏/截屏场景 rAF 会被暂停，数字永远停在 0）
 function animateScores(results) {
   const targets = Object.fromEntries(Object.entries(results).map(([k, v]) => [k, v.score]))
   const dur = 900, t0 = performance.now()
-  const tick = (now) => {
-    const p = Math.min(1, (now - t0) / dur)
+  const tick = () => {
+    const p = Math.min(1, (performance.now() - t0) / dur)
     const ease = 1 - Math.pow(1 - p, 3)
     for (const k of Object.keys(targets)) {
       shownScores.value[k] = Math.round(targets[k] * ease)
     }
-    if (p < 1) requestAnimationFrame(tick)
+    if (p < 1) setTimeout(tick, 16)
   }
-  requestAnimationFrame(tick)
+  tick()
 }
 
 async function submit() {

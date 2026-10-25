@@ -96,8 +96,13 @@ export function streamAIReport(recipeId, key, onDelta, onDone, onError, provider
 export const register = (username, password, nickname) => api.post('/auth/register', { username, password, nickname })
 export const login = (username, password) => api.post('/auth/login', { username, password })
 export const getMe = () => authApi.get('/me')
-export const saveRecord = (judged, transformed, answers) => authApi.post('/constitution/records', { judged, transformed, answers })
+export const saveRecord = (judged, transformed, answers, memberId = null) => authApi.post('/constitution/records', { judged, transformed, answers, member_id: memberId })
 export const listRecords = () => authApi.get('/constitution/records')
+
+// ---- 家庭成员档案 ----
+export const listFamilyMembers = () => authApi.get('/family/members')
+export const addFamilyMember = (name, relation, color) => authApi.post('/family/members', { name, relation, color })
+export const removeFamilyMember = (id) => authApi.delete(`/family/members/${id}`)
 export const addFavorite = (id) => authApi.post(`/favorites/${id}`)
 export const removeFavorite = (id) => authApi.delete(`/favorites/${id}`)
 export const listFavorites = () => authApi.get('/favorites')
