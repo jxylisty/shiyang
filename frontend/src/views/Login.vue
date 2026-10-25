@@ -11,6 +11,7 @@ const password = ref('')
 const nickname = ref('')
 const error = ref('')
 const busy = ref(false)
+const errShake = ref(0)              // 递增 key：错误出现时重放 shake
 
 async function submit() {
   error.value = ''; busy.value = true
@@ -23,6 +24,7 @@ async function submit() {
     router.push(redirect.startsWith('/') ? redirect : '/me')
   } catch (e) {
     error.value = e?.response?.data?.detail || '操作失败，请重试'
+    errShake.value++
   } finally { busy.value = false }
 }
 </script>
@@ -42,14 +44,18 @@ async function submit() {
         <input v-model="password" type="password" placeholder="至少6位" autocomplete="current-password"
                @keyup.enter="submit" />
       </div>
-      <div class="field" v-if="mode === 'register'">
-        <label>昵称（可选）</label>
-        <input v-model="nickname" placeholder="怎么称呼你" />
-      </div>
+      <!-- 注册昵称字段：高度过渡展开/收起 -->
+      <Transition name="field-grow">
+        <div class="field" v-if="mode === 'register'">
+          <label>昵称（可选）</label>
+          <input v-model="nickname" placeholder="怎么称呼你" />
+        </div>
+      </Transition>
 
-      <p class="err" v-if="error">{{ error }}</p>
+      <p class="err shake" v-if="error" :key="errShake">{{ error }}</p>
 
       <button class="btn block" :disabled="busy || !username || !password" @click="submit">
+        <span v-if="busy" class="spinner"></span>
         {{ busy ? '请稍候…' : (mode === 'login' ? '登录' : '创建账号') }}
       </button>
       <p class="switch" @click="mode = mode === 'login' ? 'register' : 'login'; error = ''">
@@ -60,16 +66,26 @@ async function submit() {
 </template>
 
 <style scoped>
-.login-card { max-width: 420px; margin: 40px auto; }
+.login-card { max-width: 420px; margin: 40px auto; animation: rise .5s var(--ease-out-soft) backwards; }
 .login-card h2 { text-align: center; color: var(--green-700); }
 .sub { font-size: 12px; color: var(--ink-400); text-align: center; margin: 4px 0 18px; }
-.field { margin-bottom: 14px; }
+.field { margin-bottom: 14px; overflow: hidden; }
 .field label { display: block; font-size: 13px; color: var(--ink-600); margin-bottom: 4px; }
 .field input {
   width: 100%; padding: 11px 14px; border: 1px solid var(--green-100); border-radius: 10px;
   font-size: 15px; outline: none; background: #fff;
+  transition: border-color var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
 }
-.field input:focus { border-color: var(--green-600); }
+.field input:focus { border-color: var(--green-600); box-shadow: 0 0 0 3px var(--green-50); }
+/* 注册昵称字段展开/收起 */
+.field-grow-enter-active, .field-grow-leave-active { transition: opacity .25s ease, height .25s var(--ease-out-soft), margin .25s ease; }
+.field-grow-enter-from, .field-grow-leave-to { opacity: 0; height: 0 !important; margin-bottom: 0 !important; }
 .err { color: var(--red-500); font-size: 13px; margin-bottom: 10px; }
+.spinner {
+  display: inline-block; width: 12px; height: 12px; margin-right: 6px; vertical-align: -1px;
+  border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+@keyframes spin { to { rotate: 360deg; } }
 .switch { text-align: center; font-size: 13px; color: var(--green-700); margin-top: 14px; cursor: pointer; }
 </style>

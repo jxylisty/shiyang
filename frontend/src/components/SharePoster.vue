@@ -80,7 +80,7 @@ async function draw(r) {
     })
     const rs = r.analysis.radar_summary || {}
     ctx.fillStyle = '#8a978f'; ctx.font = '13px sans-serif'
-    ctx.fillText(`三维参考：抗炎 ${Math.round(rs.anti_inflammatory || 0)} / 免疫 ${Math.round(rs.immune_regulation || 0)} / 气道 ${Math.round(rs.airway_repair || 0)}`, 90, 550)
+    ctx.fillText(`三维活性参考：抗炎 ${Math.round(rs.anti_inflammatory || 0)} / 免疫 ${Math.round(rs.immune_regulation || 0)} / 气道 ${Math.round(rs.airway_repair || 0)}`, 90, 550)
   }
   // 出处与品牌
   ctx.fillStyle = '#8a978f'; ctx.font = '13px sans-serif'
@@ -127,9 +127,15 @@ function download() {
     <div class="poster-wrap">
       <p class="p-title">分享海报</p>
       <canvas ref="canvasEl" style="display:none"></canvas>
-      <div v-if="busy" class="p-status">正在生成…</div>
-      <div v-else-if="failed" class="p-status">生成失败，请关闭后重试</div>
-      <img v-else-if="url" :src="url" class="poster-img" />
+      <div v-if="busy" class="p-status">
+        <span class="p-spinner"></span>
+        正在生成海报…
+      </div>
+      <div v-else-if="failed" class="p-status shake">生成失败，请关闭后重试</div>
+      <template v-else-if="url">
+        <img :src="url" class="poster-img" />
+        <p class="p-hint">手机端也可长按图片保存</p>
+      </template>
       <div class="p-btns">
         <button class="btn ghost" @click="show = false">关闭</button>
         <button class="btn" :disabled="!url" @click="download">保存图片</button>
@@ -142,8 +148,16 @@ function download() {
 <style scoped>
 .poster-wrap { padding: 16px; }
 .p-title { font-weight: 700; text-align: center; margin-bottom: 12px; }
-.poster-img { width: 100%; border-radius: 12px; }
+.poster-img { width: 100%; border-radius: 12px; animation: poster-in .45s var(--ease-spring); }
+@keyframes poster-in { from { opacity: 0; scale: 0.94; } }
+.p-hint { text-align: center; font-size: 11px; color: var(--ink-400); margin-top: 8px; }
 .p-status { text-align: center; color: var(--ink-400); padding: 60px 0; font-size: 14px; }
+.p-spinner {
+  display: block; width: 22px; height: 22px; margin: 0 auto 10px;
+  border: 3px solid var(--green-100); border-top-color: var(--green-600); border-radius: 50%;
+  animation: p-spin .8s linear infinite;
+}
+@keyframes p-spin { to { rotate: 360deg; } }
 .p-btns { display: flex; gap: 10px; margin-top: 12px; }
 .p-btns .btn { flex: 1; }
 </style>

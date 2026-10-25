@@ -231,12 +231,13 @@ async function toggleCheckin() {
                   <van-progress class="r-bar" :percentage="barsGrown ? Math.round(v) : 0" color="#359068" track-color="#eef7f2" :show-pivot="false" />
                   <span class="r-val">{{ barsGrown ? Math.round(v) : 0 }}</span>
                 </div>
+                <p class="r-scope">三维维度沿用大创课题「中医治疗儿童哮喘」机制研究的靶点富集框架，此处作为成分生物活性的一般性参考，不代表该方对任一具体场景的功效评价。</p>
               </div>
 
               <p class="a-targets" v-if="recipe.analysis.top_targets?.length">
                 主要关联人类蛋白靶点：{{ recipe.analysis.top_targets.map(t => t.gene).join('、') }}
               </p>
-              <p class="a-disclaimer">入血概率为 PU-Learning 模型预测值，三维评分为文献富集参考分（0-100），均为研究参考而非临床结论。</p>
+              <p class="a-disclaimer">入血概率为 PU-Learning 模型预测值；三维评分沿用大创课题靶点富集框架（抗炎/免疫/气道修复），为文献富集参考分而非临床结论。</p>
             </div>
 
             <!-- 成分-靶点网络图 -->
@@ -332,6 +333,7 @@ async function toggleCheckin() {
 
 .radar-box { margin-top: 14px; background: var(--green-50); border-radius: 10px; padding: 12px; }
 .r-title { font-size: 12px; font-weight: 700; color: var(--green-700); margin-bottom: 8px; }
+.r-scope { font-size: 10.5px; color: var(--ink-400); margin-top: 8px; line-height: 1.5; }
 .r-row { display: flex; align-items: center; gap: 8px; padding: 3px 0; }
 .r-name { width: 56px; font-size: 12px; color: var(--ink-600); }
 .r-bar { flex: 1; }

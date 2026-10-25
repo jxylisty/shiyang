@@ -1,10 +1,15 @@
 <script setup>
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { watch } from 'vue'
 import { Leaf } from '@lucide/vue'
 
 const route = useRoute()
+const router = useRouter()
 watch(() => route.meta.title, (t) => { document.title = t ? `${t} · 食养有据` : '食养有据' }, { immediate: true })
+
+// 路由切换方向：depth 变深 = 前进（新页从右滑入），变浅 = 后退（从左滑入）
+// router._navDir 由 router/index.js 的 beforeEach 维护
+const navDir = { get value() { return router._navDir ?? 0 } }
 </script>
 
 <template>
@@ -18,7 +23,7 @@ watch(() => route.meta.title, (t) => { document.title = t ? `${t} · 食养有�
     </nav>
   </header>
   <router-view v-slot="{ Component }">
-    <transition name="page-fade" mode="out-in">
+    <transition :name="navDir.value === 0 ? 'page-fade' : (navDir.value === 1 ? 'page-fwd' : 'page-back')" mode="out-in">
       <component :is="Component" :key="route.path" />
     </transition>
   </router-view>
@@ -35,8 +40,15 @@ watch(() => route.meta.title, (t) => { document.title = t ? `${t} · 食养有�
 </style>
 
 <style>
-/* 路由切换过渡（全局：router-view 在 App 模板内） */
-.page-fade-enter-active, .page-fade-leave-active { transition: opacity .18s ease, transform .18s ease; }
+/* 路由切换过渡（全局：router-view 在 App 模板内）
+   首次进入 / 同层切换：轻淡入；前进：从右滑入；后退：从左滑入 */
+.page-fade-enter-active, .page-fade-leave-active,
+.page-fwd-enter-active, .page-fwd-leave-active,
+.page-back-enter-active, .page-back-leave-active { transition: opacity .18s ease, transform .22s var(--ease-out-soft); }
 .page-fade-enter-from { opacity: 0; transform: translateY(6px); }
 .page-fade-leave-to { opacity: 0; }
+.page-fwd-enter-from { opacity: 0; transform: translateX(32px); }
+.page-fwd-leave-to { opacity: 0; transform: translateX(-18px); }
+.page-back-enter-from { opacity: 0; transform: translateX(-32px); }
+.page-back-leave-to { opacity: 0; transform: translateX(18px); }
 </style>

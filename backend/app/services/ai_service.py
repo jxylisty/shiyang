@@ -72,6 +72,8 @@ SYSTEM_PROMPT = """你是「食养有据」平台的食养科普助手。用户�
 1. 一句话讲清这个方的传统定位（引用配料功效逻辑，不要夸大）
 2. 结合成分数据（入血概率、三维评分）解释"凭什么值得喝"，把专业术语翻译成人话
 3. 冲泡/食用小贴士和禁忌提醒
+关于三维评分：其维度（抗炎/免疫调节/气道修复）来自本团队大创课题的机制研究框架，
+解读时作为成分生物活性的一般性参考提及即可，不要将其表述为该方对某场景的功效证明。
 红线：绝不使用"治疗、疗效、治愈、抗癌"字样；必须保留"调理参考，不构成医疗建议"的定位；
 不确定的内容直说不确定；成分数据引用时保留数值。"""
 
@@ -93,7 +95,7 @@ def build_recipe_messages(recipe: dict, analysis: dict | None) -> list[dict]:
             "高入血概率成分Top5": [
                 {"名称": c.get("name"), "入血概率": c.get("prob_cctcm"), "来自": c.get("herbs", "")}
                 for c in (analysis.get("top_compounds") or [])[:5]],
-            "三维评分均值(抗炎/免疫/气道修复)": analysis.get("radar_summary"),
+            "三维评分均值(抗炎/免疫/气道修复，源自大创课题机制研究框架)": analysis.get("radar_summary"),
             "主要靶点": [t["gene"] for t in (analysis.get("top_targets") or [])[:6]],
         }
     return [

@@ -29,35 +29,35 @@ onMounted(async () => {
     <template v-else-if="detail">
       <div class="card hero">
         <p class="label">体质详情</p>
-        <h2>{{ detail.name }}</h2>
+        <h2 class="pop-text">{{ detail.name }}</h2>
         <p class="principle" v-if="detail.principle">{{ detail.principle }}</p>
       </div>
 
-      <div class="section-title">典型表现</div>
-      <div class="card">
+      <div class="section-title rise" style="--i: 1">典型表现</div>
+      <div class="card rise" style="--i: 1">
         <ul class="sign-list">
-          <li v-for="s in detail.typical_signs" :key="s">{{ s }}</li>
+          <li v-for="(s, si) in detail.typical_signs" :key="s" :style="{ '--i': si }" class="li-rise">{{ s }}</li>
         </ul>
       </div>
 
-      <div class="section-title">食养参考</div>
-      <div class="card">
+      <div class="section-title rise" style="--i: 2">食养参考</div>
+      <div class="card rise" style="--i: 2">
         <p v-if="detail.foods_suitable?.length"><b class="ok">宜：</b>{{ detail.foods_suitable.join('、') }}</p>
         <p v-if="detail.foods_avoid?.length" style="margin-top:6px"><b class="bad">忌：</b>{{ detail.foods_avoid.join('、') }}</p>
         <p v-if="detail.tea_ideas?.length" style="margin-top:6px"><b>茶饮思路：</b>{{ detail.tea_ideas.join('；') }}</p>
       </div>
 
-      <div class="section-title">生活建议</div>
-      <div class="card" v-if="detail.lifestyle?.length">
+      <div class="section-title rise" style="--i: 3">生活建议</div>
+      <div class="card rise" style="--i: 3" v-if="detail.lifestyle?.length">
         <ul class="sign-list">
           <li v-for="s in detail.lifestyle" :key="s">{{ s }}</li>
         </ul>
       </div>
 
-      <div class="section-title">适宜的方子</div>
-      <div class="card">
+      <div class="section-title rise" style="--i: 4">适宜的方子</div>
+      <div class="card rise" style="--i: 4">
         <template v-if="recipes.length">
-          <router-link v-for="r in recipes" :key="r.id" :to="`/recipes/${r.id}`" class="recipe-row">
+          <router-link v-for="r in recipes" :key="r.id" :to="`/recipes/${r.id}`" class="recipe-row pressable">
             <div class="r-name">{{ r.name }} <span class="tag warm">{{ r.type }}</span></div>
             <div class="r-one">{{ r.oneliner }}</div>
           </router-link>
@@ -69,7 +69,19 @@ onMounted(async () => {
         判定依据：<a :href="detail.reference_url" target="_blank" rel="noopener">中华中医药学会《中医体质分类与判定》</a>
       </p>
     </template>
-    <div v-else class="empty">加载中…</div>
+    <!-- 加载骨架 -->
+    <template v-else>
+      <div class="card hero">
+        <div class="skl" style="height: 12px; width: 64px; margin: 0 auto;"></div>
+        <div class="skl" style="height: 28px; width: 40%; margin: 10px auto 6px;"></div>
+        <div class="skl" style="height: 13px; width: 70%; margin: 0 auto;"></div>
+      </div>
+      <div class="card" v-for="n in 2" :key="n">
+        <div class="skl" style="height: 13px; margin-bottom: 10px;" :style="{ width: n === 1 ? '88%' : '76%' }"></div>
+        <div class="skl" style="height: 13px; margin-bottom: 10px; width: 82%;"></div>
+        <div class="skl" style="height: 13px; width: 60%;"></div>
+      </div>
+    </template>
   </div>
 </template>
 
@@ -77,10 +89,11 @@ onMounted(async () => {
 .hero { text-align: center; padding: 24px 16px; }
 .hero .label { font-size: 12px; color: var(--ink-400); }
 .hero h2 { font-size: 26px; color: var(--green-700); margin: 6px 0; }
-.principle { font-size: 13px; color: var(--ink-600); }
+.pop-text { animation: pop .5s var(--ease-spring) .2s backwards; }
 .sign-list { list-style: none; }
 .sign-list li { font-size: 13.5px; color: var(--ink-600); padding: 4px 0 4px 16px; position: relative; }
 .sign-list li::before { content: ""; position: absolute; left: 2px; top: 12px; width: 6px; height: 6px; border-radius: 50%; background: var(--green-600); }
+.li-rise { animation: rise .4s var(--ease-out-soft) backwards; animation-delay: calc(var(--i, 0) * 60ms); }
 .card p { font-size: 13.5px; color: var(--ink-600); line-height: 1.7; }
 .ok { color: var(--green-700); }
 .bad { color: var(--red-500); }

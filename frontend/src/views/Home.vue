@@ -6,7 +6,7 @@ import { useCountUp } from '../utils/motion'
 import TextReveal from '../components/TextReveal.vue'
 
 const stats = ref(null)
-const throatRecipes = ref([])
+const showcaseRecipes = ref([])   // 证据链专区示例方
 const sleepRecipes = ref([])
 const daily = ref(null)        // 今日推荐
 const coverTry = ref(0)
@@ -32,15 +32,15 @@ const SEASON_SCENES = [
 ]
 
 onMounted(async () => {
-  const [statsR, throatR, sleepR] = await Promise.allSettled([
+  const [statsR, showcaseR, sleepR] = await Promise.allSettled([
     getStats(),
-    listRecipes({ scene: '护嗓润喉', size: 3 }),
+    listRecipes({ size: 3 }),
     listRecipes({ scene: '助眠', size: 3 }),
   ])
   if (statsR.status === 'fulfilled') {
     stats.value = statsR.value.data.data
   }
-  if (throatR.status === 'fulfilled') throatRecipes.value = statsR ? throatR.value.data.data.items : throatR.value.data.data.items
+  if (showcaseR.status === 'fulfilled') showcaseRecipes.value = showcaseR.value.data.data.items
   if (sleepR.status === 'fulfilled') sleepRecipes.value = sleepR.value.data.data.items
 
   // 今日推荐：按日期在全部方子里轮换，每天一款
@@ -82,11 +82,11 @@ function onDailyImgErr() {
     <!-- hero -->
     <div class="hero card" ref="heroEl" @pointermove="heroGlow">
       <div class="hero-glow" aria-hidden="true"></div>
-      <h1><TextReveal text="呼吸道与咽喉养护" /><br/><TextReveal text="每杯茶饮都有「成分说明书」" :delay="300" /></h1>
+      <h1><TextReveal text="药食同源 · 有据可查" /><br/><TextReveal text="每杯茶饮都有「成分说明书」" :delay="300" /></h1>
       <p class="sub">基于大创课题「中药入血成分预测」成果<br/>从体质测评到方子推荐，活性成分、入血概率、作用靶点全程有据可查</p>
       <div class="hero-btns">
         <router-link to="/quiz" class="btn">开始体质测评</router-link>
-        <router-link to="/recipes?scene=护嗓润喉" class="btn ghost">看护嗓专区</router-link>
+        <router-link to="/recipes" class="btn ghost">逛方子库</router-link>
       </div>
       <div v-if="stats" class="hero-stats">
         <div><b>{{ animatedStats.recipe ?? 0 }}</b><span>食养方</span></div>
@@ -133,15 +133,21 @@ function onDailyImgErr() {
       </router-link>
     </div>
 
-    <!-- 呼吸健康专区（核心定位） -->
-    <div class="section-title">呼吸健康专区 · 咽喉养护</div>
+    <!-- 成分证据链（核心差异化） -->
+    <div class="section-title">每个方子，一条完整证据链</div>
     <div class="card zone">
-      <p class="zone-intro">咽喉是呼吸道的门户。本专区每个方子附三维机制参考（抗炎 / 免疫调节 / 气道修复），与大创课题「中医治疗儿童哮喘作用机制分析」一脉相承</p>
-      <router-link v-for="r in throatRecipes" :key="r.id" :to="`/recipes/${r.id}`" class="recipe-row">
+      <p class="zone-intro">活性成分 → 预测入血概率 → 作用靶点 → 数据出处，四层可溯。成分库来自本团队大创课题自建数据库，入血概率由 PU-Learning 模型预测</p>
+      <div class="chain">
+        <span class="chain-step">活性成分</span><i>→</i>
+        <span class="chain-step">入血概率</span><i>→</i>
+        <span class="chain-step">作用靶点</span><i>→</i>
+        <span class="chain-step">数据出处</span>
+      </div>
+      <router-link v-for="r in showcaseRecipes" :key="r.id" :to="`/recipes/${r.id}`" class="recipe-row">
         <div class="r-name">{{ r.name }}</div>
         <div class="r-one">{{ r.oneliner }}</div>
       </router-link>
-      <router-link to="/recipes?scene=护嗓润喉" class="zone-more">查看全部护嗓方 →</router-link>
+      <router-link to="/recipes" class="zone-more">逛逛全部 {{ stats?.stats.recipe ?? '' }} 个方子 →</router-link>
     </div>
 
     <!-- 日常轻养 -->
@@ -226,6 +232,13 @@ function onDailyImgErr() {
 .s-overlay span { font-size: 11px; opacity: .85; }
 
 .zone-intro { font-size: 12px; color: var(--ink-600); margin-bottom: 10px; }
+/* 证据链四步：横向排列，移动端可换行 */
+.chain { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
+.chain-step {
+  font-size: 12px; font-weight: 600; color: var(--green-700);
+  background: var(--green-50); border-radius: 8px; padding: 4px 10px;
+}
+.chain i { font-style: normal; color: var(--ink-400); font-size: 12px; }
 .zone-more { display: block; text-align: center; font-size: 13px; color: var(--green-700); padding-top: 10px; text-decoration: none; font-weight: 600; }
 .recipe-row { display: block; padding: 10px 0; border-bottom: 1px solid var(--green-50); text-decoration: none; }
 .recipe-row:last-child { border-bottom: none; }
