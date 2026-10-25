@@ -3,6 +3,16 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { showConfirmDialog, showSuccessToast } from 'vant'
 import { currentUser, logout, listRecords, listFavorites, isLoggedIn, getHistory, clearHistory, listCheckins, listFamilyMembers, addFamilyMember, removeFamilyMember } from '../api'
+import ConstitutionCard from '../components/ConstitutionCard.vue'
+
+// ---- 体质名片（T2-10） ----
+const showCard = ref(false)
+const weekCount = computed(() => {
+  const recs = checkins.value?.records || []
+  const weekAgo = Date.now() - 7 * 86400000
+  const days = new Set(recs.filter(r => new Date(r.day + 'T12:00').getTime() >= weekAgo).map(r => r.day))
+  return days.size
+})
 
 const router = useRouter()
 const user = currentUser()
@@ -174,7 +184,10 @@ function buzz(ms) {
 
     <template v-else>
       <!-- 体质档案历史 -->
-      <div class="section-title">体质档案（{{ records.length }} 次）</div>
+      <div class="section-title">体质档案（{{ records.length }} 次）
+        <button v-if="records.length" @click="showCard = true"
+                style="margin-left: auto; font-size: 12px; font-weight: 400; color: var(--green-700); background: none; border: none; cursor: pointer;">体质名片 →</button>
+      </div>
       <div class="card" v-if="!records.length">
         <p class="empty" style="padding:12px 0">还没有测评记录</p>
         <router-link to="/quiz" class="btn block">去测评</router-link>
@@ -315,6 +328,9 @@ function buzz(ms) {
         </router-link>
       </div>
     </template>
+
+    <!-- 体质名片海报（T2-10） -->
+    <ConstitutionCard v-model:show="showCard" :record="records[0] || null" :week-count="weekCount" />
   </div>
 </template>
 
