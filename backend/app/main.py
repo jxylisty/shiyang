@@ -26,6 +26,7 @@ from services import safety_service as safety
 from services import evidence_service as evidence
 from services import explain_service as explain
 from services import open_api
+from services import report_service as report
 
 DB_PATH = Path(__file__).resolve().parent.parent.parent / "data" / "shiyang.db"
 DISCLAIMER = "本平台内容为健康参考信息，不构成医疗建议，不用于诊断或治疗。"
@@ -433,6 +434,15 @@ def list_checkins(authorization: str | None = Header(None)):
         for r in data["records"]:
             r["recipe_name"] = names.get(r["recipe_id"], f"#{r['recipe_id']}")
     return ok(data)
+
+
+# ==================== 21 天食养周期报告（T2-7） ====================
+
+@app.get("/api/v1/report/cycle")
+def cycle_report(authorization: str | None = Header(None), days: int = 21):
+    uid = auth_uid(authorization)
+    days = max(7, min(days, 90))
+    return ok(report.build_report(uid, days))
 
 
 # ==================== AI 流式解读（P1.2，SSE；P2 支持预生成回放） ====================

@@ -48,6 +48,9 @@ export const getExplainRecipe = (recipeId) => api.get(`/explain/recipe/${recipeI
 // ---- 开放数据 API ----
 export const getOpenIndex = () => api.get('/open')
 
+// ---- 周期报告 ----
+export const getCycleReport = (days = 21) => authApi.get('/report/cycle', { params: { days } })
+
 // ---- AI（SSE 用 fetch；key 可为空 → 后端回放预生成解读） ----
 export function streamAIReport(recipeId, key, onDelta, onDone, onError, provider = 'deepseek') {
   const kq = key ? `key=${encodeURIComponent(key)}&` : ''

@@ -319,7 +319,7 @@ function buzz(ms) {
   translate: calc(var(--seg-i, 0) * 100%) 0;
   transition: translate var(--dur-med) var(--ease-spring);
 }
-.seg-item { position: relative; z-index: 1; border: none; background: transparent; padding: 6px 14px; font-size: 13px; color: var(--ink-600); border-radius: 8px; cursor: pointer; transition: color var(--dur-fast) ease; }
+.seg-item { position: relative; z-index: 1; border: none; background: transparent; padding: 6px 14px; font-size: 13px; color: var(--ink-600); border-radius: 8px; cursor: pointer; transition: color var(--dur-fast) ease; white-space: nowrap; }
 .seg-item.on { color: #fff; font-weight: 600; }
 .switch-btn { width: 46px; height: 26px; border-radius: 13px; border: none; background: #d7e0db; position: relative; cursor: pointer; transition: background .2s; }
 .switch-btn.on { background: var(--green-600); }
@@ -327,9 +327,6 @@ function buzz(ms) {
 .switch-btn.on .knob { left: 23px; }
 .btn.danger { color: var(--red-500); background: var(--red-50); font-size: 13px; padding: 7px 12px; }
 .set-note { font-size: 11px; color: var(--ink-400); margin-top: 10px; }
-
-/* 暗色圆形扩散：只在新画面上做 clip-path 揭示，旧画面静止垫底 */
-::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
 
 /* 骨架屏 */
 .sk-row { height: 16px; border-radius: 8px; margin: 14px 0; }
