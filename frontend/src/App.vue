@@ -17,6 +17,7 @@ const navDir = { get value() { return router._navDir ?? 0 } }
     <router-link to="/" class="logo"><Leaf class="logo-icon" :size="20" :stroke-width="2.2" />食养有据<small>药食同源 · 成分有据</small></router-link>
     <nav>
       <router-link to="/recipes">方子库</router-link>
+      <router-link to="/pantry">茶罐</router-link>
       <router-link to="/herbs">药材</router-link>
       <router-link to="/compounds">成分</router-link>
       <router-link to="/me">我的</router-link>

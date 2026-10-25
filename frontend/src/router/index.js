@@ -5,6 +5,7 @@ const routes = [
   { path: '/quiz', name: 'quiz', component: () => import('../views/Quiz.vue'), meta: { title: '体质测评', depth: 1 } },
   { path: '/recipes', name: 'recipes', component: () => import('../views/Recipes.vue'), meta: { title: '方子库', depth: 1 } },
   { path: '/recipes/compare', name: 'compareLab', component: () => import('../views/CompareLab.vue'), meta: { title: '对比实验室', depth: 2 } },
+  { path: '/pantry', name: 'pantry', component: () => import('../views/Pantry.vue'), meta: { title: '我的茶罐', depth: 1 } },
   { path: '/recipes/:id(\\d+)', name: 'recipeDetail', component: () => import('../views/RecipeDetail.vue'), meta: { title: '方子详情', depth: 2 } },
   { path: '/herbs', name: 'herbs', component: () => import('../views/Herbs.vue'), meta: { title: '药材图鉴', depth: 1 } },
   { path: '/compounds', name: 'compounds', component: () => import('../views/Compounds.vue'), meta: { title: '成分库', depth: 1 } },

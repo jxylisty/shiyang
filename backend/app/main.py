@@ -21,6 +21,7 @@ from services import user_service as us
 from services import ai_service as ai
 from services import exposure_service as es
 from services import compare_service as cmp_svc
+from services import pantry_service as pantry
 
 DB_PATH = Path(__file__).resolve().parent.parent.parent / "data" / "shiyang.db"
 DISCLAIMER = "本平台内容为健康参考信息，不构成医疗建议，不用于诊断或治疗。"
@@ -133,6 +134,26 @@ def recipes_compare(a: int, b: int):
     if result is None:
         raise HTTPException(404, "方子不存在或无成分分析")
     return ok(result)
+
+
+class PantryBody(BaseModel):
+    owned: list[str] = Field(..., description="手边有的食材名列表")
+    constitution: str | None = Field(None, description="可选：体质名（如 湿热）过滤")
+
+
+@app.post("/api/v1/pantry/match")
+def pantry_match(body: PantryBody):
+    return ok(pantry.match(body.owned, body.constitution))
+
+
+@app.get("/api/v1/pantry/materials")
+def pantry_materials():
+    """全部配料名（去重+按在方子里的出现频次排序），供前端勾选"""
+    conn = get_db()
+    rows = conn.execute(
+        "SELECT name, COUNT(*) AS cnt FROM rel_recipe_material GROUP BY name ORDER BY cnt DESC").fetchall()
+    conn.close()
+    return ok({"total": len(rows), "items": [{"name": r["name"], "count": r["cnt"]} for r in rows]})
 
 
 @app.get("/api/v1/recipes/{rid}")
