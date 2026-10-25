@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { BadgeCheck } from '@lucide/vue'
+import { BadgeCheck, FlaskConical } from '@lucide/vue'
 import { listRecipes, matImg } from '../api'
 
 const route = useRoute()
@@ -68,7 +68,9 @@ function onCoverErr(r) {
       </div>
     </div>
 
-    <p class="count" v-if="!loading && !loadError">共 {{ total }} 方</p>
+    <p class="count" v-if="!loading && !loadError">共 {{ total }} 方
+      <router-link to="/recipes/compare" class="lab-link"><FlaskConical :size="13" :stroke-width="2.2" /> 对比实验室</router-link>
+    </p>
 
     <!-- 骨架屏 -->
     <div v-if="loading" class="recipe-list">
@@ -117,6 +119,7 @@ function onCoverErr(r) {
 /* 与 .f-row .tag 同特异性且需在其后声明，否则选中态的白底白字会让文字消失 */
 .f-row .tag.active { background: var(--green-700); color: #fff; border-color: var(--green-700); }
 .count { font-size: 12px; color: var(--ink-400); margin-bottom: 8px; }
+.lab-link { float: right; font-size: 12px; color: var(--green-700); text-decoration: none; display: inline-flex; align-items: center; gap: 3px; }
 .recipe-card { display: block; text-decoration: none; color: inherit; }
 
 /* 左图右文卡片 */

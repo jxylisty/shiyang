@@ -20,6 +20,7 @@ from services import constitution_service as cs
 from services import user_service as us
 from services import ai_service as ai
 from services import exposure_service as es
+from services import compare_service as cmp_svc
 
 DB_PATH = Path(__file__).resolve().parent.parent.parent / "data" / "shiyang.db"
 DISCLAIMER = "本平台内容为健康参考信息，不构成医疗建议，不用于诊断或治疗。"
@@ -122,6 +123,16 @@ def list_recipes(type: str | None = None, scene: str | None = None,
     start = (page - 1) * size
     conn.close()
     return ok({"total": total, "page": page, "size": size, "items": out[start:start + size]})
+
+
+@app.get("/api/v1/recipes/compare")
+def recipes_compare(a: int, b: int):
+    if a == b:
+        raise HTTPException(400, "请选择两个不同的方子")
+    result = cmp_svc.compare(a, b)
+    if result is None:
+        raise HTTPException(404, "方子不存在或无成分分析")
+    return ok(result)
 
 
 @app.get("/api/v1/recipes/{rid}")

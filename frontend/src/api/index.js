@@ -26,6 +26,7 @@ export const listCompounds = (minProb = 0.5, limit = 200) => api.get('/compounds
 export const getStats = () => api.get('/stats')
 export const getExposure = (id) => api.get(`/recipes/${id}/exposure`)
 export const getNetwork = (id) => api.get(`/recipes/${id}/network`)
+export const compareRecipes = (a, b) => api.get('/recipes/compare', { params: { a, b } })
 
 // ---- AI（SSE 用 fetch；key 可为空 → 后端回放预生成解读） ----
 export function streamAIReport(recipeId, key, onDelta, onDone, onError, provider = 'deepseek') {
