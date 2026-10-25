@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Node
+node_modules/
+dist/
+*.local
+npm-debug.log*
+
+# 数据库为构建产物（scripts/build_db.py 可重建），不进仓库
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+
+# 编辑器/系统
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# 演示临时产物
+gui-test-screenshots/

@@ -1,0 +1,4451 @@
+{
+  "version": "0.1",
+  "generated": "2026-10-25T14:56:41",
+  "note": "子智能体采集 + 脚本校验，全部 status=待核对，需导师口径确认后翻状态",
+  "problems": [],
+  "recipes": [
+    {
+      "name": "银菊利咽茶",
+      "type": "茶饮",
+      "oneliner": "风热咽痛时的清利护嗓参考",
+      "description": "金银花、菊花清热，薄荷利咽，桔梗、甘草宣肺利咽、调和诸味。全方偏清凉，适合咽喉红肿疼痛、用嗓过度上火时短期饮用。",
+      "method": "煎水或开水冲泡后代茶饮",
+      "duration": "冲泡或煎煮10分钟",
+      "scenes": [
+        "护嗓润喉"
+      ],
+      "constitutions_suitable": [
+        "湿热"
+      ],
+      "constitutions_unsuitable": [
+        "阳虚"
+      ],
+      "population": "咽喉肿痛、用嗓较多的人群",
+      "contraindication": "脾胃虚寒、便溏者慎用；不宜长期连续饮用",
+      "source": "南方日报《名中医李云英送你最全秋季护嗓攻略》（广东省中医院耳鼻喉科，咽喉痛方）",
+      "reference_url": "https://static.nfnews.com/content/202010/23/c4193518.html",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "金银花",
+          "kind": "药食同源",
+          "grams": 15,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        },
+        {
+          "name": "菊花",
+          "kind": "药食同源",
+          "grams": 15,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        },
+        {
+          "name": "薄荷",
+          "kind": "药食同源",
+          "grams": 5,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        },
+        {
+          "name": "桔梗",
+          "kind": "药食同源",
+          "grams": 10,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        },
+        {
+          "name": "甘草",
+          "kind": "药食同源",
+          "grams": 10,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        }
+      ],
+      "coverage": {
+        "covered": 5,
+        "directory_pending": 0,
+        "food": 0,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "麦冬金银花茶",
+      "type": "茶饮",
+      "oneliner": "慢性咽炎咽痒干咳的养阴利咽参考",
+      "description": "麦冬养阴生津、润肺清心，配金银花清热解毒，桔梗、甘草利咽，乌梅生津敛肺。适合咽干发痒、刺激性干咳的慢性咽炎人群。",
+      "method": "沸水冲泡，频服",
+      "duration": "冲泡5-10分钟",
+      "scenes": [
+        "护嗓润喉"
+      ],
+      "constitutions_suitable": [
+        "阴虚"
+      ],
+      "constitutions_unsuitable": [
+        "痰湿",
+        "阳虚"
+      ],
+      "population": "慢性咽炎、咽干咽痒人群",
+      "contraindication": "脾胃虚寒、风寒咳嗽者慎用；无明显禁忌者首次少量尝试",
+      "source": "人民网健康《麦冬金银花茶缓解咽炎》（首都医科大学附属北京中医医院治未病中心郭昕）",
+      "reference_url": "http://health.people.com.cn/n1/2016/1129/c408570-28909680.html",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "麦冬",
+          "kind": "药食同源",
+          "grams": 10,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        },
+        {
+          "name": "金银花",
+          "kind": "药食同源",
+          "grams": 6,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        },
+        {
+          "name": "桔梗",
+          "kind": "药食同源",
+          "grams": 10,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        },
+        {
+          "name": "乌梅",
+          "kind": "药食同源",
+          "grams": 10,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        },
+        {
+          "name": "甘草",
+          "kind": "药食同源",
+          "grams": 3,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        }
+      ],
+      "coverage": {
+        "covered": 5,
+        "directory_pending": 0,
+        "food": 0,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "石斛麦冬茶",
+      "type": "茶饮",
+      "oneliner": "熬夜虚火、咽干目赤的滋阴调理参考",
+      "description": "石斛滋阴清热、益胃生津，麦冬养阴润肺，配绿茶清心提神。三味合用养阴生津利咽，缓解熬夜后虚火上炎、神疲体倦、眼燥目赤。",
+      "method": "三味洗净放入茶杯，开水冲泡加盖焖泡，代茶频饮，每日一剂",
+      "duration": "焖泡10分钟",
+      "scenes": [
+        "熬夜护眼",
+        "护嗓润喉"
+      ],
+      "constitutions_suitable": [
+        "阴虚"
+      ],
+      "constitutions_unsuitable": [
+        "阳虚",
+        "痰湿"
+      ],
+      "population": "经常熬夜、咽干口渴、虚火上升人群",
+      "contraindication": "脾胃虚寒、痰多清稀者不宜多服",
+      "source": "人民网健康《老熬夜喝石斛麦冬茶》",
+      "reference_url": "http://health.people.cn/n1/2019/0612/c14739-31132636.html",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "铁皮石斛",
+          "kind": "药食同源",
+          "grams": 15,
+          "optional": false,
+          "note": "成分数据待补",
+          "analysis_ready": false
+        },
+        {
+          "name": "麦冬",
+          "kind": "药食同源",
+          "grams": 10,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        },
+        {
+          "name": "绿茶",
+          "kind": "茶叶",
+          "grams": 5,
+          "optional": false,
+          "note": "原文为绿茶叶5克，茶底类",
+          "analysis_ready": false
+        }
+      ],
+      "coverage": {
+        "covered": 1,
+        "directory_pending": 1,
+        "food": 0,
+        "tea": 1,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "气血双补暖身茶",
+      "type": "茶饮",
+      "oneliner": "气血不足手脚凉的温养茶",
+      "description": "黄芪补气，枸杞子滋补肝肾，大枣、龙眼肉养血安神。适合气血不足引起的面色苍白、蹲起头晕、手脚冰凉，可用于经期后与熬夜后调理。",
+      "method": "食材洗净放保温杯，沸水焖泡10分钟，可反复冲泡至味淡，食材可嚼服",
+      "duration": "焖泡10分钟",
+      "scenes": [
+        "经期温养",
+        "换季调理"
+      ],
+      "constitutions_suitable": [
+        "气虚",
+        "阳虚"
+      ],
+      "constitutions_unsuitable": [
+        "湿热"
+      ],
+      "population": "气血不足、手脚冰凉及经期后调理的女性",
+      "contraindication": "糖尿病患者减少龙眼肉用量；体质偏热易上火者可减量或不加黄芪",
+      "source": "北京市卫健委官网《六款代茶饮，喝出好体质》（北京小汤山医院）",
+      "reference_url": "https://wjw.beijing.gov.cn/bmfw_20143/jkzs/jksh/202608/t20260810_4816503.html",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "枸杞子",
+          "kind": "药食同源",
+          "grams": 10,
+          "optional": false,
+          "note": "原文为枸杞10克",
+          "analysis_ready": true
+        },
+        {
+          "name": "枣",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": false,
+          "note": "原文为去核红枣3颗，未标克数；成分数据待补",
+          "analysis_ready": false
+        },
+        {
+          "name": "龙眼肉",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": false,
+          "note": "原文为桂圆2颗，未标克数；成分数据待补",
+          "analysis_ready": false
+        },
+        {
+          "name": "黄芪",
+          "kind": "药食同源",
+          "grams": 5,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        }
+      ],
+      "coverage": {
+        "covered": 2,
+        "directory_pending": 2,
+        "food": 0,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "健脾祛湿消肿茶",
+      "type": "茶饮",
+      "oneliner": "痰湿困重、晨起浮肿的祛湿参考",
+      "description": "炒薏米健脾渗湿，茯苓利水健脾，陈皮理气化痰，生姜温中和胃。适合痰湿体质身体困重、晨起面肿、腿沉、大便黏腻者。",
+      "method": "前三味浸泡10分钟，加500毫升水煮沸后小火煮15分钟，加姜片再焖3分钟",
+      "duration": "煮15-18分钟",
+      "scenes": [
+        "久坐通气",
+        "换季调理"
+      ],
+      "constitutions_suitable": [
+        "痰湿"
+      ],
+      "constitutions_unsuitable": [
+        "阴虚"
+      ],
+      "population": "久坐少动、身体困重、虚胖浮肿人群",
+      "contraindication": "孕妇慎用薏苡仁；阴虚燥咳、口干无痰者不宜饮用",
+      "source": "北京市卫健委官网《六款代茶饮，喝出好体质》（北京小汤山医院）",
+      "reference_url": "https://wjw.beijing.gov.cn/bmfw_20143/jkzs/jksh/202608/t20260810_4816503.html",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "薏苡仁",
+          "kind": "药食同源",
+          "grams": 15,
+          "optional": false,
+          "note": "原文为炒薏米15克",
+          "analysis_ready": true
+        },
+        {
+          "name": "茯苓",
+          "kind": "药食同源",
+          "grams": 10,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        },
+        {
+          "name": "陈皮",
+          "kind": "药食同源",
+          "grams": 3,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        },
+        {
+          "name": "生姜",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": false,
+          "note": "原文为生姜1片，未标克数",
+          "analysis_ready": true
+        }
+      ],
+      "coverage": {
+        "covered": 4,
+        "directory_pending": 0,
+        "food": 0,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "疏肝解郁安神茶",
+      "type": "茶饮",
+      "oneliner": "压力大情绪紧绷时的舒压安神茶",
+      "description": "佛手疏肝理气，玫瑰花行气解郁，陈皮理气健脾，百合清心安神。适合压力大、烦躁易怒、失眠多梦的职场人士与更年期女性。",
+      "method": "食材洗净放玻璃茶壶，95℃以上沸水焖泡5分钟，可加1颗冰糖调味",
+      "duration": "焖泡5分钟",
+      "scenes": [
+        "情绪舒压",
+        "助眠"
+      ],
+      "constitutions_suitable": [
+        "气郁"
+      ],
+      "constitutions_unsuitable": [],
+      "population": "压力大、情绪压抑、失眠多梦的职场人群",
+      "contraindication": "经量多的女性经期暂停；孕妇禁用",
+      "source": "北京市卫健委官网《六款代茶饮，喝出好体质》（北京小汤山医院）",
+      "reference_url": "https://wjw.beijing.gov.cn/bmfw_20143/jkzs/jksh/202608/t20260810_4816503.html",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "玫瑰花",
+          "kind": "普通食物",
+          "grams": null,
+          "optional": false,
+          "note": "原文为重瓣红玫瑰5朵，未标克数；非目录内花材，按普通食材处理",
+          "analysis_ready": false
+        },
+        {
+          "name": "佛手",
+          "kind": "药食同源",
+          "grams": 5,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        },
+        {
+          "name": "陈皮",
+          "kind": "药食同源",
+          "grams": 3,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        },
+        {
+          "name": "百合",
+          "kind": "药食同源",
+          "grams": 6,
+          "optional": false,
+          "note": "原文为百合干6克",
+          "analysis_ready": true
+        },
+        {
+          "name": "冰糖",
+          "kind": "普通食物",
+          "grams": null,
+          "optional": true,
+          "note": "原文为可加1颗冰糖调味，未标克数",
+          "analysis_ready": false
+        }
+      ],
+      "coverage": {
+        "covered": 3,
+        "directory_pending": 0,
+        "food": 2,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "清热润喉护嗓茶",
+      "type": "茶饮",
+      "oneliner": "用嗓过度咽干咽痒的护嗓茶",
+      "description": "麦冬养阴生津，胖大海清热利咽开音，薄荷利咽清爽，冰糖润燥调味。适合用嗓过度、咽喉干痒、口干舌燥及上火咽痛者。",
+      "method": "麦冬、胖大海沸水焖泡8分钟，再加薄荷叶和冰糖焖2分钟，薄荷不宜久焖",
+      "duration": "焖泡10分钟",
+      "scenes": [
+        "护嗓润喉"
+      ],
+      "constitutions_suitable": [
+        "阴虚"
+      ],
+      "constitutions_unsuitable": [
+        "阳虚"
+      ],
+      "population": "教师、主播等用嗓过度及咽干上火人群",
+      "contraindication": "胖大海性寒，不宜长期连续饮用，症状缓解即停；脾胃虚寒、易腹泻者慎用",
+      "source": "北京市卫健委官网《六款代茶饮，喝出好体质》（北京小汤山医院）",
+      "reference_url": "https://wjw.beijing.gov.cn/bmfw_20143/jkzs/jksh/202608/t20260810_4816503.html",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "麦冬",
+          "kind": "药食同源",
+          "grams": 5,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        },
+        {
+          "name": "胖大海",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": false,
+          "note": "原文为1枚，未标克数",
+          "analysis_ready": true
+        },
+        {
+          "name": "薄荷",
+          "kind": "药食同源",
+          "grams": 3,
+          "optional": false,
+          "note": "原文为薄荷叶3克",
+          "analysis_ready": true
+        },
+        {
+          "name": "冰糖",
+          "kind": "普通食物",
+          "grams": null,
+          "optional": false,
+          "note": "原文为1颗，未标克数",
+          "analysis_ready": false
+        }
+      ],
+      "coverage": {
+        "covered": 3,
+        "directory_pending": 0,
+        "food": 1,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "开胃消食解腻茶",
+      "type": "茶饮",
+      "oneliner": "聚餐油腻、饭后腹胀的消食解腻茶",
+      "description": "山楂消肉食油腻之积，炒麦芽消米面之积，陈皮理气健脾，乌梅生津。适合消化不良、食欲不振、饭后腹胀及油腻饮食后不适者。",
+      "method": "食材洗净加400毫升水，煮沸后小火煮10分钟，放凉饮用更佳，可加少量冰糖",
+      "duration": "煮10分钟",
+      "scenes": [
+        "消化"
+      ],
+      "constitutions_suitable": [
+        "痰湿",
+        "平和"
+      ],
+      "constitutions_unsuitable": [],
+      "population": "消化不良、饭后腹胀人群，儿童积食可用（用量减半）",
+      "contraindication": "胃酸过多、胃溃疡患者不宜空腹饮用；孕妇慎用山楂",
+      "source": "北京市卫健委官网《六款代茶饮，喝出好体质》（北京小汤山医院）",
+      "reference_url": "https://wjw.beijing.gov.cn/bmfw_20143/jkzs/jksh/202608/t20260810_4816503.html",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "山楂",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": false,
+          "note": "原文为山楂干3片，未标克数",
+          "analysis_ready": true
+        },
+        {
+          "name": "麦芽",
+          "kind": "药食同源",
+          "grams": 10,
+          "optional": false,
+          "note": "原文为炒麦芽10克",
+          "analysis_ready": true
+        },
+        {
+          "name": "陈皮",
+          "kind": "药食同源",
+          "grams": 3,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        },
+        {
+          "name": "乌梅",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": false,
+          "note": "原文为1颗，未标克数",
+          "analysis_ready": true
+        },
+        {
+          "name": "冰糖",
+          "kind": "普通食物",
+          "grams": null,
+          "optional": true,
+          "note": "原文为可加少量，未标克数",
+          "analysis_ready": false
+        }
+      ],
+      "coverage": {
+        "covered": 4,
+        "directory_pending": 0,
+        "food": 1,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "清肝明目护眼茶",
+      "type": "茶饮",
+      "oneliner": "长时间看屏幕后的清肝明目茶",
+      "description": "枸杞子滋补肝肾、益精明目，菊花清肝明目，决明子清肝润肠，桑椹滋阴补血。适合长期看电脑手机、眼干眼花、视力模糊者。",
+      "method": "食材洗净放玻璃杯沸水焖泡8分钟，决明子过滤避免嚼服",
+      "duration": "焖泡8分钟",
+      "scenes": [
+        "熬夜护眼"
+      ],
+      "constitutions_suitable": [
+        "阴虚",
+        "平和"
+      ],
+      "constitutions_unsuitable": [
+        "阳虚"
+      ],
+      "population": "长期面对屏幕的学生与办公人群、熬夜人群",
+      "contraindication": "脾胃虚寒、易腹泻者减少决明子用量；孕妇慎用",
+      "source": "北京市卫健委官网《六款代茶饮，喝出好体质》（北京小汤山医院）",
+      "reference_url": "https://wjw.beijing.gov.cn/bmfw_20143/jkzs/jksh/202608/t20260810_4816503.html",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "枸杞子",
+          "kind": "药食同源",
+          "grams": 10,
+          "optional": false,
+          "note": "原文为枸杞10克",
+          "analysis_ready": true
+        },
+        {
+          "name": "菊花",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": false,
+          "note": "原文为5朵，未标克数",
+          "analysis_ready": true
+        },
+        {
+          "name": "决明子",
+          "kind": "药食同源",
+          "grams": 5,
+          "optional": false,
+          "note": "成分数据待补",
+          "analysis_ready": false
+        },
+        {
+          "name": "桑椹",
+          "kind": "药食同源",
+          "grams": 6,
+          "optional": false,
+          "note": "原文为桑葚干6克",
+          "analysis_ready": true
+        }
+      ],
+      "coverage": {
+        "covered": 3,
+        "directory_pending": 1,
+        "food": 0,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "菊花决明子茶",
+      "type": "茶饮",
+      "oneliner": "清肝明目的简方茶",
+      "description": "菊花清肝明目、疏散风热，决明子清肝明目、润肠通便。两味合用适合肝火偏旺、目赤眼干、伴便秘者。",
+      "method": "决明子略捣碎后与菊花一同冲泡，浸泡约10分钟，代茶饮",
+      "duration": "冲泡10分钟",
+      "scenes": [
+        "熬夜护眼"
+      ],
+      "constitutions_suitable": [
+        "湿热"
+      ],
+      "constitutions_unsuitable": [
+        "阳虚"
+      ],
+      "population": "用眼过度、眼干目赤的办公人群",
+      "contraindication": "体寒者及孕妇、儿童不建议服用",
+      "source": "新华网《健康解码·食药同源：菊花决明子茶怎样清肝明目》（中国中医科学院西苑医院伊博文）",
+      "reference_url": "http://www.news.cn/video/20250912/b258c94bfc53452daeed0752696d3011/c.html",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "菊花",
+          "kind": "药食同源",
+          "grams": 10,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        },
+        {
+          "name": "决明子",
+          "kind": "药食同源",
+          "grams": 15,
+          "optional": false,
+          "note": "成分数据待补",
+          "analysis_ready": false
+        }
+      ],
+      "coverage": {
+        "covered": 1,
+        "directory_pending": 1,
+        "food": 0,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "杞菊决明子茶",
+      "type": "茶饮",
+      "oneliner": "肝火偏旺眼干目赤的清肝茶",
+      "description": "枸杞子滋补肝肾，菊花清肝明目，炒决明子清肝泻火、润肠通便。三味合用清肝泻火、养阴明目，适合肝火偏旺、眼干目赤兼便秘者。",
+      "method": "放入有盖杯中沸水冲泡，加盖闷15分钟，代茶频频饮用，可冲泡3~5次",
+      "duration": "闷泡15分钟",
+      "scenes": [
+        "熬夜护眼"
+      ],
+      "constitutions_suitable": [
+        "阴虚",
+        "湿热"
+      ],
+      "constitutions_unsuitable": [
+        "阳虚"
+      ],
+      "population": "长期用眼、肝火偏旺的办公人群",
+      "contraindication": "脾胃虚寒、易腹泻者慎用；孕妇慎用；本品为调理参考，不能缓解近视",
+      "source": "人民网健康《决明子的养生吃法》",
+      "reference_url": "http://health.people.cn/n1/2019/0808/c14739-31282653.html",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "枸杞子",
+          "kind": "药食同源",
+          "grams": 10,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        },
+        {
+          "name": "菊花",
+          "kind": "药食同源",
+          "grams": 3,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        },
+        {
+          "name": "决明子",
+          "kind": "药食同源",
+          "grams": 20,
+          "optional": false,
+          "note": "原文为炒决明子；成分数据待补",
+          "analysis_ready": false
+        }
+      ],
+      "coverage": {
+        "covered": 2,
+        "directory_pending": 1,
+        "food": 0,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "大海桔梗茶",
+      "type": "茶饮",
+      "oneliner": "慢性咽炎咽痛声嘶的经典利咽茶",
+      "description": "胖大海清肺热、利咽喉，桔梗宣肺利咽、祛痰，蜂蜜润燥调味。适合慢性咽炎、咽喉不利、咽痛声嘶伴大便干结者。",
+      "method": "胖大海、桔梗置杯中冲入沸水，加入蜂蜜浸泡饮服，每日1剂",
+      "duration": "浸泡10分钟",
+      "scenes": [
+        "护嗓润喉"
+      ],
+      "constitutions_suitable": [
+        "阴虚"
+      ],
+      "constitutions_unsuitable": [
+        "阳虚"
+      ],
+      "population": "慢性咽炎、用嗓过度咽痛声嘶人群",
+      "contraindication": "脾胃虚寒、脾肾阳虚者不宜；慢性结肠炎、大便溏泻者不宜；风寒或肺肾阴虚引起的声音嘶哑不宜；不宜长期饮服",
+      "source": "徐州市中医院官网《秋日佳饮胖大海茶》",
+      "reference_url": "https://xztcm.com/newsinfo.aspx?nid=2745",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "胖大海",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": false,
+          "note": "原文为2枚，未标克数",
+          "analysis_ready": true
+        },
+        {
+          "name": "桔梗",
+          "kind": "药食同源",
+          "grams": 5,
+          "optional": false,
+          "note": "原文为苦桔梗5克",
+          "analysis_ready": true
+        },
+        {
+          "name": "蜂蜜",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": false,
+          "note": "原文为适量，未标克数",
+          "analysis_ready": true
+        }
+      ],
+      "coverage": {
+        "covered": 3,
+        "directory_pending": 0,
+        "food": 0,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "麦芦代茶饮",
+      "type": "茶饮",
+      "oneliner": "秋燥咽干口渴的生津清热茶",
+      "description": "芦根清热生津、除烦止呕，麦冬养阴生津、润肺利咽。两味合用生津清热，缓解秋燥引起的咽喉炎、口腔炎、咽干口渴。",
+      "method": "切碎加水煎服，1日3次；或沸水冲泡加盖焖10分钟代茶饮，可适量加薄荷、白糖",
+      "duration": "焖泡10分钟",
+      "scenes": [
+        "护嗓润喉",
+        "换季调理"
+      ],
+      "constitutions_suitable": [
+        "阴虚"
+      ],
+      "constitutions_unsuitable": [
+        "阳虚",
+        "痰湿"
+      ],
+      "population": "秋季咽干口渴、慢性咽炎人群",
+      "contraindication": "脾胃虚寒者慎用；无明显禁忌，敏感体质首次少量尝试",
+      "source": "人民网健康《秋燥易伤肺，5个小秘方让你整秋不生病》（成都中医药大学蒲昭和点评）",
+      "reference_url": "http://health.people.com.cn/n/2015/0921/c21471-27612948.html",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "鲜芦根",
+          "kind": "药食同源",
+          "grams": 15,
+          "optional": false,
+          "note": "原文为鲜芦根30克（或干品15克），此处按干品计；成分数据待补",
+          "analysis_ready": false
+        },
+        {
+          "name": "麦冬",
+          "kind": "药食同源",
+          "grams": 15,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        }
+      ],
+      "coverage": {
+        "covered": 1,
+        "directory_pending": 1,
+        "food": 0,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "二冬茶",
+      "type": "茶饮",
+      "oneliner": "天冬麦冬相须配伍的滋阴润燥古方茶",
+      "description": "出自《张氏医通》经典配伍，天冬、麦冬相须为用，养肺阴、润肺燥，麦冬兼能清心除烦、滋阴利咽，适合阴虚烦热、咽干口燥者。",
+      "method": "天冬、麦冬洗净，开水直接冲泡代茶饮",
+      "duration": "冲泡10-15分钟",
+      "scenes": [
+        "护嗓润喉",
+        "换季调理"
+      ],
+      "constitutions_suitable": [
+        "阴虚"
+      ],
+      "constitutions_unsuitable": [
+        "阳虚",
+        "痰湿"
+      ],
+      "population": "阴虚体质咽干口燥、心烦者",
+      "contraindication": "脾胃虚寒、大便溏泄者不宜；风寒咳嗽者不宜",
+      "source": "传统经典方（《张氏医通》二冬茶），配伍经中国中医药报《天冬与麦冬：滋阴生津有二冬》核对",
+      "reference_url": "https://www.cntcm.com.cn/m/content/202602/13/c500735.html",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "天冬",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": false,
+          "note": "原文为3~5克，未定具体克数；传统方为天冬、麦冬各等分",
+          "analysis_ready": true
+        },
+        {
+          "name": "麦冬",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": false,
+          "note": "原文为3~5克，未定具体克数；传统方为天冬、麦冬各等分",
+          "analysis_ready": true
+        }
+      ],
+      "coverage": {
+        "covered": 2,
+        "directory_pending": 0,
+        "food": 0,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "酸枣仁百合安睡茶",
+      "type": "茶饮",
+      "oneliner": "养心安神的睡前轻养茶参考",
+      "description": "酸枣仁养肝宁心安神，百合清心润燥；中医常用于虚烦失眠、心悸多梦人群的食养参考。",
+      "method": "酸枣仁捣碎，与百合先浸泡30分钟，养生壶水煎20分钟，睡前1-2小时温饮",
+      "duration": "水煎20分钟",
+      "scenes": [
+        "助眠"
+      ],
+      "constitutions_suitable": [
+        "阴虚",
+        "气虚"
+      ],
+      "constitutions_unsuitable": [],
+      "population": "入睡困难、多梦易醒人群",
+      "contraindication": "孕妇及严重失眠者应就诊辨证；当晚忌浓茶咖啡",
+      "source": "深圳市中医院药膳食疗科普《酸枣仁百合茶》",
+      "reference_url": "https://www.szszyy.cn/HealthEducation3889/info.aspx?itemid=46483052&lcid=118",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "酸枣仁",
+          "kind": "药食同源",
+          "grams": 20,
+          "optional": false,
+          "note": "原文：稍捣碎",
+          "analysis_ready": true
+        },
+        {
+          "name": "百合",
+          "kind": "药食同源",
+          "grams": 10,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        },
+        {
+          "name": "冰糖",
+          "kind": "普通食物",
+          "grams": null,
+          "optional": true,
+          "note": "少量，按个人喜好",
+          "analysis_ready": false
+        }
+      ],
+      "coverage": {
+        "covered": 2,
+        "directory_pending": 0,
+        "food": 1,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "清咽利喉饮",
+      "type": "茶饮",
+      "oneliner": "清热生津的利咽护嗓茶参考",
+      "description": "金银花清热解毒，麦冬养阴生津，桔梗、甘草利咽，乌梅生津；适合用嗓过度、咽干咽痒人群。",
+      "method": "药材过水去杂，带盖大口杯沸水冲泡焖10-30分钟，每日一剂多次泡服至无味",
+      "duration": "焖泡10-30分钟",
+      "scenes": [
+        "护嗓润喉"
+      ],
+      "constitutions_suitable": [
+        "阴虚"
+      ],
+      "constitutions_unsuitable": [
+        "阳虚"
+      ],
+      "population": "教师、主播等用嗓过度人群，咽干咽痒者",
+      "contraindication": "脾胃虚寒易腹泻者慎用；咽喉肿痛持续应就诊",
+      "source": "首都医科大学附属北京友谊医院中医科《常用代茶饮方药》（主治医师吴冬月）",
+      "reference_url": "https://wjw.beijing.gov.cn/bmfw_20143/jkzs/jksh/202307/t20230725_3206796.html",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "金银花",
+          "kind": "药食同源",
+          "grams": 6,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        },
+        {
+          "name": "麦冬",
+          "kind": "药食同源",
+          "grams": 6,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        },
+        {
+          "name": "桔梗",
+          "kind": "药食同源",
+          "grams": 6,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        },
+        {
+          "name": "乌梅",
+          "kind": "药食同源",
+          "grams": 6,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        },
+        {
+          "name": "甘草",
+          "kind": "药食同源",
+          "grams": 3,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        }
+      ],
+      "coverage": {
+        "covered": 5,
+        "directory_pending": 0,
+        "food": 0,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "祛湿消肿饮",
+      "type": "茶饮",
+      "oneliner": "健脾祛湿的利水轻养茶参考",
+      "description": "茯苓健脾渗湿，薏苡仁利水，荷叶升清降浊；适合身体困重、晨起面肿腿沉的痰湿人群。",
+      "method": "药材过水，养生壶加500毫升水烧开后煎煮10-15分钟，代茶频饮",
+      "duration": "煎煮10-15分钟",
+      "scenes": [
+        "消化"
+      ],
+      "constitutions_suitable": [
+        "痰湿"
+      ],
+      "constitutions_unsuitable": [
+        "阴虚"
+      ],
+      "population": "湿气重、晨起困重浮肿人群",
+      "contraindication": "孕妇慎用薏苡仁；阴虚津亏者不宜",
+      "source": "首都医科大学附属北京友谊医院中医科《常用代茶饮方药》",
+      "reference_url": "https://wjw.beijing.gov.cn/bmfw_20143/jkzs/jksh/202307/t20230725_3206796.html",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "茯苓",
+          "kind": "药食同源",
+          "grams": 10,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        },
+        {
+          "name": "薏苡仁",
+          "kind": "药食同源",
+          "grams": 20,
+          "optional": false,
+          "note": "原文：生薏米",
+          "analysis_ready": true
+        },
+        {
+          "name": "荷叶",
+          "kind": "药食同源",
+          "grams": 10,
+          "optional": false,
+          "note": "成分数据待补",
+          "analysis_ready": false
+        },
+        {
+          "name": "玉米须",
+          "kind": "普通食物",
+          "grams": 10,
+          "optional": false,
+          "note": "民间代茶食材，非目录内",
+          "analysis_ready": false
+        }
+      ],
+      "coverage": {
+        "covered": 2,
+        "directory_pending": 1,
+        "food": 1,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "轻身消脂饮",
+      "type": "茶饮",
+      "oneliner": "利湿健脾的轻体茶参考（原方名：减肥降脂饮，表述已按合规调整）",
+      "description": "荷叶升清化浊，山楂消食化积，陈皮理气健脾；适合饮食油腻、体重偏重人群的日常轻养参考。",
+      "method": "药材过水，沸水冲泡焖10-30分钟或煎煮10-15分钟，代茶频饮",
+      "duration": "焖泡10-30分钟",
+      "scenes": [
+        "控糖轻养"
+      ],
+      "constitutions_suitable": [
+        "痰湿"
+      ],
+      "constitutions_unsuitable": [],
+      "population": "饮食油腻、久坐少动、体重偏重人群",
+      "contraindication": "孕妇慎用；脾胃虚寒者不宜长期饮；不能替代减重治疗",
+      "source": "首都医科大学附属北京友谊医院中医科《常用代茶饮方药》（原方名'减肥降脂饮'）",
+      "reference_url": "https://wjw.beijing.gov.cn/bmfw_20143/jkzs/jksh/202307/t20230725_3206796.html",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "荷叶",
+          "kind": "药食同源",
+          "grams": 10,
+          "optional": false,
+          "note": "成分数据待补",
+          "analysis_ready": false
+        },
+        {
+          "name": "山楂",
+          "kind": "药食同源",
+          "grams": 10,
+          "optional": false,
+          "note": "原文：生山楂",
+          "analysis_ready": true
+        },
+        {
+          "name": "陈皮",
+          "kind": "药食同源",
+          "grams": 10,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        }
+      ],
+      "coverage": {
+        "covered": 2,
+        "directory_pending": 1,
+        "food": 0,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "荷叶山楂利湿茶",
+      "type": "茶饮",
+      "oneliner": "健脾化湿利水的轻养茶参考",
+      "description": "荷叶化湿升清，山楂消食化积，陈皮理气健脾，决明子润肠；适合脾虚湿盛人群。",
+      "method": "茶包1袋沸水焖泡10分钟，可反复加水冲泡",
+      "duration": "焖泡10分钟",
+      "scenes": [
+        "消化"
+      ],
+      "constitutions_suitable": [
+        "痰湿"
+      ],
+      "constitutions_unsuitable": [],
+      "population": "脾虚湿盛、身体困重人群",
+      "contraindication": "脾胃虚寒者禁用（原文）；孕妇慎用",
+      "source": "安徽省庐江县人民医院中医科《15款中药代茶饮》",
+      "reference_url": "https://www.ahljyy.com/display.asp?id=10970",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "荷叶",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": false,
+          "note": "原文茶包形式未标克数；成分数据待补",
+          "analysis_ready": false
+        },
+        {
+          "name": "山楂",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": false,
+          "note": "原文未标克数",
+          "analysis_ready": true
+        },
+        {
+          "name": "陈皮",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": false,
+          "note": "原文未标克数",
+          "analysis_ready": true
+        },
+        {
+          "name": "决明子",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": false,
+          "note": "原文未标克数；成分数据待补",
+          "analysis_ready": false
+        }
+      ],
+      "coverage": {
+        "covered": 2,
+        "directory_pending": 2,
+        "food": 0,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "玉竹石斛润肺茶",
+      "type": "茶饮",
+      "oneliner": "滋阴润肺的清润茶参考",
+      "description": "玉竹养阴润燥，百合清心润肺，石斛益胃生津；适合长期接触尘雾、油烟环境人群的润养参考。",
+      "method": "茶包1-2袋沸水焖泡10分钟，可反复冲泡",
+      "duration": "焖泡10分钟",
+      "scenes": [
+        "护嗓润喉"
+      ],
+      "constitutions_suitable": [
+        "阴虚"
+      ],
+      "constitutions_unsuitable": [
+        "阳虚"
+      ],
+      "population": "长期接触尘雾、油烟环境人群，咽干口燥者",
+      "contraindication": "脾胃虚寒者禁用（原文）",
+      "source": "安徽省庐江县人民医院中医科《15款中药代茶饮》",
+      "reference_url": "https://www.ahljyy.com/display.asp?id=10970",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "玉竹",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": false,
+          "note": "原文茶包形式未标克数",
+          "analysis_ready": true
+        },
+        {
+          "name": "百合",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": false,
+          "note": "原文未标克数",
+          "analysis_ready": true
+        },
+        {
+          "name": "铁皮石斛",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": false,
+          "note": "原文未标克数；成分数据待补",
+          "analysis_ready": false
+        }
+      ],
+      "coverage": {
+        "covered": 2,
+        "directory_pending": 1,
+        "food": 0,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "桑椹枸杞养发饮",
+      "type": "茶饮",
+      "oneliner": "滋补肝肾的头发养护茶参考",
+      "description": "桑椹滋阴补血，枸杞子滋补肝肾；中医认为发为血之余、肾其华在发，适合头发早白稀疏人群的日常滋养参考。",
+      "method": "茶包1-2袋沸水焖泡10分钟，可反复冲泡",
+      "duration": "焖泡10分钟",
+      "scenes": [
+        "情绪舒压"
+      ],
+      "constitutions_suitable": [
+        "阴虚",
+        "血瘀"
+      ],
+      "constitutions_unsuitable": [
+        "痰湿"
+      ],
+      "population": "头发稀少、早白人群",
+      "contraindication": "脾胃虚寒便溏者慎用；肝肾功能异常者禁用（原文）",
+      "source": "安徽省庐江县人民医院中医科《15款中药代茶饮》（原方名'桑葚枸杞生发饮'）",
+      "reference_url": "https://www.ahljyy.com/display.asp?id=10970",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "桑椹",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": false,
+          "note": "原文未标克数",
+          "analysis_ready": true
+        },
+        {
+          "name": "枸杞子",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": false,
+          "note": "原文未标克数",
+          "analysis_ready": true
+        }
+      ],
+      "coverage": {
+        "covered": 2,
+        "directory_pending": 0,
+        "food": 0,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "西洋参石斛补气茶",
+      "type": "茶饮",
+      "oneliner": "补气养阴的亚健康轻养茶参考",
+      "description": "西洋参补气养阴清热，石斛益胃生津；适合疲劳、口干的亚健康人群温和调养。",
+      "method": "茶包1-2袋沸水焖泡10分钟，可反复冲泡",
+      "duration": "焖泡10分钟",
+      "scenes": [
+        "换季调理"
+      ],
+      "constitutions_suitable": [
+        "气虚",
+        "阴虚"
+      ],
+      "constitutions_unsuitable": [
+        "阳虚"
+      ],
+      "population": "疲劳乏力、咽干口燥的亚健康人群",
+      "contraindication": "脾胃虚寒者禁用（原文）；不宜与藜芦同用",
+      "source": "安徽省庐江县人民医院中医科《15款中药代茶饮》",
+      "reference_url": "https://www.ahljyy.com/display.asp?id=10970",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "西洋参",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": false,
+          "note": "原文未标克数",
+          "analysis_ready": true
+        },
+        {
+          "name": "铁皮石斛",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": false,
+          "note": "原文未标克数；成分数据待补",
+          "analysis_ready": false
+        }
+      ],
+      "coverage": {
+        "covered": 1,
+        "directory_pending": 1,
+        "food": 0,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "乌梅消暑饮",
+      "type": "茶饮",
+      "oneliner": "生津解渴的传统乌梅饮参考",
+      "description": "乌梅生津敛阴，山楂消食化积，陈皮理气；夏季冰镇后即为传统酸梅汤风味。",
+      "method": "茶包1袋加冷水适量大火煮开，加冰糖调味",
+      "duration": "煮沸",
+      "scenes": [
+        "消化"
+      ],
+      "constitutions_suitable": [],
+      "constitutions_unsuitable": [],
+      "population": "夏季燥热、口干人群",
+      "contraindication": "脾胃虚寒、肝肾功能异常者禁用（原文）；感冒发热期不宜",
+      "source": "安徽省庐江县人民医院中医科《15款中药代茶饮》（乌梅饮）",
+      "reference_url": "https://www.ahljyy.com/display.asp?id=10970",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "乌梅",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": false,
+          "note": "原文未标克数",
+          "analysis_ready": true
+        },
+        {
+          "name": "山楂",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": false,
+          "note": "原文未标克数",
+          "analysis_ready": true
+        },
+        {
+          "name": "陈皮",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": false,
+          "note": "原文未标克数",
+          "analysis_ready": true
+        },
+        {
+          "name": "冰糖",
+          "kind": "普通食物",
+          "grams": null,
+          "optional": true,
+          "note": "适量调味",
+          "analysis_ready": false
+        }
+      ],
+      "coverage": {
+        "covered": 3,
+        "directory_pending": 0,
+        "food": 1,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "陈皮茯苓健脾祛湿茶",
+      "type": "茶饮",
+      "oneliner": "健脾祛湿的基础轻养茶参考",
+      "description": "陈皮理气健脾燥湿，茯苓健脾渗湿；两味皆为药食同源经典健脾组合，适合湿气重人群日常饮用。",
+      "method": "茶包1-2袋沸水焖泡10分钟，可反复冲泡",
+      "duration": "焖泡10分钟",
+      "scenes": [
+        "消化"
+      ],
+      "constitutions_suitable": [
+        "痰湿"
+      ],
+      "constitutions_unsuitable": [
+        "湿热"
+      ],
+      "population": "湿气重、脘腹胀满人群",
+      "contraindication": "实热、湿热、阴虚内热者禁用（原文）",
+      "source": "安徽省庐江县人民医院中医科《15款中药代茶饮》",
+      "reference_url": "https://www.ahljyy.com/display.asp?id=10970",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "陈皮",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": false,
+          "note": "原文未标克数",
+          "analysis_ready": true
+        },
+        {
+          "name": "茯苓",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": false,
+          "note": "原文未标克数",
+          "analysis_ready": true
+        }
+      ],
+      "coverage": {
+        "covered": 2,
+        "directory_pending": 0,
+        "food": 0,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "桂圆红枣温养茶",
+      "type": "茶饮",
+      "oneliner": "补血安神的冬季温养茶参考",
+      "description": "龙眼肉补益心脾养血，大枣补中益气，红糖温中；适合手脚偏凉、气血偏虚人群的冬日暖饮。",
+      "method": "沸水冲泡或煮10分钟",
+      "duration": "煮10分钟",
+      "scenes": [
+        "经期温养",
+        "换季调理"
+      ],
+      "constitutions_suitable": [
+        "气虚",
+        "阳虚"
+      ],
+      "constitutions_unsuitable": [
+        "湿热",
+        "痰湿"
+      ],
+      "population": "气血偏虚、手脚偏凉人群",
+      "contraindication": "湿热内盛、糖尿病人群慎用；感冒发热期不宜",
+      "source": "台州市路桥区中医院《中医药膳食谱》（原方名'桂圆红枣茶'）",
+      "reference_url": "https://www.lqqzyy.com/Home/Info/2541",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "龙眼肉",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": false,
+          "note": "原文桂圆肉10颗；成分数据待补",
+          "analysis_ready": false
+        },
+        {
+          "name": "枣",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": false,
+          "note": "原文红枣5颗；成分数据待补",
+          "analysis_ready": false
+        },
+        {
+          "name": "红糖",
+          "kind": "普通食物",
+          "grams": null,
+          "optional": true,
+          "note": "少许",
+          "analysis_ready": false
+        }
+      ],
+      "coverage": {
+        "covered": 0,
+        "directory_pending": 2,
+        "food": 1,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "理气化痰轻身饮",
+      "type": "茶饮",
+      "oneliner": "理气健脾、燥湿化痰的煮水代茶参考",
+      "description": "白萝卜下气消食，冬瓜清热利水，薏苡仁健脾渗湿，陈皮理气化痰；适合面部油腻、身体困重的痰湿湿热人群。",
+      "method": "四味煮水代茶饮",
+      "duration": "煮水",
+      "scenes": [
+        "久坐通气",
+        "控油祛痘"
+      ],
+      "constitutions_suitable": [
+        "痰湿",
+        "湿热"
+      ],
+      "constitutions_unsuitable": [
+        "阴虚",
+        "阳虚"
+      ],
+      "population": "面部油腻、口干口苦、久坐身体困重人群",
+      "contraindication": "脾胃虚寒者不宜久服；孕妇慎用薏苡仁",
+      "source": "北京中医药大学东方医院治未病科（北京市中医药管理局发布）《冬季'清补慢调'食疗智慧》（理气化痰代茶饮）",
+      "reference_url": "https://zyj.beijing.gov.cn/sy/whkp/202511/t20251117_4283700.html",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "白萝卜",
+          "kind": "普通食物",
+          "grams": null,
+          "optional": false,
+          "note": "原文未标克数",
+          "analysis_ready": false
+        },
+        {
+          "name": "冬瓜",
+          "kind": "普通食物",
+          "grams": null,
+          "optional": false,
+          "note": "原文未标克数",
+          "analysis_ready": false
+        },
+        {
+          "name": "薏苡仁",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": false,
+          "note": "原文'薏米'未标克数",
+          "analysis_ready": true
+        },
+        {
+          "name": "陈皮",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": false,
+          "note": "原文未标克数",
+          "analysis_ready": true
+        }
+      ],
+      "coverage": {
+        "covered": 2,
+        "directory_pending": 0,
+        "food": 2,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "黄芪芡实杞菊茶",
+      "type": "茶饮",
+      "oneliner": "春季轻养的经典四味茶参考",
+      "description": "黄芪补气固表，芡实健脾固肾，枸杞子滋补肝肾，菊花清肝明目；深圳市中医院推荐的春季茶疗方。",
+      "method": "材料浸泡30分钟，连水入养生壶煲20-30分钟（1-2人份）",
+      "duration": "煲20-30分钟",
+      "scenes": [
+        "换季调理",
+        "熬夜护眼"
+      ],
+      "constitutions_suitable": [
+        "气虚",
+        "平和"
+      ],
+      "constitutions_unsuitable": [
+        "湿热"
+      ],
+      "population": "换季易感、日常轻养人群",
+      "contraindication": "感冒发热期不宜；湿热壅盛者慎用黄芪",
+      "source": "深圳市中医院黄淑芬（深圳市卫健委'四季药膳茶疗'）（春季方）",
+      "reference_url": "http://wjw.sz.gov.cn/ztzl/jkkp/jkcs/content/post_11116470.html",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "黄芪",
+          "kind": "药食同源",
+          "grams": 17,
+          "optional": false,
+          "note": "原文15-20克取中值",
+          "analysis_ready": true
+        },
+        {
+          "name": "芡实",
+          "kind": "药食同源",
+          "grams": 12,
+          "optional": false,
+          "note": "原文10-15克取中值；成分数据待补",
+          "analysis_ready": false
+        },
+        {
+          "name": "枸杞子",
+          "kind": "药食同源",
+          "grams": 10,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        },
+        {
+          "name": "菊花",
+          "kind": "药食同源",
+          "grams": 10,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        }
+      ],
+      "coverage": {
+        "covered": 3,
+        "directory_pending": 1,
+        "food": 0,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "黄芪玫瑰开郁茶",
+      "type": "茶饮",
+      "oneliner": "疏肝解郁的春季情绪舒压茶参考",
+      "description": "黄芪健脾补中，玫瑰花行气解郁，陈皮理气，枸杞子养肝；适合春困情绪低落、压力大人群。",
+      "method": "代茶饮，沸水冲泡",
+      "duration": "冲泡",
+      "scenes": [
+        "情绪舒压"
+      ],
+      "constitutions_suitable": [
+        "气郁",
+        "气虚"
+      ],
+      "constitutions_unsuitable": [
+        "阴虚"
+      ],
+      "population": "压力大、情绪压抑的职场人群",
+      "contraindication": "月经量多者经期暂停玫瑰花；阴虚火旺者慎用黄芪",
+      "source": "《人民日报海外版》2018-02-03（北京朝阳区中医医院王红蕊）（春季方）",
+      "reference_url": "http://paper.people.com.cn/rmrbhwb/html/2018-02/03/content_1834580.htm",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "黄芪",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": false,
+          "note": "原文未标克数",
+          "analysis_ready": true
+        },
+        {
+          "name": "玫瑰花",
+          "kind": "普通食物",
+          "grams": null,
+          "optional": false,
+          "note": "非目录内花材，民间食养常用",
+          "analysis_ready": false
+        },
+        {
+          "name": "陈皮",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": false,
+          "note": "原文未标克数",
+          "analysis_ready": true
+        },
+        {
+          "name": "枸杞子",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": false,
+          "note": "原文'枸杞'未标克数",
+          "analysis_ready": true
+        }
+      ],
+      "coverage": {
+        "covered": 3,
+        "directory_pending": 0,
+        "food": 1,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "山楂荷叶轻暑饮",
+      "type": "茶饮",
+      "oneliner": "清热解暑利湿的夏日茶参考",
+      "description": "山楂消食化滞，荷叶清暑利湿，薏苡仁清暑健脾；夏日暑湿重的轻养搭配。",
+      "method": "代茶饮，沸水冲泡或煮饮",
+      "duration": "冲泡",
+      "scenes": [
+        "控糖轻养",
+        "消化"
+      ],
+      "constitutions_suitable": [
+        "痰湿",
+        "湿热"
+      ],
+      "constitutions_unsuitable": [],
+      "population": "夏季暑湿、饮食油腻人群",
+      "contraindication": "孕妇慎用薏苡仁、山楂；脾胃虚寒者不宜",
+      "source": "《人民日报海外版》2018-02-03（北京朝阳区中医医院王红蕊）（夏季方，山楂荷叶饮）",
+      "reference_url": "http://paper.people.com.cn/rmrbhwb/html/2018-02/03/content_1834580.htm",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "山楂",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": false,
+          "note": "原文未标克数",
+          "analysis_ready": true
+        },
+        {
+          "name": "荷叶",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": false,
+          "note": "原文未标克数；成分数据待补",
+          "analysis_ready": false
+        },
+        {
+          "name": "薏苡仁",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": false,
+          "note": "原文'薏仁米'未标克数",
+          "analysis_ready": true
+        }
+      ],
+      "coverage": {
+        "covered": 2,
+        "directory_pending": 1,
+        "food": 0,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "百合麦冬润燥饮",
+      "type": "茶饮",
+      "oneliner": "清热润燥的秋季轻养茶参考",
+      "description": "百合养阴润肺清心，麦冬益胃生津除烦，菊花清解余热；秋季防燥的平和搭配。",
+      "method": "代茶饮，沸水冲泡",
+      "duration": "冲泡",
+      "scenes": [
+        "护嗓润喉",
+        "换季调理"
+      ],
+      "constitutions_suitable": [
+        "阴虚"
+      ],
+      "constitutions_unsuitable": [
+        "阳虚"
+      ],
+      "population": "秋季咽干、熬夜上火的上班族",
+      "contraindication": "脾胃虚寒便溏者不宜",
+      "source": "《人民日报海外版》2018-02-03（北京朝阳区中医医院王红蕊）（秋季方，百合麦冬饮）",
+      "reference_url": "http://paper.people.com.cn/rmrbhwb/html/2018-02/03/content_1834580.htm",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "百合",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": false,
+          "note": "原文未标克数",
+          "analysis_ready": true
+        },
+        {
+          "name": "麦冬",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": false,
+          "note": "原文未标克数",
+          "analysis_ready": true
+        },
+        {
+          "name": "菊花",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": false,
+          "note": "原文'少许'未标克数",
+          "analysis_ready": true
+        }
+      ],
+      "coverage": {
+        "covered": 3,
+        "directory_pending": 0,
+        "food": 0,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "姜枣桂圆陈皮茶",
+      "type": "茶饮",
+      "oneliner": "温经养胃驱寒的冬季暖茶参考",
+      "description": "生姜温中散寒，龙眼肉补心血，大枣补中益气，陈皮理气防滞；四味性温，寒冬暖身。",
+      "method": "代茶饮，沸水冲泡或煮饮",
+      "duration": "冲泡",
+      "scenes": [
+        "经期温养",
+        "换季调理"
+      ],
+      "constitutions_suitable": [
+        "阳虚",
+        "气虚"
+      ],
+      "constitutions_unsuitable": [
+        "湿热",
+        "阴虚"
+      ],
+      "population": "畏寒、手脚偏凉人群冬季日常",
+      "contraindication": "阴虚火旺、湿热内盛者不宜；感冒发热期不宜",
+      "source": "《人民日报海外版》2018-02-03（北京朝阳区中医医院王红蕊）（冬季方）",
+      "reference_url": "http://paper.people.com.cn/rmrbhwb/html/2018-02/03/content_1834580.htm",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "生姜",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": false,
+          "note": "原文未标克数",
+          "analysis_ready": true
+        },
+        {
+          "name": "龙眼肉",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": false,
+          "note": "原文'桂圆'未标克数；成分数据待补",
+          "analysis_ready": false
+        },
+        {
+          "name": "枣",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": false,
+          "note": "原文未标克数；成分数据待补",
+          "analysis_ready": false
+        },
+        {
+          "name": "陈皮",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": false,
+          "note": "原文未标克数",
+          "analysis_ready": true
+        }
+      ],
+      "coverage": {
+        "covered": 2,
+        "directory_pending": 2,
+        "food": 0,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "洋参菊花轻养茶",
+      "type": "茶饮",
+      "oneliner": "补气养阴清热的日常轻养茶",
+      "description": "西洋参补气养阴、清热生津，配菊花清肝明目；适合疲劳咽干的气阴两虚人群。",
+      "method": "沸水冲泡，可加冰糖适量",
+      "duration": "冲泡",
+      "scenes": [
+        "换季调理",
+        "熬夜护眼"
+      ],
+      "constitutions_suitable": [
+        "气虚",
+        "阴虚"
+      ],
+      "constitutions_unsuitable": [
+        "阳虚"
+      ],
+      "population": "疲劳、咽干、用眼多人群",
+      "contraindication": "脾胃虚寒者不宜；不宜与藜芦同用",
+      "source": "宁夏医科大学中医学院养生科普",
+      "reference_url": "http://www.nxmu.edu.cn/nxykdxhuiyizhongyi/info/1048/1493.htm",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "西洋参",
+          "kind": "药食同源",
+          "grams": 6,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        },
+        {
+          "name": "菊花",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": false,
+          "note": "原文5朵",
+          "analysis_ready": true
+        },
+        {
+          "name": "冰糖",
+          "kind": "普通食物",
+          "grams": null,
+          "optional": true,
+          "note": "适量",
+          "analysis_ready": false
+        }
+      ],
+      "coverage": {
+        "covered": 2,
+        "directory_pending": 0,
+        "food": 1,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "古法酸梅茶",
+      "type": "茶饮",
+      "oneliner": "生津解渴的经典酸梅汤配方（健康报剂量版）",
+      "description": "乌梅生津敛阴，山楂消食，陈皮理气，甘草调和；即传统酸梅汤，夏季冰镇风味更佳。",
+      "method": "煮水代茶，加冰糖适量",
+      "duration": "煮水",
+      "scenes": [
+        "消化"
+      ],
+      "constitutions_suitable": [],
+      "constitutions_unsuitable": [],
+      "population": "夏季口干、食欲不振人群",
+      "contraindication": "胃酸过多者不宜；感冒发热期不宜",
+      "source": "健康报《中式养生水，你喝对了吗》酸梅茶剂量",
+      "reference_url": "https://www.jkb.com.cn/TCM/2025/0328/501880.html",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "乌梅",
+          "kind": "药食同源",
+          "grams": 35,
+          "optional": false,
+          "note": "原文30-40克取中值",
+          "analysis_ready": true
+        },
+        {
+          "name": "山楂",
+          "kind": "药食同源",
+          "grams": 15,
+          "optional": false,
+          "note": "原文10-20克取中值",
+          "analysis_ready": true
+        },
+        {
+          "name": "陈皮",
+          "kind": "药食同源",
+          "grams": 15,
+          "optional": false,
+          "note": "原文10-20克取中值",
+          "analysis_ready": true
+        },
+        {
+          "name": "甘草",
+          "kind": "药食同源",
+          "grams": 4.5,
+          "optional": false,
+          "note": "原文3-6克取中值",
+          "analysis_ready": true
+        },
+        {
+          "name": "冰糖",
+          "kind": "普通食物",
+          "grams": null,
+          "optional": true,
+          "note": "适量",
+          "analysis_ready": false
+        }
+      ],
+      "coverage": {
+        "covered": 4,
+        "directory_pending": 0,
+        "food": 1,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "陈皮蜂蜜柚子茶",
+      "type": "茶饮",
+      "oneliner": "理气化痰、清热润肠的果味茶参考",
+      "description": "陈皮理气化痰，柚子清香润燥，配绿茶与蜂蜜；口感温和的日常理气茶。",
+      "method": "陈皮、柚子肉与绿茶同泡，稍加蜂蜜调饮",
+      "duration": "冲泡",
+      "scenes": [
+        "消化"
+      ],
+      "constitutions_suitable": [
+        "气郁",
+        "痰湿"
+      ],
+      "constitutions_unsuitable": [],
+      "population": "餐后腹胀、痰多人群",
+      "contraindication": "蜂蜜不耐高温，待温后加入；糖尿病人群少放蜂蜜",
+      "source": "中国医学科学院北京协和医院中医科（健康报《中式养生水，你喝对了吗》）",
+      "reference_url": "https://www.jkb.com.cn/TCM/2025/0328/501880.html",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "陈皮",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": false,
+          "note": "原文未标克数",
+          "analysis_ready": true
+        },
+        {
+          "name": "柚子",
+          "kind": "普通食物",
+          "grams": null,
+          "optional": false,
+          "note": "原文未标克数",
+          "analysis_ready": false
+        },
+        {
+          "name": "绿茶",
+          "kind": "茶叶",
+          "grams": null,
+          "optional": false,
+          "note": "原文未标克数",
+          "analysis_ready": false
+        },
+        {
+          "name": "蜂蜜",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": true,
+          "note": "少许调味",
+          "analysis_ready": true
+        }
+      ],
+      "coverage": {
+        "covered": 2,
+        "directory_pending": 0,
+        "food": 1,
+        "tea": 1,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "协和补气茶",
+      "type": "茶饮",
+      "oneliner": "气虚人群的基础补气茶参考",
+      "description": "黄芪补气升阳固表，配党参增强补气之力；适合乏力倦怠、易感冒的气虚人群。",
+      "method": "煮茶或冲泡饮用",
+      "duration": "煮泡",
+      "scenes": [
+        "换季调理"
+      ],
+      "constitutions_suitable": [
+        "气虚"
+      ],
+      "constitutions_unsuitable": [
+        "湿热"
+      ],
+      "population": "乏力倦怠、虚汗多、怕风易感冒人群",
+      "contraindication": "感冒发热期不宜；湿热壅盛者不宜",
+      "source": "中国医学科学院北京协和医院中医科（健康报《中式养生水，你喝对了吗》）（气虚证补气茶）",
+      "reference_url": "https://www.jkb.com.cn/TCM/2025/0328/501880.html",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "黄芪",
+          "kind": "药食同源",
+          "grams": 12,
+          "optional": false,
+          "note": "原文10-15克取中值",
+          "analysis_ready": true
+        },
+        {
+          "name": "党参",
+          "kind": "药食同源",
+          "grams": 8,
+          "optional": false,
+          "note": "原文'参类6-10克'，取党参",
+          "analysis_ready": true
+        }
+      ],
+      "coverage": {
+        "covered": 2,
+        "directory_pending": 0,
+        "food": 0,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "协和养血茶",
+      "type": "茶饮",
+      "oneliner": "血虚人群的气血双补茶参考",
+      "description": "当归补血活血，龙眼肉养心血，大枣补中益气，黄芪益气生血；适合面色萎黄、头晕心悸人群。",
+      "method": "代茶饮",
+      "duration": "冲泡",
+      "scenes": [
+        "经期温养"
+      ],
+      "constitutions_suitable": [
+        "血瘀",
+        "气虚"
+      ],
+      "constitutions_unsuitable": [
+        "湿热"
+      ],
+      "population": "面色萎黄或苍白、头晕心悸、手足发麻人群",
+      "contraindication": "感冒发热期不宜；孕妇咨询医师后使用",
+      "source": "中国医学科学院北京协和医院中医科（健康报《中式养生水，你喝对了吗》）（血虚证养血茶）",
+      "reference_url": "https://www.jkb.com.cn/TCM/2025/0328/501880.html",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "枣",
+          "kind": "药食同源",
+          "grams": 6,
+          "optional": false,
+          "note": "成分数据待补",
+          "analysis_ready": false
+        },
+        {
+          "name": "当归",
+          "kind": "药食同源",
+          "grams": 6,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        },
+        {
+          "name": "龙眼肉",
+          "kind": "药食同源",
+          "grams": 6,
+          "optional": false,
+          "note": "成分数据待补",
+          "analysis_ready": false
+        },
+        {
+          "name": "黄芪",
+          "kind": "药食同源",
+          "grams": 6,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        }
+      ],
+      "coverage": {
+        "covered": 2,
+        "directory_pending": 2,
+        "food": 0,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "山楂决明轻身饮",
+      "type": "茶饮",
+      "oneliner": "祛痰湿助消化的轻养基础方（仅录原文基础方）",
+      "description": "山楂消食化积，决明子润肠清肝，陈皮理气；超重与代谢偏弱人群的代茶基础方，需配合运动。",
+      "method": "代茶饮",
+      "duration": "冲泡",
+      "scenes": [
+        "控糖轻养"
+      ],
+      "constitutions_suitable": [
+        "痰湿",
+        "湿热"
+      ],
+      "constitutions_unsuitable": [],
+      "population": "超重、代谢偏慢、饮食油腻人群（配合锻炼）",
+      "contraindication": "孕妇慎用；脾胃虚寒便溏者不宜；不能替代减重治疗",
+      "source": "中国医学科学院北京协和医院中医科（健康报《中式养生水，你喝对了吗》）（减脂代茶饮基础方；原文番泻叶加减项因安全性未收录）",
+      "reference_url": "https://www.jkb.com.cn/TCM/2025/0328/501880.html",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "山楂",
+          "kind": "药食同源",
+          "grams": 10,
+          "optional": false,
+          "note": "原文生山楂",
+          "analysis_ready": true
+        },
+        {
+          "name": "决明子",
+          "kind": "药食同源",
+          "grams": 10,
+          "optional": false,
+          "note": "成分数据待补",
+          "analysis_ready": false
+        },
+        {
+          "name": "陈皮",
+          "kind": "药食同源",
+          "grams": 10,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        }
+      ],
+      "coverage": {
+        "covered": 2,
+        "directory_pending": 1,
+        "food": 0,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "滋阴生津润燥茶",
+      "type": "茶饮",
+      "oneliner": "阴虚口干人群的自选搭配润燥茶",
+      "description": "麦冬、石斛养阴生津，芦根清热除烦；阴虚证口干、皮肤干燥、手足心热人群的轻养茶（原文为五味可选项，此处取目录内三味基础组方）。",
+      "method": "冲泡或煎煮，代茶饮",
+      "duration": "冲泡",
+      "scenes": [
+        "护嗓润喉"
+      ],
+      "constitutions_suitable": [
+        "阴虚"
+      ],
+      "constitutions_unsuitable": [
+        "阳虚"
+      ],
+      "population": "口干口渴、皮肤干燥、手足心热、夜间多汗人群",
+      "contraindication": "脾胃虚寒便溏者不宜",
+      "source": "中国医学科学院北京协和医院中医科（健康报《中式养生水，你喝对了吗》）（阴虚润燥茶）",
+      "reference_url": "https://www.jkb.com.cn/TCM/2025/0328/501880.html",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "麦冬",
+          "kind": "药食同源",
+          "grams": 8,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        },
+        {
+          "name": "铁皮石斛",
+          "kind": "药食同源",
+          "grams": 8,
+          "optional": false,
+          "note": "成分数据待补",
+          "analysis_ready": false
+        },
+        {
+          "name": "鲜芦根",
+          "kind": "药食同源",
+          "grams": 8,
+          "optional": false,
+          "note": "成分数据待补",
+          "analysis_ready": false
+        },
+        {
+          "name": "胖大海",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": true,
+          "note": "原文：咽喉不适音哑者加",
+          "analysis_ready": true
+        }
+      ],
+      "coverage": {
+        "covered": 2,
+        "directory_pending": 2,
+        "food": 0,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "温阳暖身茶",
+      "type": "茶饮",
+      "oneliner": "阳虚怕冷人群的温中助阳茶参考",
+      "description": "肉桂温阳散寒，生姜温中止呕，龙眼肉、大枣补养气血；适合怕冷、手足冰凉、易腹泻的阳虚人群。",
+      "method": "调配煮茶温服",
+      "duration": "煮茶",
+      "scenes": [
+        "经期温养",
+        "换季调理"
+      ],
+      "constitutions_suitable": [
+        "阳虚"
+      ],
+      "constitutions_unsuitable": [
+        "阴虚",
+        "湿热"
+      ],
+      "population": "怕冷、手足冰凉、易腹泻人群",
+      "contraindication": "阴虚火旺者不宜；感冒发热期不宜；孕妇咨询医师后使用",
+      "source": "中国医学科学院北京协和医院中医科（健康报《中式养生水，你喝对了吗》）（阳虚温阳茶）",
+      "reference_url": "https://www.jkb.com.cn/TCM/2025/0328/501880.html",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "龙眼肉",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": false,
+          "note": "原文未标克数；成分数据待补",
+          "analysis_ready": false
+        },
+        {
+          "name": "肉桂",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": false,
+          "note": "原文未标克数",
+          "analysis_ready": true
+        },
+        {
+          "name": "生姜",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": false,
+          "note": "原文未标克数",
+          "analysis_ready": true
+        },
+        {
+          "name": "枣",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": false,
+          "note": "原文未标克数；成分数据待补",
+          "analysis_ready": false
+        }
+      ],
+      "coverage": {
+        "covered": 2,
+        "directory_pending": 2,
+        "food": 0,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "黄精桑椹固本茶",
+      "type": "茶饮",
+      "oneliner": "中老年补肾填精的轻养茶参考",
+      "description": "黄精滋肾润脾，桑椹滋阴补血，覆盆子固肾缩尿；原文为五子类可选项，此处取目录内三味（菟丝子、沙苑子目录外未收录）。",
+      "method": "煎煮或冲泡",
+      "duration": "煎煮",
+      "scenes": [
+        "换季调理"
+      ],
+      "constitutions_suitable": [
+        "阴虚",
+        "气虚"
+      ],
+      "constitutions_unsuitable": [
+        "痰湿"
+      ],
+      "population": "腰腿酸痛、耳鸣、记忆力下降的中老年人群",
+      "contraindication": "痰湿壅盛者不宜；腹泻者慎用",
+      "source": "中国医学科学院北京协和医院中医科（健康报《中式养生水，你喝对了吗》）（老年补肾茶可选目录内三味）",
+      "reference_url": "https://www.jkb.com.cn/TCM/2025/0328/501880.html",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "黄精",
+          "kind": "药食同源",
+          "grams": 8,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        },
+        {
+          "name": "桑椹",
+          "kind": "药食同源",
+          "grams": 8,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        },
+        {
+          "name": "覆盆子",
+          "kind": "药食同源",
+          "grams": 8,
+          "optional": false,
+          "note": "成分数据待补",
+          "analysis_ready": false
+        }
+      ],
+      "coverage": {
+        "covered": 2,
+        "directory_pending": 1,
+        "food": 0,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "春季桑叶疏风饮",
+      "type": "茶饮",
+      "oneliner": "清肝明目疏风的春季轻养茶",
+      "description": "桑叶清肝明目、疏风；春季肝气偏旺、情绪急躁人群的简单茶方，脾虚者可加西洋参或大枣。",
+      "method": "泡水饮服",
+      "duration": "冲泡",
+      "scenes": [
+        "控糖轻养",
+        "情绪舒压"
+      ],
+      "constitutions_suitable": [],
+      "constitutions_unsuitable": [],
+      "population": "春季情绪急躁、用眼多人群",
+      "contraindication": "脾胃虚寒者加西洋参同泡；孕期慎用",
+      "source": "中国医学科学院北京协和医院中医科（健康报《中式养生水，你喝对了吗》）（春季桑叶饮）",
+      "reference_url": "https://www.jkb.com.cn/TCM/2025/0328/501880.html",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "桑叶",
+          "kind": "药食同源",
+          "grams": 4,
+          "optional": false,
+          "note": "原文3-5克取中值",
+          "analysis_ready": true
+        },
+        {
+          "name": "西洋参",
+          "kind": "药食同源",
+          "grams": 4,
+          "optional": true,
+          "note": "原文：脾虚者加",
+          "analysis_ready": true
+        }
+      ],
+      "coverage": {
+        "covered": 2,
+        "directory_pending": 0,
+        "food": 0,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "雪梨百合果茶",
+      "type": "茶饮",
+      "oneliner": "养阴润燥的秋季煮果茶",
+      "description": "雪梨生津润燥，百合养阴清心，配海棠果煮茶；秋季干咳、咽干人群的温和果茶。",
+      "method": "煮制果茶",
+      "duration": "煮茶",
+      "scenes": [
+        "护嗓润喉",
+        "换季调理"
+      ],
+      "constitutions_suitable": [
+        "阴虚"
+      ],
+      "constitutions_unsuitable": [],
+      "population": "秋季咽干、易干咳人群",
+      "contraindication": "脾胃虚寒便溏者少饮；糖尿病人群注意冰糖",
+      "source": "中国医学科学院北京协和医院中医科（健康报《中式养生水，你喝对了吗》）（秋季雪梨果茶）",
+      "reference_url": "https://www.jkb.com.cn/TCM/2025/0328/501880.html",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "雪梨",
+          "kind": "普通食物",
+          "grams": null,
+          "optional": false,
+          "note": "原文未标克数",
+          "analysis_ready": false
+        },
+        {
+          "name": "百合",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": false,
+          "note": "原文未标克数",
+          "analysis_ready": true
+        },
+        {
+          "name": "海棠果",
+          "kind": "普通食物",
+          "grams": null,
+          "optional": false,
+          "note": "原文'海棠'未标克数",
+          "analysis_ready": false
+        }
+      ],
+      "coverage": {
+        "covered": 1,
+        "directory_pending": 0,
+        "food": 2,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "麦冬马蹄生津水",
+      "type": "茶饮",
+      "oneliner": "润肺生津的秋季煮水",
+      "description": "麦冬养阴生津，马蹄（荸荠）清热生津；口鼻干燥人群的简单煮水。",
+      "method": "麦冬与去皮马蹄煮水，加少许冰糖",
+      "duration": "煮水",
+      "scenes": [
+        "护嗓润喉"
+      ],
+      "constitutions_suitable": [
+        "阴虚"
+      ],
+      "constitutions_unsuitable": [
+        "阳虚"
+      ],
+      "population": "秋季口鼻干燥人群",
+      "contraindication": "脾胃虚寒者不宜多饮",
+      "source": "中国医学科学院北京协和医院中医科（健康报《中式养生水，你喝对了吗》）（秋季麦冬马蹄水）",
+      "reference_url": "https://www.jkb.com.cn/TCM/2025/0328/501880.html",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "麦冬",
+          "kind": "药食同源",
+          "grams": 12,
+          "optional": false,
+          "note": "原文10-15克取中值",
+          "analysis_ready": true
+        },
+        {
+          "name": "马蹄",
+          "kind": "普通食物",
+          "grams": 200,
+          "optional": false,
+          "note": "",
+          "analysis_ready": false
+        },
+        {
+          "name": "冰糖",
+          "kind": "普通食物",
+          "grams": null,
+          "optional": true,
+          "note": "少许",
+          "analysis_ready": false
+        }
+      ],
+      "coverage": {
+        "covered": 1,
+        "directory_pending": 0,
+        "food": 2,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "菊杞桂圆滋补茶",
+      "type": "茶饮",
+      "oneliner": "名中医推荐的冬季滋补茶",
+      "description": "菊花清肝明目，枸杞子滋补肝肾，桂圆养血安神，大枣补中益气；四味各10克的平和冬季滋补方。",
+      "method": "开水冲泡代茶饮",
+      "duration": "冲泡",
+      "scenes": [
+        "换季调理",
+        "熬夜护眼"
+      ],
+      "constitutions_suitable": [
+        "平和",
+        "气虚"
+      ],
+      "constitutions_unsuitable": [
+        "湿热"
+      ],
+      "population": "冬季日常滋补、早白发、头晕目眩人群",
+      "contraindication": "湿热内盛、糖尿病人群慎用桂圆大枣",
+      "source": "人民网健康《名中医的冬季养生茶》",
+      "reference_url": "http://health.people.com.cn/n1/2016/1218/c14739-28957737.html",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "菊花",
+          "kind": "药食同源",
+          "grams": 10,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        },
+        {
+          "name": "枸杞子",
+          "kind": "药食同源",
+          "grams": 10,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        },
+        {
+          "name": "龙眼肉",
+          "kind": "药食同源",
+          "grams": 10,
+          "optional": false,
+          "note": "成分数据待补",
+          "analysis_ready": false
+        },
+        {
+          "name": "枣",
+          "kind": "药食同源",
+          "grams": 10,
+          "optional": false,
+          "note": "原文红枣，按10克约2枚计；成分数据待补",
+          "analysis_ready": false
+        }
+      ],
+      "coverage": {
+        "covered": 2,
+        "directory_pending": 2,
+        "food": 0,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "莲藕双豆百合猪骨汤",
+      "type": "药膳",
+      "oneliner": "初秋祛湿润燥的家常煲汤参考",
+      "description": "莲藕熟用健脾开胃，赤小豆利水祛湿，百合润肺清心，陈皮理气；初秋暑湿未清时的一道平和家常汤。",
+      "method": "全部材料入锅，加水煲汤约1.5小时，加盐调味（2-3人份）",
+      "duration": "煲1.5小时",
+      "scenes": [
+        "换季调理"
+      ],
+      "constitutions_suitable": [
+        "痰湿",
+        "平和"
+      ],
+      "constitutions_unsuitable": [],
+      "population": "初秋日常家庭饮用人群",
+      "contraindication": "高尿酸、痛风人群少喝老火汤（原文通用提示）",
+      "source": "广东省中西医结合医院治未病中心（广东中医药博物馆发布）秋季药膳汤水",
+      "reference_url": "https://gdcmm.gzucm.edu.cn/info/1010/4147.htm",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "莲藕",
+          "kind": "普通食物",
+          "grams": 375,
+          "optional": false,
+          "note": "原文250-500g取中值",
+          "analysis_ready": false
+        },
+        {
+          "name": "赤小豆",
+          "kind": "药食同源",
+          "grams": 40,
+          "optional": false,
+          "note": "原文30-50g取中值；成分数据待补",
+          "analysis_ready": false
+        },
+        {
+          "name": "眉豆",
+          "kind": "普通食物",
+          "grams": 40,
+          "optional": false,
+          "note": "原文30-50g取中值；非目录内，家常豆类",
+          "analysis_ready": false
+        },
+        {
+          "name": "猪脊骨",
+          "kind": "普通食物",
+          "grams": 400,
+          "optional": false,
+          "note": "",
+          "analysis_ready": false
+        },
+        {
+          "name": "百合",
+          "kind": "药食同源",
+          "grams": 60,
+          "optional": false,
+          "note": "原文鲜百合1个约60g",
+          "analysis_ready": true
+        },
+        {
+          "name": "陈皮",
+          "kind": "药食同源",
+          "grams": 3,
+          "optional": false,
+          "note": "原文1瓣",
+          "analysis_ready": true
+        },
+        {
+          "name": "蜜枣",
+          "kind": "普通食物",
+          "grams": 15,
+          "optional": false,
+          "note": "原文1枚",
+          "analysis_ready": false
+        }
+      ],
+      "coverage": {
+        "covered": 2,
+        "directory_pending": 1,
+        "food": 4,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "莲子莲藕水鸭汤",
+      "type": "药膳",
+      "oneliner": "滋阴补虚、养心安神的秋季炖汤参考",
+      "description": "水鸭滋阴，莲子养心安神，百合润肺，炒薏米祛湿，陈皮理气；中秋时节防治秋乏秋燥的平和滋补汤。",
+      "method": "全部材料入锅加水，煲汤约1.5小时，加盐调味（2-3人份）",
+      "duration": "煲1.5小时",
+      "scenes": [
+        "换季调理",
+        "助眠"
+      ],
+      "constitutions_suitable": [
+        "阴虚",
+        "平和"
+      ],
+      "constitutions_unsuitable": [
+        "阳虚"
+      ],
+      "population": "秋乏、秋燥人群",
+      "contraindication": "高尿酸、痛风人群少喝老火汤；脾胃虚寒者少饮",
+      "source": "广东省中西医结合医院治未病中心（广东中医药博物馆发布）秋季药膳汤水",
+      "reference_url": "https://gdcmm.gzucm.edu.cn/info/1010/4147.htm",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "莲子",
+          "kind": "药食同源",
+          "grams": 20,
+          "optional": false,
+          "note": "成分数据待补",
+          "analysis_ready": false
+        },
+        {
+          "name": "莲藕",
+          "kind": "普通食物",
+          "grams": 400,
+          "optional": false,
+          "note": "原文2-3节约400g",
+          "analysis_ready": false
+        },
+        {
+          "name": "百合",
+          "kind": "药食同源",
+          "grams": 60,
+          "optional": false,
+          "note": "原文鲜百合1个",
+          "analysis_ready": true
+        },
+        {
+          "name": "鸭肉",
+          "kind": "普通食物",
+          "grams": 600,
+          "optional": false,
+          "note": "原文鸭半只",
+          "analysis_ready": false
+        },
+        {
+          "name": "陈皮",
+          "kind": "药食同源",
+          "grams": 3,
+          "optional": false,
+          "note": "原文1瓣",
+          "analysis_ready": true
+        },
+        {
+          "name": "薏苡仁",
+          "kind": "药食同源",
+          "grams": 20,
+          "optional": false,
+          "note": "原文炒薏米",
+          "analysis_ready": true
+        },
+        {
+          "name": "蜜枣",
+          "kind": "普通食物",
+          "grams": 15,
+          "optional": false,
+          "note": "原文1枚",
+          "analysis_ready": false
+        },
+        {
+          "name": "生姜",
+          "kind": "药食同源",
+          "grams": 9,
+          "optional": false,
+          "note": "原文3片",
+          "analysis_ready": true
+        }
+      ],
+      "coverage": {
+        "covered": 4,
+        "directory_pending": 1,
+        "food": 3,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "椰子木瓜银耳猪骨汤",
+      "type": "药膳",
+      "oneliner": "补益肺气、健脾固肾的美容养颜汤参考",
+      "description": "椰子水清甜生津，木瓜和胃化湿，银耳滋阴润肤，芡实、莲子健脾固肾；秋季日常滋润养颜的家常汤。",
+      "method": "全部材料入锅加水，煲汤约1.5小时，加盐调味（2-3人份）",
+      "duration": "煲1.5小时",
+      "scenes": [
+        "控油祛痘"
+      ],
+      "constitutions_suitable": [
+        "平和",
+        "阴虚"
+      ],
+      "constitutions_unsuitable": [],
+      "population": "秋季皮肤干燥、日常养颜需求人群",
+      "contraindication": "高尿酸、痛风人群少喝老火汤",
+      "source": "广东省中西医结合医院治未病中心（广东中医药博物馆发布）秋季药膳汤水",
+      "reference_url": "https://gdcmm.gzucm.edu.cn/info/1010/4147.htm",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "椰子",
+          "kind": "普通食物",
+          "grams": 500,
+          "optional": false,
+          "note": "原文椰子1个",
+          "analysis_ready": false
+        },
+        {
+          "name": "芡实",
+          "kind": "药食同源",
+          "grams": 15,
+          "optional": false,
+          "note": "成分数据待补",
+          "analysis_ready": false
+        },
+        {
+          "name": "莲子",
+          "kind": "药食同源",
+          "grams": 15,
+          "optional": false,
+          "note": "原文去芯；成分数据待补",
+          "analysis_ready": false
+        },
+        {
+          "name": "木瓜",
+          "kind": "药食同源",
+          "grams": 500,
+          "optional": false,
+          "note": "原文木瓜1个",
+          "analysis_ready": true
+        },
+        {
+          "name": "猪骨",
+          "kind": "普通食物",
+          "grams": 400,
+          "optional": false,
+          "note": "",
+          "analysis_ready": false
+        },
+        {
+          "name": "银耳",
+          "kind": "普通食物",
+          "grams": 10,
+          "optional": false,
+          "note": "滋阴润肤主料之一",
+          "analysis_ready": false
+        },
+        {
+          "name": "枣",
+          "kind": "药食同源",
+          "grams": 9,
+          "optional": false,
+          "note": "原文红枣3枚去核；成分数据待补",
+          "analysis_ready": false
+        },
+        {
+          "name": "生姜",
+          "kind": "药食同源",
+          "grams": 6,
+          "optional": false,
+          "note": "原文2片",
+          "analysis_ready": true
+        }
+      ],
+      "coverage": {
+        "covered": 2,
+        "directory_pending": 3,
+        "food": 3,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "淮山地黄栗子煲鸡",
+      "type": "药膳",
+      "oneliner": "健脾胃、滋阴益气的深秋平补汤参考",
+      "description": "山药健脾益气，熟地黄滋阴养血，板栗补肾强筋，茯苓、莲子、芡实健脾祛湿，陈皮理气；深秋平补的经典搭配。",
+      "method": "全部材料入锅加水，煲汤约1.5小时，加盐调味（2-3人份）",
+      "duration": "煲1.5小时",
+      "scenes": [
+        "换季调理"
+      ],
+      "constitutions_suitable": [
+        "气虚",
+        "阴虚"
+      ],
+      "constitutions_unsuitable": [
+        "湿热"
+      ],
+      "population": "深秋体虚、脾胃虚弱人群",
+      "contraindication": "湿盛中满、腹胀者少饮；高尿酸痛风人群少喝老火汤",
+      "source": "广东省中西医结合医院治未病中心（广东中医药博物馆发布）秋季药膳汤水",
+      "reference_url": "https://gdcmm.gzucm.edu.cn/info/1010/4147.htm",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "鸡肉",
+          "kind": "普通食物",
+          "grams": 600,
+          "optional": false,
+          "note": "原文鸡半只",
+          "analysis_ready": false
+        },
+        {
+          "name": "山药",
+          "kind": "药食同源",
+          "grams": 50,
+          "optional": false,
+          "note": "原文淮山药",
+          "analysis_ready": true
+        },
+        {
+          "name": "地黄",
+          "kind": "药食同源",
+          "grams": 15,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        },
+        {
+          "name": "板栗",
+          "kind": "普通食物",
+          "grams": 200,
+          "optional": false,
+          "note": "去壳去皮",
+          "analysis_ready": false
+        },
+        {
+          "name": "枣",
+          "kind": "药食同源",
+          "grams": 9,
+          "optional": false,
+          "note": "原文若干，按3枚计；成分数据待补",
+          "analysis_ready": false
+        },
+        {
+          "name": "茯苓",
+          "kind": "药食同源",
+          "grams": 15,
+          "optional": false,
+          "note": "原文白茯苓",
+          "analysis_ready": true
+        },
+        {
+          "name": "莲子",
+          "kind": "药食同源",
+          "grams": 15,
+          "optional": false,
+          "note": "原文建莲；成分数据待补",
+          "analysis_ready": false
+        },
+        {
+          "name": "芡实",
+          "kind": "药食同源",
+          "grams": 15,
+          "optional": false,
+          "note": "成分数据待补",
+          "analysis_ready": false
+        },
+        {
+          "name": "陈皮",
+          "kind": "药食同源",
+          "grams": 2,
+          "optional": false,
+          "note": "原文1/8个",
+          "analysis_ready": true
+        }
+      ],
+      "coverage": {
+        "covered": 4,
+        "directory_pending": 3,
+        "food": 2,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "石斛洋参炖乌鸡",
+      "type": "药膳",
+      "oneliner": "益气生津、养阴润燥的清炖汤参考",
+      "description": "石斛益胃生津，西洋参补气养阴，乌鸡滋阴补血；滋补而不腻，适合秋冬抗燥、皮肤干燥与咽干人群。",
+      "method": "全部材料隔水清炖约2小时，加盐调味（2-3人份）",
+      "duration": "炖2小时",
+      "scenes": [
+        "换季调理",
+        "经期温养"
+      ],
+      "constitutions_suitable": [
+        "阴虚",
+        "气虚"
+      ],
+      "constitutions_unsuitable": [
+        "阳虚"
+      ],
+      "population": "秋冬咽干皮肤干燥、月经量少人群的滋养参考",
+      "contraindication": "感冒发热期不宜；脾胃虚寒便溏者慎用",
+      "source": "广东省中西医结合医院治未病中心（广东中医药博物馆发布）秋季药膳汤水",
+      "reference_url": "https://gdcmm.gzucm.edu.cn/info/1010/4147.htm",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "乌鸡",
+          "kind": "普通食物",
+          "grams": 250,
+          "optional": false,
+          "note": "",
+          "analysis_ready": false
+        },
+        {
+          "name": "铁皮石斛",
+          "kind": "药食同源",
+          "grams": 6,
+          "optional": false,
+          "note": "原文2-3粒；成分数据待补",
+          "analysis_ready": false
+        },
+        {
+          "name": "西洋参",
+          "kind": "药食同源",
+          "grams": 5,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        },
+        {
+          "name": "生姜",
+          "kind": "药食同源",
+          "grams": 3,
+          "optional": false,
+          "note": "原文1片",
+          "analysis_ready": true
+        },
+        {
+          "name": "蜜枣",
+          "kind": "普通食物",
+          "grams": 15,
+          "optional": false,
+          "note": "原文1枚",
+          "analysis_ready": false
+        }
+      ],
+      "coverage": {
+        "covered": 2,
+        "directory_pending": 1,
+        "food": 2,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "山药莲子健脾粥",
+      "type": "药膳",
+      "oneliner": "补气健脾的基础养生粥",
+      "description": "山药平补肺脾肾，莲子健脾养心，粳米养胃；适合乏力、食欲不振的气虚人群日常食养。",
+      "method": "材料洗净后煮至软烂，可加少量红糖调味",
+      "duration": "煮粥",
+      "scenes": [
+        "消化"
+      ],
+      "constitutions_suitable": [
+        "气虚",
+        "平和"
+      ],
+      "constitutions_unsuitable": [],
+      "population": "乏力、食欲不振人群及儿童（减量）",
+      "contraindication": "便秘腹胀者少食",
+      "source": "台州市路桥区中医院《中医药膳食谱》（山药莲子粥）",
+      "reference_url": "https://www.lqqzyy.com/Home/Info/2541",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "山药",
+          "kind": "药食同源",
+          "grams": 50,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        },
+        {
+          "name": "莲子",
+          "kind": "药食同源",
+          "grams": 20,
+          "optional": false,
+          "note": "成分数据待补",
+          "analysis_ready": false
+        },
+        {
+          "name": "粳米",
+          "kind": "普通食物",
+          "grams": 100,
+          "optional": false,
+          "note": "",
+          "analysis_ready": false
+        }
+      ],
+      "coverage": {
+        "covered": 1,
+        "directory_pending": 1,
+        "food": 1,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "冬瓜薏米排骨汤",
+      "type": "药膳",
+      "oneliner": "清热利湿的祛痘轻养汤",
+      "description": "冬瓜清热利水，薏苡仁健脾渗湿，排骨滋养；适合口苦、面部油腻长痘的湿热人群。",
+      "method": "排骨焯水后与薏米同煮1小时，加入冬瓜再煮20分钟",
+      "duration": "煮1小时20分钟",
+      "scenes": [
+        "控油祛痘"
+      ],
+      "constitutions_suitable": [
+        "湿热"
+      ],
+      "constitutions_unsuitable": [
+        "阳虚"
+      ],
+      "population": "湿热体质、面部油腻痤疮人群",
+      "contraindication": "脾胃虚寒便溏者少食；孕妇慎用薏苡仁",
+      "source": "台州市路桥区中医院《中医药膳食谱》（冬瓜薏米排骨汤）",
+      "reference_url": "https://www.lqqzyy.com/Home/Info/2541",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "冬瓜",
+          "kind": "普通食物",
+          "grams": 300,
+          "optional": false,
+          "note": "",
+          "analysis_ready": false
+        },
+        {
+          "name": "薏苡仁",
+          "kind": "药食同源",
+          "grams": 30,
+          "optional": false,
+          "note": "原文生薏米",
+          "analysis_ready": true
+        },
+        {
+          "name": "排骨",
+          "kind": "普通食物",
+          "grams": 200,
+          "optional": false,
+          "note": "",
+          "analysis_ready": false
+        }
+      ],
+      "coverage": {
+        "covered": 1,
+        "directory_pending": 0,
+        "food": 2,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "枸杞菊花养肝粥",
+      "type": "药膳",
+      "oneliner": "春季养肝明目的家常粥",
+      "description": "枸杞子滋补肝肾，菊花清肝明目；适合肝火偏旺、眼睛干涩人群的日常食养。",
+      "method": "粳米煮至半熟，加入枸杞子、菊花煮至熟烂",
+      "duration": "煮粥",
+      "scenes": [
+        "熬夜护眼"
+      ],
+      "constitutions_suitable": [
+        "阴虚",
+        "平和"
+      ],
+      "constitutions_unsuitable": [
+        "阳虚"
+      ],
+      "population": "长期用眼、眼睛干涩人群",
+      "contraindication": "脾胃虚寒便溏者少食",
+      "source": "台州市路桥区中医院《中医药膳食谱》（枸杞菊花粥）",
+      "reference_url": "https://www.lqqzyy.com/Home/Info/2541",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "枸杞子",
+          "kind": "药食同源",
+          "grams": 10,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        },
+        {
+          "name": "菊花",
+          "kind": "药食同源",
+          "grams": 5,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        },
+        {
+          "name": "粳米",
+          "kind": "普通食物",
+          "grams": 100,
+          "optional": false,
+          "note": "",
+          "analysis_ready": false
+        }
+      ],
+      "coverage": {
+        "covered": 2,
+        "directory_pending": 0,
+        "food": 1,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "菠菜猪肝明目汤",
+      "type": "药膳",
+      "oneliner": "补血明目的家常汤",
+      "description": "猪肝养肝明目补血，菠菜滋阴润燥；经典的明目食养搭配。",
+      "method": "猪肝切片焯水后与菠菜、生姜同煮",
+      "duration": "煮汤",
+      "scenes": [
+        "熬夜护眼"
+      ],
+      "constitutions_suitable": [
+        "血瘀",
+        "平和"
+      ],
+      "constitutions_unsuitable": [],
+      "population": "用眼过度、面色偏白人群",
+      "contraindication": "高尿酸、高胆固醇人群少食猪肝；孕妇咨询医师后食用",
+      "source": "台州市路桥区中医院《中医药膳食谱》（菠菜猪肝汤）",
+      "reference_url": "https://www.lqqzyy.com/Home/Info/2541",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "猪肝",
+          "kind": "普通食物",
+          "grams": 100,
+          "optional": false,
+          "note": "",
+          "analysis_ready": false
+        },
+        {
+          "name": "菠菜",
+          "kind": "普通食物",
+          "grams": 200,
+          "optional": false,
+          "note": "",
+          "analysis_ready": false
+        },
+        {
+          "name": "生姜",
+          "kind": "药食同源",
+          "grams": 9,
+          "optional": false,
+          "note": "原文3片",
+          "analysis_ready": true
+        }
+      ],
+      "coverage": {
+        "covered": 1,
+        "directory_pending": 0,
+        "food": 2,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "绿豆薏米清暑汤",
+      "type": "药膳",
+      "oneliner": "清热利湿的夏季经典甜汤",
+      "description": "绿豆清热解毒消暑，薏苡仁利湿；夏季清补的经典搭配。",
+      "method": "煮至豆烂汤稠，加冰糖适量",
+      "duration": "煮汤",
+      "scenes": [
+        "换季调理"
+      ],
+      "constitutions_suitable": [
+        "湿热"
+      ],
+      "constitutions_unsuitable": [
+        "阳虚"
+      ],
+      "population": "夏季暑热、湿热人群",
+      "contraindication": "脾胃虚寒者不宜多食；经期女性慎用",
+      "source": "台州市路桥区中医院《中医药膳食谱》（绿豆薏米汤）",
+      "reference_url": "https://www.lqqzyy.com/Home/Info/2541",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "绿豆",
+          "kind": "普通食物",
+          "grams": 50,
+          "optional": false,
+          "note": "",
+          "analysis_ready": false
+        },
+        {
+          "name": "薏苡仁",
+          "kind": "药食同源",
+          "grams": 30,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        },
+        {
+          "name": "冰糖",
+          "kind": "普通食物",
+          "grams": null,
+          "optional": true,
+          "note": "适量",
+          "analysis_ready": false
+        }
+      ],
+      "coverage": {
+        "covered": 1,
+        "directory_pending": 0,
+        "food": 2,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "冬瓜茯苓老鸭汤",
+      "type": "药膳",
+      "oneliner": "健脾祛湿的夏季炖鸭汤",
+      "description": "鸭肉滋阴，冬瓜清热利水，茯苓健脾渗湿；夏季祛湿而不燥热的搭配。",
+      "method": "鸭肉焯水后与食材炖煮1小时",
+      "duration": "炖1小时",
+      "scenes": [
+        "换季调理"
+      ],
+      "constitutions_suitable": [
+        "痰湿",
+        "阴虚"
+      ],
+      "constitutions_unsuitable": [
+        "阳虚"
+      ],
+      "population": "夏季湿重、身体困重人群",
+      "contraindication": "脾胃虚寒者少食",
+      "source": "台州市路桥区中医院《中医药膳食谱》（冬瓜老鸭汤）",
+      "reference_url": "https://www.lqqzyy.com/Home/Info/2541",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "鸭肉",
+          "kind": "普通食物",
+          "grams": 600,
+          "optional": false,
+          "note": "原文老鸭半只",
+          "analysis_ready": false
+        },
+        {
+          "name": "冬瓜",
+          "kind": "普通食物",
+          "grams": 500,
+          "optional": false,
+          "note": "",
+          "analysis_ready": false
+        },
+        {
+          "name": "茯苓",
+          "kind": "药食同源",
+          "grams": 15,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        }
+      ],
+      "coverage": {
+        "covered": 1,
+        "directory_pending": 0,
+        "food": 2,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "银耳百合润燥羹",
+      "type": "药膳",
+      "oneliner": "滋阴润肺的秋季经典甜品",
+      "description": "银耳滋阴润肺养颜，百合清心安神，莲子健脾；秋季抗燥、睡前轻养的经典甜羹。",
+      "method": "隔水炖2小时",
+      "duration": "炖2小时",
+      "scenes": [
+        "助眠",
+        "控油祛痘"
+      ],
+      "constitutions_suitable": [
+        "阴虚",
+        "平和"
+      ],
+      "constitutions_unsuitable": [
+        "痰湿"
+      ],
+      "population": "秋燥咽干、皮肤干燥、心烦少寐人群",
+      "contraindication": "糖尿病人群注意冰糖用量；便溏者少食",
+      "source": "台州市路桥区中医院《中医药膳食谱》（银耳百合羹）",
+      "reference_url": "https://www.lqqzyy.com/Home/Info/2541",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "银耳",
+          "kind": "普通食物",
+          "grams": 20,
+          "optional": false,
+          "note": "",
+          "analysis_ready": false
+        },
+        {
+          "name": "百合",
+          "kind": "药食同源",
+          "grams": 15,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        },
+        {
+          "name": "莲子",
+          "kind": "药食同源",
+          "grams": 10,
+          "optional": false,
+          "note": "成分数据待补",
+          "analysis_ready": false
+        },
+        {
+          "name": "冰糖",
+          "kind": "普通食物",
+          "grams": null,
+          "optional": true,
+          "note": "适量",
+          "analysis_ready": false
+        }
+      ],
+      "coverage": {
+        "covered": 1,
+        "directory_pending": 1,
+        "food": 2,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "当归生姜羊肉汤",
+      "type": "药膳",
+      "oneliner": "医圣张仲景经典温补汤，冬季暖身参考",
+      "description": "出自《金匮要略》。当归补血活血，生姜温中散寒，羊肉温补气血；适合畏寒怕冷、手脚冰凉的阳虚气血不足人群。",
+      "method": "羊肉焯水后与当归、生姜炖煮2小时",
+      "duration": "炖2小时",
+      "scenes": [
+        "经期温养",
+        "换季调理"
+      ],
+      "constitutions_suitable": [
+        "阳虚",
+        "气虚"
+      ],
+      "constitutions_unsuitable": [
+        "阴虚",
+        "湿热"
+      ],
+      "population": "畏寒怕冷、手脚冰凉、精神不振人群",
+      "contraindication": "阴虚火旺（口干咽燥、心烦失眠）者不宜；感冒发热期不宜；孕妇咨询医师后食用",
+      "source": "台州市路桥区中医院《中医药膳食谱》（当归生姜羊肉汤，源自《金匮要略》，北京中医药大学东方医院冬季食疗科普同方推荐）",
+      "reference_url": "https://www.lqqzyy.com/Home/Info/2541",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "羊肉",
+          "kind": "普通食物",
+          "grams": 500,
+          "optional": false,
+          "note": "",
+          "analysis_ready": false
+        },
+        {
+          "name": "当归",
+          "kind": "药食同源",
+          "grams": 10,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        },
+        {
+          "name": "生姜",
+          "kind": "药食同源",
+          "grams": 20,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        }
+      ],
+      "coverage": {
+        "covered": 2,
+        "directory_pending": 0,
+        "food": 1,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "黄芪山药补气鸡汤",
+      "type": "药膳",
+      "oneliner": "补气健脾的温养鸡汤",
+      "description": "黄芪补气升阳，山药平补脾肺肾，鸡肉温中益气；适合易疲劳、气短的气虚人群。",
+      "method": "炖煮1.5小时",
+      "duration": "炖1.5小时",
+      "scenes": [
+        "换季调理"
+      ],
+      "constitutions_suitable": [
+        "气虚"
+      ],
+      "constitutions_unsuitable": [
+        "湿热"
+      ],
+      "population": "易疲劳、气短乏力人群",
+      "contraindication": "感冒发热期不宜；湿热壅盛者不宜；阴虚火旺者慎用黄芪",
+      "source": "台州市路桥区中医院《中医药膳食谱》（黄芪山药鸡汤）",
+      "reference_url": "https://www.lqqzyy.com/Home/Info/2541",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "黄芪",
+          "kind": "药食同源",
+          "grams": 15,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        },
+        {
+          "name": "山药",
+          "kind": "药食同源",
+          "grams": 200,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        },
+        {
+          "name": "鸡肉",
+          "kind": "普通食物",
+          "grams": 600,
+          "optional": false,
+          "note": "原文鸡半只",
+          "analysis_ready": false
+        }
+      ],
+      "coverage": {
+        "covered": 2,
+        "directory_pending": 0,
+        "food": 1,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "石斛麦冬滋阴瘦肉汤",
+      "type": "药膳",
+      "oneliner": "生津养阴的清润瘦肉汤",
+      "description": "石斛益胃生津，麦冬养阴润燥；适合口干、潮热的阴虚人群。",
+      "method": "炖煮1小时",
+      "duration": "炖1小时",
+      "scenes": [
+        "换季调理"
+      ],
+      "constitutions_suitable": [
+        "阴虚"
+      ],
+      "constitutions_unsuitable": [
+        "阳虚",
+        "痰湿"
+      ],
+      "population": "口干咽燥、潮热盗汗人群",
+      "contraindication": "脾胃虚寒便溏者不宜",
+      "source": "台州市路桥区中医院《中医药膳食谱》（石斛麦冬瘦肉汤）",
+      "reference_url": "https://www.lqqzyy.com/Home/Info/2541",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "铁皮石斛",
+          "kind": "药食同源",
+          "grams": 10,
+          "optional": false,
+          "note": "成分数据待补",
+          "analysis_ready": false
+        },
+        {
+          "name": "麦冬",
+          "kind": "药食同源",
+          "grams": 10,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        },
+        {
+          "name": "猪瘦肉",
+          "kind": "普通食物",
+          "grams": 200,
+          "optional": false,
+          "note": "",
+          "analysis_ready": false
+        }
+      ],
+      "coverage": {
+        "covered": 1,
+        "directory_pending": 1,
+        "food": 1,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "赤小豆鲫鱼利湿汤",
+      "type": "药膳",
+      "oneliner": "利湿清热的祛痘轻养汤",
+      "description": "赤小豆利水消肿，鲫鱼健脾利湿，陈皮理气；适合长痘、口苦的湿热人群。",
+      "method": "鲫鱼煎后加水与赤小豆、陈皮炖煮",
+      "duration": "炖煮",
+      "scenes": [
+        "控油祛痘"
+      ],
+      "constitutions_suitable": [
+        "湿热",
+        "痰湿"
+      ],
+      "constitutions_unsuitable": [],
+      "population": "湿热长痘、口苦身重人群",
+      "contraindication": "对鱼类过敏者禁用；痛风患者慎食鱼汤",
+      "source": "台州市路桥区中医院《中医药膳食谱》（赤小豆鲫鱼汤）",
+      "reference_url": "https://www.lqqzyy.com/Home/Info/2541",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "鲫鱼",
+          "kind": "普通食物",
+          "grams": 400,
+          "optional": false,
+          "note": "原文鲫鱼1条",
+          "analysis_ready": false
+        },
+        {
+          "name": "赤小豆",
+          "kind": "药食同源",
+          "grams": 30,
+          "optional": false,
+          "note": "成分数据待补",
+          "analysis_ready": false
+        },
+        {
+          "name": "陈皮",
+          "kind": "药食同源",
+          "grams": 5,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        }
+      ],
+      "coverage": {
+        "covered": 1,
+        "directory_pending": 1,
+        "food": 1,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "酸枣仁小米安神粥",
+      "type": "药膳",
+      "oneliner": "宁心安神的助眠粥",
+      "description": "酸枣仁养心安神，小米和胃安眠；中医经典的助眠食养搭配，适合失眠多梦人群晚餐食用。",
+      "method": "酸枣仁打碎煎汁，用药汁煮小米成粥",
+      "duration": "煮粥",
+      "scenes": [
+        "助眠"
+      ],
+      "constitutions_suitable": [
+        "气虚",
+        "阴虚"
+      ],
+      "constitutions_unsuitable": [],
+      "population": "失眠多梦、睡眠浅的人群",
+      "contraindication": "晚餐适量食用；严重失眠应就诊",
+      "source": "台州市路桥区中医院《中医药膳食谱》（酸枣仁小米粥）",
+      "reference_url": "https://www.lqqzyy.com/Home/Info/2541",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "酸枣仁",
+          "kind": "药食同源",
+          "grams": 15,
+          "optional": false,
+          "note": "原文：打碎",
+          "analysis_ready": true
+        },
+        {
+          "name": "小米",
+          "kind": "普通食物",
+          "grams": 100,
+          "optional": false,
+          "note": "",
+          "analysis_ready": false
+        }
+      ],
+      "coverage": {
+        "covered": 1,
+        "directory_pending": 0,
+        "food": 1,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "五红补养汤",
+      "type": "药膳",
+      "oneliner": "经典的'五红'气血双补甜汤",
+      "description": "大枣、红豆、红皮花生、枸杞子、红糖五味红色食材搭配，补气养血；适合气血不足人群的日常温养。",
+      "method": "全部材料煮至软烂",
+      "duration": "煮汤",
+      "scenes": [
+        "经期温养"
+      ],
+      "constitutions_suitable": [
+        "气虚",
+        "血瘀"
+      ],
+      "constitutions_unsuitable": [
+        "湿热"
+      ],
+      "population": "气血不足、面色偏白人群、女性经后温养",
+      "contraindication": "糖尿病人群注意红糖用量；湿热内盛者不宜",
+      "source": "台州市路桥区中医院《中医药膳食谱》（五红汤）",
+      "reference_url": "https://www.lqqzyy.com/Home/Info/2541",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "枣",
+          "kind": "药食同源",
+          "grams": 20,
+          "optional": false,
+          "note": "成分数据待补",
+          "analysis_ready": false
+        },
+        {
+          "name": "红豆",
+          "kind": "普通食物",
+          "grams": 20,
+          "optional": false,
+          "note": "",
+          "analysis_ready": false
+        },
+        {
+          "name": "花生",
+          "kind": "普通食物",
+          "grams": 20,
+          "optional": false,
+          "note": "原文红皮花生",
+          "analysis_ready": false
+        },
+        {
+          "name": "枸杞子",
+          "kind": "药食同源",
+          "grams": 20,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        },
+        {
+          "name": "红糖",
+          "kind": "普通食物",
+          "grams": null,
+          "optional": true,
+          "note": "适量",
+          "analysis_ready": false
+        }
+      ],
+      "coverage": {
+        "covered": 1,
+        "directory_pending": 1,
+        "food": 3,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "四神健脾汤",
+      "type": "药膳",
+      "oneliner": "健脾养胃的经典'四神'汤",
+      "description": "山药、茯苓、莲子、芡实四味平和之品配猪肚，健脾祛湿养胃；经典健脾食养方。",
+      "method": "全部材料炖煮2小时",
+      "duration": "炖2小时",
+      "scenes": [
+        "消化"
+      ],
+      "constitutions_suitable": [
+        "气虚",
+        "痰湿"
+      ],
+      "constitutions_unsuitable": [],
+      "population": "脾胃虚弱、食欲不振、大便不成形人群",
+      "contraindication": "便秘腹胀者少食；猪肚胆固醇偏高者适量",
+      "source": "台州市路桥区中医院《中医药膳食谱》（四神汤）",
+      "reference_url": "https://www.lqqzyy.com/Home/Info/2541",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "山药",
+          "kind": "药食同源",
+          "grams": 15,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        },
+        {
+          "name": "茯苓",
+          "kind": "药食同源",
+          "grams": 15,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        },
+        {
+          "name": "莲子",
+          "kind": "药食同源",
+          "grams": 15,
+          "optional": false,
+          "note": "成分数据待补",
+          "analysis_ready": false
+        },
+        {
+          "name": "芡实",
+          "kind": "药食同源",
+          "grams": 15,
+          "optional": false,
+          "note": "成分数据待补",
+          "analysis_ready": false
+        },
+        {
+          "name": "猪肚",
+          "kind": "普通食物",
+          "grams": 300,
+          "optional": false,
+          "note": "原文猪肚1个约300g",
+          "analysis_ready": false
+        }
+      ],
+      "coverage": {
+        "covered": 2,
+        "directory_pending": 2,
+        "food": 1,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "茯苓莲子芡实轻身粥",
+      "type": "药膳",
+      "oneliner": "健脾祛湿的'清补'准备粥",
+      "description": "茯苓、莲子、芡实配谷物同煮，先健脾祛湿清理湿浊，为冬令进补打基础；'清补慢调'思路的代表方。",
+      "method": "与谷物一同炖煮成粥",
+      "duration": "炖煮",
+      "scenes": [
+        "消化"
+      ],
+      "constitutions_suitable": [
+        "痰湿",
+        "气虚"
+      ],
+      "constitutions_unsuitable": [],
+      "population": "湿气重、进补易上火人群",
+      "contraindication": "便秘者少食",
+      "source": "北京中医药大学东方医院治未病科（北京市中医药管理局发布）《冬季'清补慢调'食疗智慧》（茯苓莲子芡实谷物粥）",
+      "reference_url": "https://zyj.beijing.gov.cn/sy/whkp/202511/t20251117_4283700.html",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "茯苓",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": false,
+          "note": "原文未标克数",
+          "analysis_ready": true
+        },
+        {
+          "name": "莲子",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": false,
+          "note": "原文未标克数；成分数据待补",
+          "analysis_ready": false
+        },
+        {
+          "name": "芡实",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": false,
+          "note": "原文未标克数；成分数据待补",
+          "analysis_ready": false
+        },
+        {
+          "name": "粳米",
+          "kind": "普通食物",
+          "grams": null,
+          "optional": false,
+          "note": "原文'谷物'未标克数",
+          "analysis_ready": false
+        }
+      ],
+      "coverage": {
+        "covered": 1,
+        "directory_pending": 2,
+        "food": 1,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "冬瓜薏苡仁陈皮鸭汤",
+      "type": "药膳",
+      "oneliner": "滋阴养胃、健脾利水的夏季祛暑汤",
+      "description": "薏苡仁健脾利湿，冬瓜清热祛暑，鸭肉滋阴，陈皮理气；深圳市中医院推荐的夏季汤方（3-4人份）。",
+      "method": "薏苡仁浸泡半小时；全部材料入砂锅大火煲开转小火1.5小时，加盐调味",
+      "duration": "煲1.5小时",
+      "scenes": [
+        "换季调理"
+      ],
+      "constitutions_suitable": [
+        "痰湿",
+        "阴虚"
+      ],
+      "constitutions_unsuitable": [
+        "阳虚"
+      ],
+      "population": "夏季暑湿、身体困重人群",
+      "contraindication": "孕妇不建议饮用（原文：薏苡仁性凉）",
+      "source": "深圳市中医院黄淑芬（深圳市卫健委'四季药膳茶疗'）（夏季方）",
+      "reference_url": "http://wjw.sz.gov.cn/ztzl/jkkp/jkcs/content/post_11116470.html",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "薏苡仁",
+          "kind": "药食同源",
+          "grams": 50,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        },
+        {
+          "name": "冬瓜",
+          "kind": "普通食物",
+          "grams": 500,
+          "optional": false,
+          "note": "",
+          "analysis_ready": false
+        },
+        {
+          "name": "陈皮",
+          "kind": "药食同源",
+          "grams": 6,
+          "optional": false,
+          "note": "原文5-8克取中值",
+          "analysis_ready": true
+        },
+        {
+          "name": "鸭肉",
+          "kind": "普通食物",
+          "grams": 500,
+          "optional": false,
+          "note": "",
+          "analysis_ready": false
+        },
+        {
+          "name": "生姜",
+          "kind": "药食同源",
+          "grams": 6,
+          "optional": false,
+          "note": "原文2片",
+          "analysis_ready": true
+        },
+        {
+          "name": "蜜枣",
+          "kind": "普通食物",
+          "grams": 15,
+          "optional": false,
+          "note": "原文1颗",
+          "analysis_ready": false
+        }
+      ],
+      "coverage": {
+        "covered": 3,
+        "directory_pending": 0,
+        "food": 3,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "桂圆莲子宁神汤",
+      "type": "药膳",
+      "oneliner": "养心宁神健脾的经典安眠甜汤",
+      "description": "龙眼肉补益心脾、养血安神，莲子补心益脾、补肾固精；中老年人及长期失眠人群的经典甜汤。",
+      "method": "桂圆与莲子煮成汤",
+      "duration": "煮汤",
+      "scenes": [
+        "助眠"
+      ],
+      "constitutions_suitable": [
+        "气虚",
+        "平和"
+      ],
+      "constitutions_unsuitable": [
+        "湿热"
+      ],
+      "population": "中老年人、长期失眠多梦人群",
+      "contraindication": "糖尿病人群注意加糖量；湿热内盛者不宜",
+      "source": "人民网健康《睡眠不好 推荐七款安眠汤》（原源：家庭医生在线）（桂圆莲子汤）",
+      "reference_url": "http://health.people.com.cn/n1/2016/0629/c21471-28506404.html",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "龙眼肉",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": false,
+          "note": "原文'二两'，产地计量口径不一未换算；成分数据待补",
+          "analysis_ready": false
+        },
+        {
+          "name": "莲子",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": false,
+          "note": "原文'二两'未换算；成分数据待补",
+          "analysis_ready": false
+        }
+      ],
+      "coverage": {
+        "covered": 0,
+        "directory_pending": 2,
+        "food": 0,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "百合鸡蛋安神汤",
+      "type": "药膳",
+      "oneliner": "清心安神的睡前蛋汤",
+      "description": "百合清心润肺安神，鸡蛋滋阴养血；睡前一小时饮用的温和安神汤。",
+      "method": "生百合蒸熟，加入蛋黄一个，以200毫升水搅匀，加少许冰糖煮沸后再以50毫升水搅匀，睡前一小时饮用",
+      "duration": "蒸煮",
+      "scenes": [
+        "助眠"
+      ],
+      "constitutions_suitable": [
+        "阴虚"
+      ],
+      "constitutions_unsuitable": [],
+      "population": "虚烦惊悸、入睡困难人群",
+      "contraindication": "对鸡蛋过敏者禁用；睡前适量",
+      "source": "人民网健康《睡眠不好 推荐七款安眠汤》（原源：家庭医生在线）（安神汤）",
+      "reference_url": "http://health.people.com.cn/n1/2016/0629/c21471-28506404.html",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "百合",
+          "kind": "药食同源",
+          "grams": 15,
+          "optional": false,
+          "note": "原文五钱约15克",
+          "analysis_ready": true
+        },
+        {
+          "name": "鸡蛋",
+          "kind": "普通食物",
+          "grams": 50,
+          "optional": false,
+          "note": "原文一个蛋黄",
+          "analysis_ready": false
+        },
+        {
+          "name": "冰糖",
+          "kind": "普通食物",
+          "grams": null,
+          "optional": true,
+          "note": "少许",
+          "analysis_ready": false
+        }
+      ],
+      "coverage": {
+        "covered": 1,
+        "directory_pending": 0,
+        "food": 2,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "百合绿豆清心乳",
+      "type": "药膳",
+      "oneliner": "夏夜清心除烦的安神甜汤",
+      "description": "百合清心安神，绿豆清热除烦，牛奶助眠；夏季烦热难眠人群的经典甜汤。",
+      "method": "百合、绿豆煮熟烂，服时加牛奶与少量冰糖",
+      "duration": "煮汤",
+      "scenes": [
+        "助眠"
+      ],
+      "constitutions_suitable": [
+        "阴虚",
+        "湿热"
+      ],
+      "constitutions_unsuitable": [
+        "阳虚"
+      ],
+      "population": "夏季心烦睡不着的人群",
+      "contraindication": "脾胃虚寒者不宜冰镇饮用；乳糖不耐者少加牛奶",
+      "source": "人民网健康《睡眠不好 推荐七款安眠汤》（原源：家庭医生在线）（百合绿豆乳）",
+      "reference_url": "http://health.people.com.cn/n1/2016/0629/c21471-28506404.html",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "百合",
+          "kind": "药食同源",
+          "grams": 25,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        },
+        {
+          "name": "绿豆",
+          "kind": "普通食物",
+          "grams": 25,
+          "optional": false,
+          "note": "",
+          "analysis_ready": false
+        },
+        {
+          "name": "牛奶",
+          "kind": "普通食物",
+          "grams": 200,
+          "optional": false,
+          "note": "原文'加些牛奶'",
+          "analysis_ready": false
+        },
+        {
+          "name": "冰糖",
+          "kind": "普通食物",
+          "grams": null,
+          "optional": true,
+          "note": "少量",
+          "analysis_ready": false
+        }
+      ],
+      "coverage": {
+        "covered": 1,
+        "directory_pending": 0,
+        "food": 3,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "莲子煨瘦肉汤",
+      "type": "药膳",
+      "oneliner": "补心益脾的失眠食养汤",
+      "description": "莲子补心益脾养血安神，瘦猪肉滋阴润燥；适合失眠伴气短乏力人群。",
+      "method": "瘦猪肉片与莲子肉加水共煨炖至熟，调味服食",
+      "duration": "煨炖",
+      "scenes": [
+        "助眠"
+      ],
+      "constitutions_suitable": [
+        "气虚",
+        "阴虚"
+      ],
+      "constitutions_unsuitable": [],
+      "population": "失眠、气短乏力人群",
+      "contraindication": "便秘腹胀者少食",
+      "source": "人民网健康《睡眠不好 推荐七款安眠汤》（原源：家庭医生在线）（莲子煨瘦肉，'五种食物'篇）",
+      "reference_url": "http://health.people.com.cn/n1/2016/0629/c21471-28506404.html",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "猪瘦肉",
+          "kind": "普通食物",
+          "grams": 250,
+          "optional": false,
+          "note": "",
+          "analysis_ready": false
+        },
+        {
+          "name": "莲子",
+          "kind": "药食同源",
+          "grams": 50,
+          "optional": false,
+          "note": "成分数据待补",
+          "analysis_ready": false
+        }
+      ],
+      "coverage": {
+        "covered": 0,
+        "directory_pending": 1,
+        "food": 1,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "百合安神粥",
+      "type": "药膳",
+      "oneliner": "清心安神的早晚养生粥",
+      "description": "百合润肺清心，大米养胃；神经衰弱、更年期心悸失眠人群的早晚粥方。",
+      "method": "百合清水浸泡半天去苦味，与大米共煮至粥成，加冰糖适量，早晚各服1次",
+      "duration": "煮粥",
+      "scenes": [
+        "助眠"
+      ],
+      "constitutions_suitable": [
+        "阴虚"
+      ],
+      "constitutions_unsuitable": [],
+      "population": "神经衰弱、更年期心悸失眠人群",
+      "contraindication": "糖尿病人群注意冰糖",
+      "source": "人民网健康《睡眠不好 推荐七款安眠汤》（原源：家庭医生在线）（百合粥，'五种食物'篇）",
+      "reference_url": "http://health.people.com.cn/n1/2016/0629/c21471-28506404.html",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "百合",
+          "kind": "药食同源",
+          "grams": 30,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        },
+        {
+          "name": "粳米",
+          "kind": "普通食物",
+          "grams": 100,
+          "optional": false,
+          "note": "原文大米",
+          "analysis_ready": false
+        },
+        {
+          "name": "冰糖",
+          "kind": "普通食物",
+          "grams": null,
+          "optional": true,
+          "note": "适量",
+          "analysis_ready": false
+        }
+      ],
+      "coverage": {
+        "covered": 1,
+        "directory_pending": 0,
+        "food": 2,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "桂圆花生鱼头汤",
+      "type": "药膳",
+      "oneliner": "心脾两虚人群的养血安神鱼汤",
+      "description": "龙眼肉补益心脾养血安神，花生健脾养胃，鱼头补虚；心脾两虚、失眠多梦人群的食养汤。",
+      "method": "花生浸泡1小时；姜片煎鱼头至微黄，冲入热水旺火煮5分钟；全部材料入锅炖约2.5小时",
+      "duration": "炖2.5小时",
+      "scenes": [
+        "助眠",
+        "经期温养"
+      ],
+      "constitutions_suitable": [
+        "气虚",
+        "平和"
+      ],
+      "constitutions_unsuitable": [
+        "湿热"
+      ],
+      "population": "心脾两虚、失眠多梦、健忘人群",
+      "contraindication": "对鱼类过敏者禁用；痛风患者慎食鱼汤",
+      "source": "人民网健康《睡眠不好 推荐七款安眠汤》（原源：家庭医生在线）（桂圆花生鱼头汤，'五种食物'篇）",
+      "reference_url": "http://health.people.com.cn/n1/2016/0629/c21471-28506404.html",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "鲢鱼头",
+          "kind": "普通食物",
+          "grams": 700,
+          "optional": false,
+          "note": "原文草鱼头700克",
+          "analysis_ready": false
+        },
+        {
+          "name": "花生",
+          "kind": "普通食物",
+          "grams": 30,
+          "optional": false,
+          "note": "",
+          "analysis_ready": false
+        },
+        {
+          "name": "龙眼肉",
+          "kind": "药食同源",
+          "grams": 20,
+          "optional": false,
+          "note": "成分数据待补",
+          "analysis_ready": false
+        },
+        {
+          "name": "枣",
+          "kind": "药食同源",
+          "grams": 36,
+          "optional": false,
+          "note": "原文12个；成分数据待补",
+          "analysis_ready": false
+        },
+        {
+          "name": "生姜",
+          "kind": "药食同源",
+          "grams": null,
+          "optional": false,
+          "note": "原文姜片适量",
+          "analysis_ready": true
+        }
+      ],
+      "coverage": {
+        "covered": 1,
+        "directory_pending": 2,
+        "food": 2,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "核桃黑芝麻糊",
+      "type": "药膳",
+      "oneliner": "神经衰弱人群的健脑安神糊",
+      "description": "核桃仁补肾健脑，黑芝麻滋补肝肾；心悸失眠、健忘人群的经典搭配。",
+      "method": "核桃仁、黑芝麻炒熟研末，加白糖混匀，日服1次每服约10克",
+      "duration": "研末冲服",
+      "scenes": [
+        "助眠",
+        "熬夜护眼"
+      ],
+      "constitutions_suitable": [
+        "阴虚",
+        "平和"
+      ],
+      "constitutions_unsuitable": [
+        "痰湿"
+      ],
+      "population": "心悸失眠、健忘、脑力消耗大人群",
+      "contraindication": "便溏腹泻者少食；糖尿病人群注意白糖",
+      "source": "人民网健康《睡眠不好 推荐七款安眠汤》（原源：家庭医生在线）（核桃黑芝麻，'五种食物'篇）",
+      "reference_url": "http://health.people.com.cn/n1/2016/0629/c21471-28506404.html",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "核桃",
+          "kind": "普通食物",
+          "grams": 50,
+          "optional": false,
+          "note": "",
+          "analysis_ready": false
+        },
+        {
+          "name": "黑芝麻",
+          "kind": "药食同源",
+          "grams": 50,
+          "optional": false,
+          "note": "成分数据待补",
+          "analysis_ready": false
+        },
+        {
+          "name": "白糖",
+          "kind": "普通食物",
+          "grams": 15,
+          "optional": false,
+          "note": "混匀后每服约10克",
+          "analysis_ready": false
+        }
+      ],
+      "coverage": {
+        "covered": 0,
+        "directory_pending": 1,
+        "food": 2,
+        "tea": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "酸枣仁百合瘦肉汤",
+      "type": "药膳",
+      "oneliner": "清热除烦的助眠瘦肉汤",
+      "description": "酸枣仁养心安神，百合清心润肺；虚烦不眠人群的清润汤方。",
+      "method": "枣仁洗净加水300毫升小火煮30分钟去渣取汁，再加百合与瘦肉同煮30分钟，调味喝汤吃肉",
+      "duration": "煮1小时",
+      "scenes": [
+        "助眠"
+      ],
+      "constitutions_suitable": [
+        "阴虚"
+      ],
+      "constitutions_unsuitable": [],
+      "population": "虚烦不眠、心神不宁人群",
+      "contraindication": "严重失眠应就诊；风寒咳嗽者少食",
+      "source": "新华网转载《羊城晚报》（广东省第二中医院心血管科黄琳主任医师）（酸枣仁百合汤）",
+      "reference_url": "http://www.news.cn/health/20211103/c10883df0a934f39aaa9be56742b8b64/c.html",
+      "status": "待核对",
+      "materials": [
+        {
+          "name": "酸枣仁",
+          "kind": "药食同源",
+          "grams": 30,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        },
+        {
+          "name": "百合",
+          "kind": "药食同源",
+          "grams": 30,
+          "optional": false,
+          "note": "",
+          "analysis_ready": true
+        },
+        {
+          "name": "猪瘦肉",
+          "kind": "普通食物",
+          "grams": 50,
+          "optional": false,
+          "note": "",
+          "analysis_ready": false
+        }
+      ],
+      "coverage": {
+        "covered": 2,
+        "directory_pending": 0,
+        "food": 1,
+        "tea": 0,
+        "unknown": 0
+      }
+    }
+  ]
+}

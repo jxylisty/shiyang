@@ -1,0 +1,113 @@
+/* 食养有据 —— 清新食养风（移动端优先） */
+:root {
+  --green-900: #1d4a38;
+  --green-700: #2e7d5b;
+  --green-600: #359068;
+  --green-100: #e8f4ee;
+  --green-50: #f4faf7;
+  --amber-600: #c98a2d;
+  --amber-50: #fdf6e9;
+  --red-500: #c25e50;
+  --red-50: #faf0ee;
+  --ink-900: #1f2b26;
+  --ink-600: #55645d;
+  --ink-400: #8a978f;
+  --bg: #f6f9f7;
+  --card: #ffffff;
+  --radius: 14px;
+  --shadow: 0 2px 10px rgba(31, 74, 56, 0.07);
+
+  /* Vant 主题接入：组件库变量指向本品牌色，避免默认蓝 */
+  --van-primary-color: var(--green-700);
+  --van-success-color: var(--green-600);
+  --van-danger-color: var(--red-500);
+  --van-warning-color: var(--amber-600);
+  --van-text-color: var(--ink-900);
+  --van-text-color-2: var(--ink-600);
+  --van-text-color-3: var(--ink-400);
+  --van-background: var(--bg);
+  --van-tag-primary-color: var(--green-50);
+  --van-tag-primary-text-color: var(--green-700);
+  --van-tag-border-radius: 12px;
+  --van-search-background: #fff;
+  --van-search-content-background: var(--green-50);
+  --van-progress-color: var(--green-600);
+  --van-progress-background: var(--green-50);
+  --van-nav-bar-title-text-color: var(--ink-900);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: var(--bg);
+  color: var(--ink-900);
+  line-height: 1.6;
+}
+#app { max-width: 750px; margin: 0 auto; min-height: 100vh; }
+
+/* 顶部栏 */
+.topbar {
+  position: sticky; top: 0; z-index: 20;
+  background: rgba(255,255,255,0.92); backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--green-100);
+  padding: 12px 16px;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+}
+.topbar .logo { font-weight: 700; font-size: 18px; color: var(--green-700); letter-spacing: 1px; white-space: nowrap; }
+.topbar .logo small { font-weight: 400; color: var(--ink-400); font-size: 11px; margin-left: 6px; letter-spacing: 0; white-space: nowrap; }
+@media (max-width: 420px) {
+  .topbar .logo { font-size: 16px; }
+  .topbar .logo small { display: none; }
+  .topbar nav a { padding: 4px 8px; }
+}
+.topbar nav { display: flex; gap: 4px; }
+.topbar nav a {
+  text-decoration: none; color: var(--ink-600); font-size: 14px;
+  padding: 4px 10px; border-radius: 18px;
+}
+.topbar nav a.router-link-exact-active { background: var(--green-100); color: var(--green-700); font-weight: 600; }
+
+/* 底部免责声明 */
+.disclaimer {
+  margin: 24px 16px 32px; padding: 10px 14px;
+  background: var(--amber-50); border-radius: 10px;
+  color: var(--amber-600); font-size: 12px; text-align: center;
+}
+
+/* 卡片与通用 */
+.page { padding: 16px; }
+.card {
+  background: var(--card); border-radius: var(--radius);
+  box-shadow: var(--shadow); padding: 16px; margin-bottom: 12px;
+}
+.section-title { font-size: 16px; font-weight: 700; margin: 18px 0 10px; display: flex; align-items: center; gap: 6px; }
+.section-title::before { content: ""; width: 4px; height: 16px; background: var(--green-600); border-radius: 2px; }
+
+.btn {
+  display: inline-block; border: none; cursor: pointer;
+  background: var(--green-700); color: #fff;
+  font-size: 15px; font-weight: 600;
+  padding: 11px 22px; border-radius: 24px; text-decoration: none;
+  transition: opacity .15s;
+}
+.btn:active { opacity: .8; }
+.btn.block { display: block; text-align: center; width: 100%; }
+.btn.ghost { background: var(--green-100); color: var(--green-700); }
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+
+.tag {
+  display: inline-block; font-size: 11px; padding: 2px 9px;
+  border-radius: 12px; background: var(--green-50); color: var(--green-700);
+  border: 1px solid var(--green-100); margin: 2px 4px 2px 0;
+}
+.tag.warm { background: var(--amber-50); color: var(--amber-600); border-color: #f0e3c8; }
+.tag.warn { background: var(--red-50); color: var(--red-500); border-color: #eed6d1; }
+.tag.active { background: var(--green-700); color: #fff; border-color: var(--green-700); }
+
+.empty { text-align: center; color: var(--ink-400); padding: 40px 0; font-size: 14px; }
+
+/* 桌面大屏适配：布局放宽到 1080px，方子列表两列，详情页内容两栏 */
+@media (min-width: 900px) {
+  #app { max-width: 1080px; }
+  .page { padding: 24px 32px; }
+}

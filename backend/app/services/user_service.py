@@ -1,0 +1,180 @@
+# -*- coding: utf-8 -*-
+"""
+用户系统服务：注册登录(JWT) + 体质档案历史 + 收藏
+存储在独立的 data/user.db（与方子库 shiyang.db 分离，重建方子库不丢用户数据）
+"""
+import json
+import sqlite3
+import time
+from pathlib import Path
+
+import bcrypt
+import jose.jwt as jwt
+from jose import JWTError
+
+USER_DB = Path(__file__).resolve().parents[3] / "data" / "user.db"
+JWT_SECRET = "shiyang-dev-secret-change-in-prod"  # 生产环境用环境变量覆盖
+JWT_EXP = 60 * 60 * 24 * 14  # 14 天
+
+_SCHEMA = """
+CREATE TABLE IF NOT EXISTS user (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    nickname TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS constitution_record (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES user(id),
+    main_code TEXT, main_name TEXT,
+    combined TEXT,           -- JSON 兼夹codes
+    transformed TEXT,        -- JSON 全维度转化分
+    answers TEXT,            -- JSON 原始作答（复现用）
+    created_at TEXT DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_cr_user ON constitution_record(user_id);
+CREATE TABLE IF NOT EXISTS favorite (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES user(id),
+    recipe_id INTEGER NOT NULL,
+    created_at TEXT DEFAULT (datetime('now')),
+    UNIQUE(user_id, recipe_id)
+);
+"""
+
+
+def db():
+    conn = sqlite3.connect(USER_DB)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.executescript(_SCHEMA)
+    return conn
+
+
+# ---------- 认证 ----------
+
+def hash_pw(pw: str) -> str:
+    return bcrypt.hashpw(pw.encode(), bcrypt.gensalt()).decode()
+
+
+def verify_pw(pw: str, hashed: str) -> bool:
+    try:
+        return bcrypt.checkpw(pw.encode(), hashed.encode())
+    except ValueError:
+        return False
+
+
+def make_token(uid: int, username: str) -> str:
+    payload = {"uid": uid, "username": username, "exp": int(time.time()) + JWT_EXP}
+    return jwt.encode(payload, JWT_SECRET, algorithm="HS256")
+
+
+def parse_token(token: str) -> dict | None:
+    try:
+        return jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+    except JWTError:
+        return None
+
+
+def register(username: str, password: str, nickname: str | None = None) -> dict:
+    if not (3 <= len(username) <= 20) or not username.replace("_", "").isalnum():
+        raise ValueError("用户名需3-20位字母数字下划线")
+    if len(password) < 6:
+        raise ValueError("密码至少6位")
+    conn = db()
+    try:
+        cur = conn.execute("INSERT INTO user(username,password_hash,nickname) VALUES (?,?,?)",
+                           (username, hash_pw(password), nickname or username))
+        conn.commit()
+        uid = cur.lastrowid
+        return {"id": uid, "username": username, "nickname": nickname or username,
+                "token": make_token(uid, username)}
+    except sqlite3.IntegrityError:
+        raise ValueError("用户名已被注册")
+    finally:
+        conn.close()
+
+
+def login(username: str, password: str) -> dict:
+    conn = db()
+    try:
+        row = conn.execute("SELECT * FROM user WHERE username=?", (username,)).fetchone()
+        if not row or not verify_pw(password, row["password_hash"]):
+            raise ValueError("用户名或密码错误")
+        return {"id": row["id"], "username": row["username"], "nickname": row["nickname"],
+                "token": make_token(row["id"], row["username"])}
+    finally:
+        conn.close()
+
+
+# ---------- 体质档案 ----------
+
+def save_record(uid: int, judged: dict, transformed: dict, answers: dict) -> int:
+    main = judged.get("main")
+    main_name = judged["results"][main]["score"] if False else None  # 占位，实际用下表
+    conn = db()
+    try:
+        cur = conn.execute(
+            "INSERT INTO constitution_record(user_id,main_code,main_name,combined,transformed,answers) "
+            "VALUES (?,?,?,?,?,?)",
+            (uid, main, judged.get("main_name"),
+             json.dumps(judged.get("combined", []), ensure_ascii=False),
+             json.dumps(transformed, ensure_ascii=False),
+             json.dumps(answers, ensure_ascii=False)))
+        conn.commit()
+        return cur.lastrowid
+    finally:
+        conn.close()
+
+
+def list_records(uid: int, limit: int = 20) -> list[dict]:
+    conn = db()
+    try:
+        rows = conn.execute(
+            "SELECT id, main_code, combined, transformed, created_at "
+            "FROM constitution_record WHERE user_id=? ORDER BY id DESC LIMIT ?",
+            (uid, limit)).fetchall()
+        out = []
+        for r in rows:
+            out.append({"id": r["id"], "main_code": r["main_code"],
+                        "main_name": NAME_BY_CODE.get(r["main_code"], r["main_code"]),
+                        "combined": [NAME_BY_CODE.get(c, c) for c in json.loads(r["combined"] or "[]")],
+                        "transformed": json.loads(r["transformed"] or "{}"),
+                        "created_at": r["created_at"]})
+        return out
+    finally:
+        conn.close()
+
+
+NAME_BY_CODE = {"pinghe": "平和质", "qixu": "气虚质", "yangxu": "阳虚质", "yinxu": "阴虚质",
+                "tanshi": "痰湿质", "shire": "湿热质", "xueyu": "血瘀质", "qiyu": "气郁质", "tebing": "特禀质"}
+
+
+# ---------- 收藏 ----------
+
+def add_favorite(uid: int, recipe_id: int):
+    conn = db()
+    try:
+        conn.execute("INSERT OR IGNORE INTO favorite(user_id,recipe_id) VALUES (?,?)", (uid, recipe_id))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def remove_favorite(uid: int, recipe_id: int):
+    conn = db()
+    try:
+        conn.execute("DELETE FROM favorite WHERE user_id=? AND recipe_id=?", (uid, recipe_id))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def list_favorites(uid: int) -> list[int]:
+    conn = db()
+    try:
+        return [r[0] for r in conn.execute(
+            "SELECT recipe_id FROM favorite WHERE user_id=? ORDER BY id DESC", (uid,)).fetchall()]
+    finally:
+        conn.close()
