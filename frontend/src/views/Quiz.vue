@@ -14,6 +14,14 @@ const qDir = ref(1)            // 题目切换方向：1 前进 / -1 后退
 const justPicked = ref(null)   // 刚选中的选项值：驱动 pop 弹跳
 const revealed = ref(false)    // 结果页揭示：进度条从 0 生长
 const shownScores = ref({})    // 九维分数滚动显示值
+// 家庭代测（T2-8）：0=本人，>0 为成员 id
+const members = ref([])
+const forMember = ref(0)
+onMounted(async () => {
+  if (isLoggedIn()) {
+    try { members.value = (await listFamilyMembers()).data.data } catch { /* 静默 */ }
+  }
+})
 
 const OPTIONS = [
   { label: '没有', v: 1 }, { label: '很少', v: 2 }, { label: '有时', v: 3 },
@@ -156,16 +164,18 @@ async function submit() {
     const res = (await submitQuiz(answers.value)).data.data
     result.value = res
     clearProgress()
-    // 已登录 → 自动存入体质档案（失败不打断展示）
+    // 已登录 → 自动存入体质档案（可挂家庭成员；失败不打断展示）
     if (isLoggedIn()) {
-      saveRecord(res.judged, res.transformed, answers.value).catch(() => {})
+      saveRecord(res.judged, res.transformed, answers.value,
+                 forMember.value || null).catch(() => {})
     }
     window.scrollTo({ top: 0, behavior: 'smooth' })
-    // 揭示动画：下一帧把进度条从 0 播到终值，同时分数滚动
-    requestAnimationFrame(() => requestAnimationFrame(() => {
+    // 揭示动画：setTimeout 下一拍把进度条从 0 播到终值，同时分数滚动
+    // （双 setTimeout 替代双 rAF：隐藏页签里 rAF 不触发会导致进度条定格 0）
+    setTimeout(() => setTimeout(() => {
       revealed.value = true
       animateScores(res.judged.results)
-    }))
+    }, 16), 16)
   } catch (e) {
     // 提交失败不清进度，用户可重试
     error.value = '提交失败，请检查网络后重试（您的作答已保留）'
@@ -250,8 +260,11 @@ const mainName = computed(() => {
 
       <p v-if="error && !flat.length" class="submit-error shake">{{ error }}</p>
 
-      <!-- 题目卡：方向感切换（前进左滑入 / 后退右滑入） -->
-      <Transition :name="qDir === 1 ? 'q-fwd' : 'q-back'" mode="out-in">
+      <!-- 题目卡：方向感切换（前进左滑入 / 后退右滑入）
+           :css="false" + JS 钩子：收尾用 setTimeout，不依赖 transitionend
+           （隐藏页签/切后台时该事件可能永不到达，out-in 会卡死整页） -->
+      <Transition :name="qDir === 1 ? 'q-fwd' : 'q-back'" mode="out-in"
+                  :css="false" @enter="qEnter" @leave="qLeave">
         <div class="card q-card" v-if="flat.length && cur()" :key="idx">
           <p class="q-text">{{ idx + 1 }}. {{ cur().q }}</p>
           <div class="opts">
@@ -274,6 +287,13 @@ const mainName = computed(() => {
         <button class="btn ghost" v-if="answeredCount() > 0" @click="restart">清空重答</button>
       </div>
       <p class="q-note">共 {{ flat.length || 67 }} 题，约 3 分钟。进度自动保存在本机，误关页面后重新打开可继续作答。</p>
+      <!-- 家庭代测（T2-8）：结果将存入选中成员的档案 -->
+      <div class="member-pick" v-if="members.length && !result">
+        <span class="mp-label">替谁测评：</span>
+        <button class="tag mp-tag" :class="{ active: forMember === 0 }" @click="forMember = 0">本人</button>
+        <button v-for="m in members" :key="m.id" class="tag mp-tag"
+                :class="{ active: forMember === m.id }" @click="forMember = m.id">{{ m.name }}</button>
+      </div>
     </template>
   </div>
 </template>
@@ -283,13 +303,7 @@ const mainName = computed(() => {
 .progress-line :deep(.van-progress__portion) { border-radius: 3px; transition: width var(--dur-med) var(--ease-out-soft); }
 .p-count { font-size: 12px; color: var(--ink-400); margin-bottom: 12px; }
 
-/* 题目方向感过渡 */
-.q-fwd-enter-active, .q-fwd-leave-active,
-.q-back-enter-active, .q-back-leave-active { transition: opacity .18s ease, transform .18s var(--ease-out-soft); }
-.q-fwd-enter-from { opacity: 0; transform: translateX(28px); }
-.q-fwd-leave-to { opacity: 0; transform: translateX(-20px); }
-.q-back-enter-from { opacity: 0; transform: translateX(-28px); }
-.q-back-leave-to { opacity: 0; transform: translateX(20px); }
+/* 题目卡过渡视觉由 qEnter/qLeave JS 钩子内联驱动 */
 
 .q-text { font-size: 17px; font-weight: 600; min-height: 76px; }
 .opts { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 10px; }
@@ -304,6 +318,10 @@ const mainName = computed(() => {
 .submit-error { margin-top: 12px; padding: 10px 12px; background: var(--red-50); color: var(--red-500); border-radius: 10px; font-size: 13px; }
 .q-nav .btn { flex: 1; text-align: center; }
 .q-note { font-size: 11px; color: var(--ink-400); margin-top: 14px; line-height: 1.5; }
+.member-pick { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; }
+.mp-label { font-size: 12px; color: var(--ink-400); }
+.mp-tag { cursor: pointer; }
+.mp-tag.active { background: var(--green-700); color: #fff; border-color: var(--green-700); }
 
 /* 提交按钮 loading 圈 */
 .spinner {
