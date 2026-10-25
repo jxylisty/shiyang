@@ -9,6 +9,7 @@ import NetworkGraph from '../components/NetworkGraph.vue'
 import SharePoster from '../components/SharePoster.vue'
 import SafetyBanner from '../components/SafetyBanner.vue'
 import EvidenceCard from '../components/EvidenceCard.vue'
+import ExplainPanel from '../components/ExplainPanel.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -246,6 +247,9 @@ async function toggleCheckin() {
               </p>
               <p class="a-disclaimer">入血概率为 PU-Learning 模型预测值；三维评分沿用大创课题靶点富集框架（抗炎/免疫/气道修复），为文献富集参考分而非临床结论。</p>
             </div>
+
+            <!-- 入血概率可解释（T1-4） -->
+            <ExplainPanel :recipe-id="recipe.id" style="margin-bottom: 12px;" />
 
             <!-- 成分-靶点网络图 -->
             <div class="section-title">成分 - 靶点网络图</div>

@@ -24,6 +24,7 @@ from services import compare_service as cmp_svc
 from services import pantry_service as pantry
 from services import safety_service as safety
 from services import evidence_service as evidence
+from services import explain_service as explain
 
 DB_PATH = Path(__file__).resolve().parent.parent.parent / "data" / "shiyang.db"
 DISCLAIMER = "本平台内容为健康参考信息，不构成医疗建议，不用于诊断或治疗。"
@@ -198,6 +199,24 @@ def evidence_recipe(rid: int):
     result = evidence.recipe_evidence(rid)
     if result is None:
         raise HTTPException(404, "方子不存在")
+    return ok(result)
+
+
+# ==================== 入血概率可解释（T1-4） ====================
+
+@app.get("/api/v1/explain/compound")
+def explain_compound(name: str):
+    result = explain.compound_explain(name)
+    if result is None:
+        raise HTTPException(404, "化合物不存在")
+    return ok(result)
+
+
+@app.get("/api/v1/explain/recipe/{rid}")
+def explain_recipe(rid: int):
+    result = explain.recipe_compounds(rid)
+    if result is None:
+        raise HTTPException(404, "方子不存在或无成分分析")
     return ok(result)
 
 
