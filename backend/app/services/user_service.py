@@ -4,6 +4,7 @@
 存储在独立的 data/user.db（与方子库 shiyang.db 分离，重建方子库不丢用户数据）
 """
 import json
+import os
 import sqlite3
 import time
 from pathlib import Path
@@ -13,7 +14,8 @@ import jose.jwt as jwt
 from jose import JWTError
 
 USER_DB = Path(__file__).resolve().parents[3] / "data" / "user.db"
-JWT_SECRET = "shiyang-dev-secret-change-in-prod"  # 生产环境用环境变量覆盖
+# 生产环境用环境变量 SHIYANG_JWT_SECRET 覆盖；缺省值仅供本地开发
+JWT_SECRET = os.environ.get("SHIYANG_JWT_SECRET") or "shiyang-dev-secret-change-in-prod"
 JWT_EXP = 60 * 60 * 24 * 14  # 14 天
 
 _SCHEMA = """
@@ -41,6 +43,15 @@ CREATE TABLE IF NOT EXISTS favorite (
     created_at TEXT DEFAULT (datetime('now')),
     UNIQUE(user_id, recipe_id)
 );
+CREATE TABLE IF NOT EXISTS checkin (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES user(id),
+    recipe_id INTEGER NOT NULL,
+    day TEXT NOT NULL,           -- YYYY-MM-DD（本地日期，一天一方一条）
+    created_at TEXT DEFAULT (datetime('now')),
+    UNIQUE(user_id, recipe_id, day)
+);
+CREATE INDEX IF NOT EXISTS idx_ck_user_day ON checkin(user_id, day);
 """
 
 
@@ -48,6 +59,7 @@ def db():
     conn = sqlite3.connect(USER_DB)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA foreign_keys=ON")
     conn.executescript(_SCHEMA)
     return conn
 
@@ -111,14 +123,12 @@ def login(username: str, password: str) -> dict:
 # ---------- 体质档案 ----------
 
 def save_record(uid: int, judged: dict, transformed: dict, answers: dict) -> int:
-    main = judged.get("main")
-    main_name = judged["results"][main]["score"] if False else None  # 占位，实际用下表
     conn = db()
     try:
         cur = conn.execute(
             "INSERT INTO constitution_record(user_id,main_code,main_name,combined,transformed,answers) "
             "VALUES (?,?,?,?,?,?)",
-            (uid, main, judged.get("main_name"),
+            (uid, judged.get("main"), judged.get("main_name"),
              json.dumps(judged.get("combined", []), ensure_ascii=False),
              json.dumps(transformed, ensure_ascii=False),
              json.dumps(answers, ensure_ascii=False)))
@@ -178,3 +188,68 @@ def list_favorites(uid: int) -> list[int]:
             "SELECT recipe_id FROM favorite WHERE user_id=? ORDER BY id DESC", (uid,)).fetchall()]
     finally:
         conn.close()
+
+
+# ---------- 饮用打卡（P2） ----------
+
+def add_checkin(uid: int, recipe_id: int) -> dict:
+    """当日打卡（一天一方一条，重复打卡幂等返回 already=True）"""
+    day = time.strftime("%Y-%m-%d")
+    conn = db()
+    try:
+        cur = conn.execute("INSERT OR IGNORE INTO checkin(user_id,recipe_id,day) VALUES (?,?,?)",
+                           (uid, recipe_id, day))
+        conn.commit()
+        return {"recipe_id": recipe_id, "day": day,
+                "already": cur.rowcount == 0}
+    finally:
+        conn.close()
+
+
+def remove_checkin(uid: int, recipe_id: int) -> dict:
+    day = time.strftime("%Y-%m-%d")
+    conn = db()
+    try:
+        conn.execute("DELETE FROM checkin WHERE user_id=? AND recipe_id=? AND day=?",
+                     (uid, recipe_id, day))
+        conn.commit()
+        return {"recipe_id": recipe_id, "day": day, "removed": True}
+    finally:
+        conn.close()
+
+
+def _streak(days: set[str]) -> int:
+    """连续打卡天数：从今天（或昨天）往前数"""
+    from datetime import date, timedelta
+    d = date.today()
+    if d.isoformat() not in days:
+        d -= timedelta(days=1)
+        if d.isoformat() not in days:
+            return 0
+    n = 0
+    while d.isoformat() in days:
+        n += 1
+        d -= timedelta(days=1)
+    return n
+
+
+def list_checkins(uid: int, days: int = 30) -> dict:
+    """近 N 天打卡记录 + 连续天数 + 今日打卡的方子 id 列表"""
+    from datetime import date, timedelta
+    since = (date.today() - timedelta(days=days - 1)).isoformat()
+    conn = db()
+    try:
+        rows = conn.execute(
+            "SELECT recipe_id, day FROM checkin WHERE user_id=? AND day>=? ORDER BY day DESC",
+            (uid, since)).fetchall()
+    finally:
+        conn.close()
+    records = [{"recipe_id": r["recipe_id"], "day": r["day"]} for r in rows]
+    day_set = {r["day"] for r in rows}
+    today = date.today().isoformat()
+    return {
+        "records": records,
+        "streak": _streak(day_set),
+        "total": len(day_set),
+        "today": sorted({r["recipe_id"] for r in rows if r["day"] == today}),
+    }

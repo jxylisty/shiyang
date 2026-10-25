@@ -3,6 +3,7 @@
 食养有据 backend —— FastAPI 应用入口
 路由：体质测评、方子库、成分分析、AI 流式解读（SSE）、用户系统（注册/档案/收藏）、暴露量估计、网络图数据
 """
+import asyncio
 import json
 import sqlite3
 from contextlib import asynccontextmanager
@@ -84,6 +85,8 @@ def submit_quiz(q: QuizSubmit):
 def list_recipes(type: str | None = None, scene: str | None = None,
                  constitution: str | None = None, q: str | None = None,
                  page: int = 1, size: int = 20):
+    page = max(1, min(page, 1000))
+    size = max(1, min(size, 100))
     conn = get_db()
     where, params = ["status != '弃用'"], []
     if type:
@@ -103,6 +106,18 @@ def list_recipes(type: str | None = None, scene: str | None = None,
         out.append({"id": r["id"], "name": r["name"], "type": r["type"], "oneliner": r["oneliner"],
                     "scenes": scenes, "constitutions_suitable": suits, "duration": r["duration"],
                     "analysis_ready": bool(r["analysis_ready"])})
+    # 封面用首味配料名（卡片左图），一次查询按 recipe_id 取最小 id 配料
+    if out:
+        ph = ",".join("?" * len(out))
+        first_mat = {}
+        for row in conn.execute(
+                f"SELECT recipe_id, name FROM rel_recipe_material "
+                f"WHERE recipe_id IN ({ph}) AND id IN "
+                f"(SELECT MIN(id) FROM rel_recipe_material WHERE recipe_id IN ({ph}) GROUP BY recipe_id)",
+                [r["id"] for r in out] * 2).fetchall():
+            first_mat[row["recipe_id"]] = row["name"]
+        for r in out:
+            r["materials"] = [first_mat[r["id"]]] if r["id"] in first_mat else []
     total = len(out)
     start = (page - 1) * size
     conn.close()
@@ -156,6 +171,7 @@ def list_herbs(q: str | None = None):
 
 @app.get("/api/v1/compounds")
 def list_compounds(min_prob: float = 0.5, limit: int = 50):
+    min_prob = max(0.0, min(min_prob, 1.0))
     conn = get_db()
     rows = conn.execute(
         "SELECT c.id,c.name,c.prob_cctcm,c.prob_herb,c.mw,c.logp,"
@@ -253,7 +269,7 @@ def save_constitution_record(body: SaveRecordBody, authorization: str | None = H
 @app.get("/api/v1/constitution/records")
 def list_constitution_records(authorization: str | None = Header(None), limit: int = 20):
     uid = auth_uid(authorization)
-    return ok(us.list_records(uid, limit))
+    return ok(us.list_records(uid, max(1, min(limit, 100))))
 
 
 # ---------- 收藏 ----------
@@ -289,11 +305,45 @@ def list_fav(authorization: str | None = Header(None)):
     return ok(items)
 
 
-# ==================== AI 流式解读（P1.2，SSE） ====================
+# ---------- 饮用打卡（P2） ----------
+
+@app.post("/api/v1/checkins/{recipe_id}")
+def do_checkin(recipe_id: int, authorization: str | None = Header(None)):
+    uid = auth_uid(authorization)
+    return ok(us.add_checkin(uid, recipe_id))
+
+
+@app.delete("/api/v1/checkins/{recipe_id}")
+def undo_checkin(recipe_id: int, authorization: str | None = Header(None)):
+    uid = auth_uid(authorization)
+    return ok(us.remove_checkin(uid, recipe_id))
+
+
+@app.get("/api/v1/checkins")
+def list_checkins(authorization: str | None = Header(None)):
+    uid = auth_uid(authorization)
+    data = us.list_checkins(uid)
+    # 附方子名（周视图和 Me 页展示用）
+    rids = list({r["recipe_id"] for r in data["records"]})
+    if rids:
+        conn = get_db()
+        ph = ",".join("?" * len(rids))
+        names = dict(conn.execute(
+            f"SELECT id,name FROM recipe WHERE id IN ({ph})", rids).fetchall())
+        conn.close()
+        for r in data["records"]:
+            r["recipe_name"] = names.get(r["recipe_id"], f"#{r['recipe_id']}")
+    return ok(data)
+
+
+# ==================== AI 流式解读（P1.2，SSE；P2 支持预生成回放） ====================
 
 @app.get("/api/v1/recipes/{rid}/ai-report")
-async def ai_report(rid: int, key: str = Query(...), provider: str = "deepseek",
-                    model: str = "", base_url: str = ""):
+async def ai_report(rid: int, key: str | None = Query(None), provider: str = "deepseek",
+                    model: str = "", base_url: str = "",
+                    x_ai_key: str | None = Header(None, alias="X-AI-Key")):
+    # Key 优先取请求头 X-AI-Key（不进 URL，避免被代理/访问日志记录）；query 参数保留向后兼容
+    key = (x_ai_key or key or "").strip() or None
     conn = get_db()
     r = conn.execute("SELECT * FROM recipe WHERE id=?", (rid,)).fetchone()
     if not r:
@@ -314,6 +364,29 @@ async def ai_report(rid: int, key: str = Query(...), provider: str = "deepseek",
     conn.close()
 
     messages = ai.build_recipe_messages(recipe, analysis)
+
+    # 无用户 Key：回放平台预生成的解读（SSE 节奏分片，保留打字机体验）
+    if not key:
+        pregen = ai.get_pregen_report(rid)
+        if pregen is None:
+            raise HTTPException(404, "该方暂无 AI 解读；可在面板里填自己的 Key 实时生成")
+
+        async def replay():
+            # 按 2-6 字分片推送，模拟流式节奏
+            CHUNK, DELAY_MS = 4, 28
+            buf = ""
+            for ch in pregen:
+                buf += ch
+                if len(buf) >= CHUNK or ch in "\n。！？；":
+                    yield f"data: {json.dumps({'delta': buf, 'source': 'pregen'}, ensure_ascii=False)}\n\n"
+                    buf = ""
+                    await asyncio.sleep(DELAY_MS / 1000)
+            if buf:
+                yield f"data: {json.dumps({'delta': buf, 'source': 'pregen'}, ensure_ascii=False)}\n\n"
+            yield "data: [DONE]\n\n"
+
+        return StreamingResponse(replay(), media_type="text/event-stream",
+                                 headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
     async def gen():
         try:
@@ -343,6 +416,8 @@ def exposure(rid: int):
 
 @app.get("/api/v1/recipes/{rid}/network")
 def network(rid: int, max_compounds: int = 6, max_targets: int = 12):
+    max_compounds = max(1, min(max_compounds, 20))
+    max_targets = max(1, min(max_targets, 40))
     conn = get_db()
     a = conn.execute("SELECT top_compounds FROM recipe_analysis WHERE recipe_id=?", (rid,)).fetchone()
     if not a:
@@ -385,14 +460,14 @@ def network(rid: int, max_compounds: int = 6, max_targets: int = 12):
                "legend": ["方子", "活性成分", "作用靶点"]})
 
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8100)
-
-
 @app.get("/api/v1/constitution/{code}")
 def constitution_info(code: str):
     d = cs.constitution_detail(code)
     if not d:
         raise HTTPException(404, f"未知体质: {code}")
     return ok(d)
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="127.0.0.1", port=8100)

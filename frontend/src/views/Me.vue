@@ -1,22 +1,87 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { currentUser, logout, listRecords, listFavorites, isLoggedIn } from '../api'
+import { showConfirmDialog, showSuccessToast } from 'vant'
+import { currentUser, logout, listRecords, listFavorites, isLoggedIn, getHistory, clearHistory, listCheckins } from '../api'
 
 const router = useRouter()
 const user = currentUser()
 const records = ref([])
 const favorites = ref([])
 const loading = ref(true)
+const checkins = ref(null)   // {records, streak, total, today}
+
+// ---- 设置（纯本地，未登录可用） ----
+const FONT_KEYS = ['standard', 'large', 'xlarge']
+const FONT_LABELS = { standard: '标准', large: '大', xlarge: '特大' }
+const fontScale = ref(localStorage.getItem('shiyang_fontscale') || 'standard')
+const darkMode = ref(localStorage.getItem('shiyang_theme') === 'dark')
+
+function setFontScale(v) {
+  fontScale.value = v
+  localStorage.setItem('shiyang_fontscale', v)
+  document.documentElement.dataset.fontsize = v
+}
+// 暗色模式切换：支持 View Transitions 的浏览器做「从开关位置圆形扩散」，
+// 不支持的直接切换（startViewTransition 不存在时行为与原来一致）
+function toggleDark(v, ev) {
+  darkMode.value = v
+  localStorage.setItem('shiyang_theme', v ? 'dark' : 'light')
+  const apply = () => {
+    document.documentElement.classList.toggle('van-theme-dark', v)
+    document.documentElement.dataset.theme = v ? 'dark' : 'light'
+  }
+  if (document.startViewTransition && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    // 圆形扩散：以开关中心为圆心，扩散半径盖住全屏对角线
+    const btn = ev?.currentTarget
+    const x = btn ? btn.getBoundingClientRect().left + btn.offsetWidth / 2 : window.innerWidth - 60
+    const y = btn ? btn.getBoundingClientRect().top + btn.offsetHeight / 2 : 60
+    const radius = Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y))
+    const vt = document.startViewTransition(apply)
+    vt.ready.then(() => {
+      document.documentElement.animate(
+        { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${radius}px at ${x}px ${y}px)`] },
+        { duration: 450, easing: 'ease-in-out', pseudoElement: '::view-transition-new(root)' }
+      )
+    }).catch(() => {})
+  } else {
+    apply()
+  }
+}
+async function clearLocalData() {
+  await showConfirmDialog({
+    title: '清空本地数据',
+    message: '将清除本机的测评作答缓存、浏览历史与 AI 密钥，不影响账号与收藏。',
+  })
+  for (const k of ['shiyang_quiz_v1', 'shiyang_history_v1', 'shiyang_ai_key']) {
+    localStorage.removeItem(k)
+  }
+  history.value = []
+  showSuccessToast('已清空')
+}
+
+// ---- 浏览历史 ----
+const history = ref(getHistory())
+function doClearHistory() {
+  clearHistory()
+  history.value = []
+  showSuccessToast('浏览历史已清空')
+}
 
 const CODE_NAME = { pinghe: '平和质', qixu: '气虚质', yangxu: '阳虚质', yinxu: '阴虚质', tanshi: '痰湿质', shire: '湿热质', xueyu: '血瘀质', qiyu: '气郁质', tebing: '特禀质' }
 
 onMounted(async () => {
+  document.documentElement.dataset.fontsize = FONT_KEYS.includes(fontScale.value) ? fontScale.value : 'standard'
+  if (darkMode.value) {
+    document.documentElement.classList.add('van-theme-dark')
+    document.documentElement.dataset.theme = 'dark'
+  }
   if (!isLoggedIn()) { router.push('/login'); return }
   try {
-    const [r1, r2] = await Promise.all([listRecords(), listFavorites()])
+    const [r1, r2, r3] = await Promise.all([listRecords(), listFavorites(), listCheckins()])
     records.value = r1.data.data
     favorites.value = r2.data.data
+    checkins.value = r3.data.data
   } catch (e) {
     if (e?.response?.status === 401) { logout(); router.push('/login') }
   } finally { loading.value = false }
@@ -34,8 +99,30 @@ const compare = computed(() => {
   }))
 })
 
+// 本周打卡：周一到今天的格子
+const WEEK_LABELS = ['一', '二', '三', '四', '五', '六', '日']
+const weekGrid = computed(() => {
+  if (!checkins.value) return []
+  const days = new Set(checkins.value.records.map(r => r.day))
+  const out = []
+  const now = new Date()
+  const monday = new Date(now)
+  monday.setDate(now.getDate() - ((now.getDay() + 6) % 7))
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday)
+    d.setDate(monday.getDate() + i)
+    const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    out.push({ label: WEEK_LABELS[i], iso, hit: days.has(iso), future: d > now && iso !== now.toISOString().slice(0, 10) })
+  }
+  return out
+})
+const recentCheckins = computed(() => (checkins.value?.records || []).slice(0, 5))
+
 function doLogout() { logout(); router.push('/') }
 function fmtDate(s) { return (s || '').slice(0, 16) }
+function buzz(ms) {
+  try { navigator.vibrate?.(ms) } catch { /* 不支持则静默 */ }
+}
 </script>
 
 <template>
@@ -50,7 +137,9 @@ function fmtDate(s) { return (s || '').slice(0, 16) }
       <button class="btn ghost" @click="doLogout">退出</button>
     </div>
 
-    <div v-if="loading" class="empty">加载中…</div>
+    <div v-if="loading" class="card">
+      <div class="sk-row sk-anim" v-for="i in 3" :key="i"></div>
+    </div>
 
     <template v-else>
       <!-- 体质档案历史 -->
@@ -83,6 +172,29 @@ function fmtDate(s) { return (s || '').slice(0, 16) }
         </template>
       </div>
 
+      <!-- 饮用打卡 -->
+      <div class="section-title">饮用打卡</div>
+      <div class="card" v-if="checkins">
+        <div class="ck-head">
+          <span class="ck-streak">连续 <b>{{ checkins.streak }}</b> 天</span>
+          <span class="ck-total">累计 {{ checkins.total }} 天</span>
+        </div>
+        <div class="ck-week">
+          <div v-for="d in weekGrid" :key="d.iso" class="ck-cell" :class="{ hit: d.hit, future: d.future }">
+            <span class="ck-label">{{ d.label }}</span>
+            <span class="ck-dot"></span>
+          </div>
+        </div>
+        <template v-if="recentCheckins.length">
+          <p class="ck-title">最近打卡</p>
+          <div v-for="(r, i) in recentCheckins" :key="i" class="ck-row">
+            <router-link :to="`/recipes/${r.recipe_id}`" class="ck-name">{{ r.recipe_name }}</router-link>
+            <span class="ck-day">{{ r.day }}</span>
+          </div>
+        </template>
+        <p v-else class="ck-empty">还没有打卡记录，去方子详情页试试「今日打卡」</p>
+      </div>
+
       <!-- 收藏 -->
       <div class="section-title">我的收藏（{{ favorites.length }}）</div>
       <div class="card" v-if="!favorites.length">
@@ -94,6 +206,44 @@ function fmtDate(s) { return (s || '').slice(0, 16) }
           <div class="r-name">{{ f.name }} <span class="tag warm">{{ f.type }}</span></div>
           <div class="r-one">{{ f.oneliner }}</div>
         </router-link>
+      </div>
+
+      <!-- 最近浏览（本地，未登录也可用） -->
+      <div class="section-title">最近浏览</div>
+      <div class="card" v-if="!history.length">
+        <p class="empty" style="padding:12px 0">暂无浏览记录</p>
+      </div>
+      <div class="card" v-else>
+        <router-link v-for="h in history.slice(0, 5)" :key="h.id" :to="`/recipes/${h.id}`" class="recipe-row">
+          <div class="r-name">{{ h.name }} <span class="tag warm">{{ h.type }}</span></div>
+          <div class="r-one">{{ h.oneliner }}</div>
+        </router-link>
+        <button class="btn ghost block clear-btn" @click="doClearHistory">清空浏览历史</button>
+      </div>
+
+      <!-- 设置 -->
+      <div class="section-title">设置</div>
+      <div class="card">
+        <div class="set-row">
+          <span class="set-label">字号大小</span>
+          <div class="seg" :style="{ '--seg-i': FONT_KEYS.indexOf(fontScale) }">
+            <span class="seg-slider" aria-hidden="true"></span>
+            <button v-for="k in FONT_KEYS" :key="k" class="seg-item"
+                    :class="{ on: fontScale === k }" @click="setFontScale(k)">{{ FONT_LABELS[k] }}</button>
+          </div>
+        </div>
+        <div class="set-row">
+          <span class="set-label">暗色模式</span>
+          <button class="switch-btn" :class="{ on: darkMode }" role="switch"
+                  :aria-checked="darkMode" @click="toggleDark(!darkMode, $event)">
+            <span class="knob"></span>
+          </button>
+        </div>
+        <div class="set-row">
+          <span class="set-label">本地数据</span>
+          <button class="btn ghost danger" @click="clearLocalData">清空作答/历史/AI密钥</button>
+        </div>
+        <p class="set-note">字号与主题仅保存在本机；收藏与体质档案跟随账号。</p>
       </div>
     </template>
   </div>
@@ -122,7 +272,59 @@ function fmtDate(s) { return (s || '').slice(0, 16) }
 .c-delta.down { color: var(--green-700); }
 .cmp-note { font-size: 11px; color: var(--ink-400); margin-top: 6px; }
 .recipe-row { display: block; padding: 10px 0; border-bottom: 1px solid var(--green-50); text-decoration: none; }
-.recipe-row:last-child { border-bottom: none; }
+.recipe-row:last-of-type { border-bottom: none; }
 .r-name { font-weight: 600; font-size: 15px; color: var(--ink-900); }
 .r-one { font-size: 12px; color: var(--ink-400); margin-top: 2px; }
+
+.clear-btn { margin-top: 10px; font-size: 13px; padding: 8px 0; }
+
+/* 打卡 */
+.ck-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; }
+.ck-streak { font-size: 13px; color: var(--ink-600); }
+.ck-streak b { font-size: 20px; color: var(--green-700); font-variant-numeric: tabular-nums; }
+.ck-total { font-size: 12px; color: var(--ink-400); }
+.ck-week { display: flex; justify-content: space-between; gap: 4px; margin-bottom: 10px; }
+.ck-cell { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.ck-label { font-size: 11px; color: var(--ink-400); }
+.ck-dot { width: 22px; height: 22px; border-radius: 50%; background: var(--green-50); border: 1px solid var(--green-100); position: relative; transition: background var(--dur-fast) ease, border-color var(--dur-fast) ease; }
+.ck-cell.hit .ck-dot { background: var(--green-600); border-color: var(--green-600); animation: pop .45s var(--ease-spring); }
+.ck-cell.hit .ck-dot::after { content: ""; position: absolute; left: 7px; top: 3px; width: 5px; height: 9px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+.ck-cell.future { opacity: .35; }
+.ck-title { font-size: 12px; color: var(--green-700); font-weight: 700; margin: 8px 0 2px; }
+.ck-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed var(--green-50); font-size: 13px; }
+.ck-row:last-of-type { border-bottom: none; }
+.ck-name { color: var(--ink-900); text-decoration: none; font-weight: 600; }
+.ck-day { font-size: 11px; color: var(--ink-400); }
+.ck-empty { font-size: 12px; color: var(--ink-400); padding: 6px 0; }
+
+/* 设置卡片 */
+.set-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--green-50); }
+.set-row:last-of-type { border-bottom: none; }
+.set-label { font-size: 14px; color: var(--ink-900); }
+/* 字号分段控件：滑块随 --seg-i 平移（三档等宽） */
+.seg { position: relative; display: grid; grid-template-columns: repeat(3, auto); background: var(--green-50); border-radius: 10px; padding: 3px; }
+.seg-slider {
+  position: absolute; top: 3px; bottom: 3px; left: 3px; border-radius: 8px;
+  background: var(--green-700);
+  width: calc((100% - 6px) / 3);
+  translate: calc(var(--seg-i, 0) * 100%) 0;
+  transition: translate var(--dur-med) var(--ease-spring);
+}
+.seg-item { position: relative; z-index: 1; border: none; background: transparent; padding: 6px 14px; font-size: 13px; color: var(--ink-600); border-radius: 8px; cursor: pointer; transition: color var(--dur-fast) ease; }
+.seg-item.on { color: #fff; font-weight: 600; }
+.switch-btn { width: 46px; height: 26px; border-radius: 13px; border: none; background: #d7e0db; position: relative; cursor: pointer; transition: background .2s; }
+.switch-btn.on { background: var(--green-600); }
+.switch-btn .knob { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: left .2s var(--ease-spring); }
+.switch-btn.on .knob { left: 23px; }
+.btn.danger { color: var(--red-500); background: var(--red-50); font-size: 13px; padding: 7px 12px; }
+.set-note { font-size: 11px; color: var(--ink-400); margin-top: 10px; }
+
+/* 暗色圆形扩散：只在新画面上做 clip-path 揭示，旧画面静止垫底 */
+::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+
+/* 骨架屏 */
+.sk-row { height: 16px; border-radius: 8px; margin: 14px 0; }
+.sk-row:first-child { margin-top: 0; }
+.sk-row:last-child { margin-bottom: 0; }
+.sk-anim { background: linear-gradient(90deg, var(--green-50) 25%, #e6f1ea 50%, var(--green-50) 75%); background-size: 200% 100%; animation: shimmer 1.3s infinite; }
 </style>

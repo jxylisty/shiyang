@@ -1,9 +1,10 @@
 <script setup>
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { login, register, saveSession } from '../api'
 
 const router = useRouter()
+const route = useRoute()
 const mode = ref('login')            // login | register
 const username = ref('')
 const password = ref('')
@@ -17,7 +18,9 @@ async function submit() {
     const fn = mode.value === 'login' ? login : register
     const { data } = await fn(username.value.trim(), password.value, nickname.value.trim() || undefined)
     saveSession(data.data)
-    router.push('/me')
+    // 带来源页跳回（如从方子详情页点收藏），无则去「我的」
+    const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : ''
+    router.push(redirect.startsWith('/') ? redirect : '/me')
   } catch (e) {
     error.value = e?.response?.data?.detail || '操作失败，请重试'
   } finally { busy.value = false }

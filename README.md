@@ -18,8 +18,11 @@ shiyang/
 ├── docs/
 │   ├── overlap_report.md            # 重合度盘点报告（2026-10 版）
 │   ├── 方子整理模板.xlsx            # 方子数据录入模板（方子表+配料表+填写说明）
-│   └── 开源资源清单.md              # 开源数据/工具清单（给老师看）
-└── (待建) backend/  frontend/
+│   ├── 开源资源清单.md              # 开源数据/工具清单（给老师看）
+│   ├── API接口设计文档.md           # 后端 24 接口全量设计文档（v0.2.0）
+│   └── 数据库设计文档.md            # shiyang.db 15 表 + user.db 4 表设计文档
+├── backend/                         # FastAPI 后端（uvicorn app.main:app --port 8100）
+└── frontend/                        # Vue3 移动端优先前端（vite）
 ```
 
 ## 快速开始

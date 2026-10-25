@@ -2,12 +2,17 @@
 """
 AI 流式解读服务（移植自大创系统 ai_service，OpenAI/DeepSeek 兼容）
 Key 由前端请求头传入，不落库。含食养报告专用 prompt 组装。
+P2 新增：平台级 Key 预生成解读（pregen），无用户 Key 也能流式回放。
 """
 import json
 import os
+import sqlite3
+from pathlib import Path
 from typing import AsyncIterator
 
 import httpx
+
+DB_PATH = Path(__file__).resolve().parents[3] / "data" / "shiyang.db"
 
 PROVIDER_DEFAULTS = {
     "openai": {"base_url": "https://api.openai.com/v1", "model": "gpt-4o"},
@@ -95,3 +100,56 @@ def build_recipe_messages(recipe: dict, analysis: dict | None) -> list[dict]:
         {"role": "system", "content": SYSTEM_PROMPT},
         {"role": "user", "content": "请解读这个方子：\n" + json.dumps(info, ensure_ascii=False, indent=1)},
     ]
+
+
+# ---------- 预生成解读（P2：AI 免门槛） ----------
+
+def _pregen_db():
+    """预生成表建在 shiyang.db（方子库一侧），与 recipe_analysis 同库方便同事务"""
+    conn = sqlite3.connect(DB_PATH)
+    conn.execute("""CREATE TABLE IF NOT EXISTS recipe_pregen_ai (
+        recipe_id INTEGER PRIMARY KEY REFERENCES recipe(id),
+        content TEXT NOT NULL,
+        model TEXT,
+        generated_at TEXT DEFAULT (datetime('now'))
+    )""")
+    return conn
+
+
+def get_pregen_report(recipe_id: int) -> str | None:
+    conn = _pregen_db()
+    try:
+        row = conn.execute("SELECT content FROM recipe_pregen_ai WHERE recipe_id=?", (recipe_id,)).fetchone()
+        return row[0] if row else None
+    finally:
+        conn.close()
+
+
+def save_pregen_report(recipe_id: int, content: str, model: str = ""):
+    conn = _pregen_db()
+    try:
+        conn.execute(
+            "INSERT OR REPLACE INTO recipe_pregen_ai(recipe_id,content,model) VALUES (?,?,?)",
+            (recipe_id, content, model))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def platform_key() -> str | None:
+    """平台级 Key：环境变量 SHIYANG_AI_KEY（生成预解读用，不经过前端）"""
+    key = os.environ.get("SHIYANG_AI_KEY") or ""
+    return key.strip() or None
+
+
+def pregen_missing(limit: int | None = None) -> list[int]:
+    """找出 analysis_ready=1 但还没有预生成解读的方子 id（一次性脚本用）"""
+    conn = _pregen_db()
+    try:
+        sql = ("SELECT r.id FROM recipe r LEFT JOIN recipe_pregen_ai p ON p.recipe_id=r.id "
+               "WHERE r.analysis_ready=1 AND p.recipe_id IS NULL ORDER BY r.id")
+        if limit:
+            sql += f" LIMIT {int(limit)}"
+        return [r[0] for r in conn.execute(sql).fetchall()]
+    finally:
+        conn.close()
