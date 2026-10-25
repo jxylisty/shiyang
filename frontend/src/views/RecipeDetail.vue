@@ -8,6 +8,7 @@ import AIReport from '../components/AIReport.vue'
 import NetworkGraph from '../components/NetworkGraph.vue'
 import SharePoster from '../components/SharePoster.vue'
 import SafetyBanner from '../components/SafetyBanner.vue'
+import EvidenceCard from '../components/EvidenceCard.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -207,6 +208,9 @@ async function toggleCheckin() {
             <p>{{ recipe.source }}</p>
             <a v-if="recipe.reference_url" :href="recipe.reference_url" target="_blank" rel="noopener">查看原始出处 <ExternalLink :size="13" :stroke-width="2" /></a>
           </div>
+
+          <!-- 证据链与溯源（T1-3） -->
+          <EvidenceCard :recipe-id="recipe.id" />
         </div>
 
         <div class="col-side">

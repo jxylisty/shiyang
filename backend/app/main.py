@@ -23,6 +23,7 @@ from services import exposure_service as es
 from services import compare_service as cmp_svc
 from services import pantry_service as pantry
 from services import safety_service as safety
+from services import evidence_service as evidence
 
 DB_PATH = Path(__file__).resolve().parent.parent.parent / "data" / "shiyang.db"
 DISCLAIMER = "本平台内容为健康参考信息，不构成医疗建议，不用于诊断或治疗。"
@@ -183,6 +184,21 @@ def safety_check_batch(body: SafetyBatchBody):
     if body.profile not in safety.PROFILES:
         raise HTTPException(404, "人群档案未知")
     return ok(safety.filter_recipes(body.profile, body.recipe_ids[:100]))
+
+
+# ==================== 证据分级与溯源（T1-3） ====================
+
+@app.get("/api/v1/evidence/levels")
+def evidence_levels():
+    return ok(evidence.levels())
+
+
+@app.get("/api/v1/evidence/recipe/{rid}")
+def evidence_recipe(rid: int):
+    result = evidence.recipe_evidence(rid)
+    if result is None:
+        raise HTTPException(404, "方子不存在")
+    return ok(result)
 
 
 @app.get("/api/v1/recipes/{rid}")

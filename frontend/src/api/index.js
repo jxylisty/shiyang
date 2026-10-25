@@ -37,6 +37,10 @@ export const getSafetyProfiles = () => api.get('/safety/profiles')
 export const safetyCheck = (recipeId, profile) => api.get(`/safety/check/${recipeId}`, { params: { profile } })
 export const safetyCheckBatch = (recipeIds, profile) => api.post('/safety/check-batch', { recipe_ids: recipeIds, profile })
 
+// ---- 证据分级与溯源 ----
+export const getEvidenceLevels = () => api.get('/evidence/levels')
+export const getEvidence = (recipeId) => api.get(`/evidence/recipe/${recipeId}`)
+
 // ---- AI（SSE 用 fetch；key 可为空 → 后端回放预生成解读） ----
 export function streamAIReport(recipeId, key, onDelta, onDone, onError, provider = 'deepseek') {
   const kq = key ? `key=${encodeURIComponent(key)}&` : ''
