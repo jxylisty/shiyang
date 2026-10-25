@@ -1,8 +1,8 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { BadgeCheck, FlaskConical } from '@lucide/vue'
-import { listRecipes, matImg } from '../api'
+import { BadgeCheck, FlaskConical, ShieldAlert } from '@lucide/vue'
+import { listRecipes, matImg, getSafetyProfiles, safetyCheckBatch } from '../api'
 
 const route = useRoute()
 const items = ref([])
@@ -12,6 +12,25 @@ const loadError = ref(false)
 const type = ref('')
 const scene = ref(route.query.scene || '')
 const kw = ref(route.query.q || '')
+
+// ---- 慢病安全滤镜（T1-5）：人群模式 ----
+const profiles = ref([])
+const profile = ref(localStorage.getItem('shiyang_safety_profile') || '')
+const safetyMap = ref({})   // {rid: {verdict, blocks, warns, profile_name}}
+
+function pickProfile(code) {
+  profile.value = profile.value === code ? '' : code
+  localStorage.setItem('shiyang_safety_profile', profile.value)
+  runSafety()
+}
+
+async function runSafety() {
+  if (!profile.value || !items.value.length) { safetyMap.value = {}; return }
+  try {
+    const { data } = await safetyCheckBatch(items.value.map(r => r.id), profile.value)
+    safetyMap.value = data.data.results
+  } catch { safetyMap.value = {} }
+}
 
 const SCENES = ['护嗓润喉', '熬夜护眼', '换季调理', '助眠', '消化', '控糖轻养', '控油祛痘', '久坐通气', '情绪舒压', '经期温养']
 
@@ -27,6 +46,7 @@ async function load() {
     const d = (await listRecipes(params)).data.data
     items.value = d.items
     total.value = d.total
+    runSafety()
   } catch {
     loadError.value = true
     items.value = []
@@ -40,6 +60,8 @@ function onSearch() {
 
 onMounted(load)
 watch(() => route.query.scene, (s) => { scene.value = s || ''; load() })
+// 人群档案清单加载一次
+getSafetyProfiles().then(({ data }) => { profiles.value = data.data.items }).catch(() => {})
 function pickScene(s) { scene.value = scene.value === s ? '' : s; load() }
 function pickType(t) { type.value = type.value === t ? '' : t; load() }
 
@@ -72,6 +94,13 @@ function onCoverErr(r) {
       <router-link to="/recipes/compare" class="lab-link"><FlaskConical :size="13" :stroke-width="2.2" /> 对比实验室</router-link>
     </p>
 
+    <!-- 人群安全滤镜 -->
+    <div class="f-row safety-row" v-if="profiles.length">
+      <span class="safety-label"><ShieldAlert :size="13" :stroke-width="2.2" /> 我属于</span>
+      <button v-for="p in profiles" :key="p.code" class="tag safety-tag"
+              :class="{ active: profile === p.code }" @click="pickProfile(p.code)">{{ p.name }}</button>
+    </div>
+
     <!-- 骨架屏 -->
     <div v-if="loading" class="recipe-list">
       <div v-for="i in 6" :key="i" class="card recipe-card sk-card">
@@ -88,7 +117,8 @@ function onCoverErr(r) {
 
     <div v-else class="recipe-list">
       <router-link v-for="(r, i) in items" :key="r.id" :to="`/recipes/${r.id}`"
-                   class="card recipe-card with-cover pressable" :style="{ '--i': i, '--d': `${Math.min(i, 12) * 40}ms` }">
+                   class="card recipe-card with-cover pressable" :style="{ '--i': i, '--d': `${Math.min(i, 12) * 40}ms` }"
+                   :class="{ 'safety-block': safetyMap[r.id]?.verdict === 'block' }">
         <div class="rc-cover" :class="{ 'rc-cover-fb': r.type === '药膳' }">
           <img v-if="r._cover !== ''" :src="r._cover || coverOf(r)" alt="" loading="lazy" @error="onCoverErr(r)" />
           <span v-else class="rc-cover-fallback">{{ (r.materials?.[0] || r.name)[0] }}</span>
@@ -99,6 +129,12 @@ function onCoverErr(r) {
             <span class="rc-name">{{ r.name }}</span>
           </div>
           <p class="rc-one">{{ r.oneliner }}</p>
+          <div v-if="safetyMap[r.id]?.verdict === 'block'" class="rc-safety block">
+            <ShieldAlert :size="12" /> {{ safetyMap[r.id].blocks[0].reason }}<span v-if="safetyMap[r.id].blocks.length > 1"> 等</span>
+          </div>
+          <div v-else-if="safetyMap[r.id]?.verdict === 'warn'" class="rc-safety warn">
+            <ShieldAlert :size="12" /> {{ safetyMap[r.id].warns[0].reason }}<span v-if="safetyMap[r.id].warns.length > 1"> 等</span>
+          </div>
           <div class="rc-bottom">
             <span v-for="s in r.scenes.slice(0, 2)" :key="s" class="tag">{{ s }}</span>
             <span v-if="r.duration" class="rc-dur">{{ r.duration }}</span>
@@ -120,6 +156,14 @@ function onCoverErr(r) {
 .f-row .tag.active { background: var(--green-700); color: #fff; border-color: var(--green-700); }
 .count { font-size: 12px; color: var(--ink-400); margin-bottom: 8px; }
 .lab-link { float: right; font-size: 12px; color: var(--green-700); text-decoration: none; display: inline-flex; align-items: center; gap: 3px; }
+.safety-row { align-items: center; margin-bottom: 10px; padding: 8px 10px; background: var(--amber-50); border-radius: 10px; }
+.safety-label { font-size: 12px; color: var(--amber-600); display: inline-flex; align-items: center; gap: 3px; flex-shrink: 0; }
+.safety-tag { background: #fff; }
+.safety-tag.active { background: var(--amber-600); color: #fff; border-color: var(--amber-600); }
+.recipe-card.safety-block { opacity: .55; }
+.rc-safety { font-size: 11px; margin: 0 0 6px; padding: 4px 8px; border-radius: 8px; display: flex; align-items: center; gap: 4px; line-height: 1.4; }
+.rc-safety.block { background: var(--red-50); color: var(--red-500); }
+.rc-safety.warn { background: var(--amber-50); color: var(--amber-600); }
 .recipe-card { display: block; text-decoration: none; color: inherit; }
 
 /* 左图右文卡片 */

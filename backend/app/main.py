@@ -22,6 +22,7 @@ from services import ai_service as ai
 from services import exposure_service as es
 from services import compare_service as cmp_svc
 from services import pantry_service as pantry
+from services import safety_service as safety
 
 DB_PATH = Path(__file__).resolve().parent.parent.parent / "data" / "shiyang.db"
 DISCLAIMER = "本平台内容为健康参考信息，不构成医疗建议，不用于诊断或治疗。"
@@ -154,6 +155,34 @@ def pantry_materials():
         "SELECT name, COUNT(*) AS cnt FROM rel_recipe_material GROUP BY name ORDER BY cnt DESC").fetchall()
     conn.close()
     return ok({"total": len(rows), "items": [{"name": r["name"], "count": r["cnt"]} for r in rows]})
+
+
+# ==================== 慢病安全滤镜（T1-5） ====================
+
+@app.get("/api/v1/safety/profiles")
+def safety_profiles():
+    return ok({"items": safety._profile_summaries(),
+               "disclaimer": "人群禁忌库基于药典与公开资料整理，仅供筛选参考，不构成医疗建议；服用药物或特殊健康状况请遵医嘱。"})
+
+
+@app.get("/api/v1/safety/check/{recipe_id}")
+def safety_check(recipe_id: int, profile: str):
+    result = safety.check_recipe(recipe_id, profile)
+    if result is None:
+        raise HTTPException(404, "方子不存在或人群档案未知")
+    return ok(result)
+
+
+class SafetyBatchBody(BaseModel):
+    recipe_ids: list[int]
+    profile: str
+
+
+@app.post("/api/v1/safety/check-batch")
+def safety_check_batch(body: SafetyBatchBody):
+    if body.profile not in safety.PROFILES:
+        raise HTTPException(404, "人群档案未知")
+    return ok(safety.filter_recipes(body.profile, body.recipe_ids[:100]))
 
 
 @app.get("/api/v1/recipes/{rid}")

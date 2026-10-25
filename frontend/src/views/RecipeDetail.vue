@@ -7,6 +7,7 @@ import { getRecipe, getExposure, addFavorite, removeFavorite, listFavorites, isL
 import AIReport from '../components/AIReport.vue'
 import NetworkGraph from '../components/NetworkGraph.vue'
 import SharePoster from '../components/SharePoster.vue'
+import SafetyBanner from '../components/SafetyBanner.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -139,6 +140,8 @@ async function toggleCheckin() {
     <template v-else>
       <div class="detail-grid">
         <div class="col-main">
+          <!-- 人群安全提示（T1-5，独立组件，无人群模式时不渲染） -->
+          <SafetyBanner :recipe-id="recipe.id" />
           <!-- 头部 -->
           <div class="card head">
             <div class="h-top">

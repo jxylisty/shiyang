@@ -32,6 +32,11 @@ export const compareRecipes = (a, b) => api.get('/recipes/compare', { params: { 
 export const getPantryMaterials = () => api.get('/pantry/materials')
 export const pantryMatch = (owned, constitution) => api.post('/pantry/match', { owned, constitution })
 
+// ---- 慢病安全滤镜 ----
+export const getSafetyProfiles = () => api.get('/safety/profiles')
+export const safetyCheck = (recipeId, profile) => api.get(`/safety/check/${recipeId}`, { params: { profile } })
+export const safetyCheckBatch = (recipeIds, profile) => api.post('/safety/check-batch', { recipe_ids: recipeIds, profile })
+
 // ---- AI（SSE 用 fetch；key 可为空 → 后端回放预生成解读） ----
 export function streamAIReport(recipeId, key, onDelta, onDone, onError, provider = 'deepseek') {
   const kq = key ? `key=${encodeURIComponent(key)}&` : ''
