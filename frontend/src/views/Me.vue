@@ -245,6 +245,15 @@ function buzz(ms) {
         </div>
         <p class="set-note">字号与主题仅保存在本机；收藏与体质档案跟随账号。</p>
       </div>
+
+      <!-- 开放数据 API（T1-6） -->
+      <div class="section-title">开发者</div>
+      <div class="card">
+        <router-link to="/open-api" class="recipe-row" style="display: flex; align-items: center; gap: 8px;">
+          <b>开放数据 API</b>
+          <span style="font-size: 12px; color: var(--ink-400);">目录/药材/成分/靶点，免 Key 只读</span>
+        </router-link>
+      </div>
     </template>
   </div>
 </template>

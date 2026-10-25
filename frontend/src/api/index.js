@@ -45,6 +45,9 @@ export const getEvidence = (recipeId) => api.get(`/evidence/recipe/${recipeId}`)
 export const getExplainCompound = (name) => api.get('/explain/compound', { params: { name } })
 export const getExplainRecipe = (recipeId) => api.get(`/explain/recipe/${recipeId}`)
 
+// ---- 开放数据 API ----
+export const getOpenIndex = () => api.get('/open')
+
 // ---- AI（SSE 用 fetch；key 可为空 → 后端回放预生成解读） ----
 export function streamAIReport(recipeId, key, onDelta, onDone, onError, provider = 'deepseek') {
   const kq = key ? `key=${encodeURIComponent(key)}&` : ''

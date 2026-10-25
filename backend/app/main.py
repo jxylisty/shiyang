@@ -25,6 +25,7 @@ from services import pantry_service as pantry
 from services import safety_service as safety
 from services import evidence_service as evidence
 from services import explain_service as explain
+from services import open_api
 
 DB_PATH = Path(__file__).resolve().parent.parent.parent / "data" / "shiyang.db"
 DISCLAIMER = "本平台内容为健康参考信息，不构成医疗建议，不用于诊断或治疗。"
@@ -48,6 +49,8 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="食养有据 API", version=VERSION, lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+# 开放数据子路由（T1-6）：/api/v1/open/*
+app.include_router(open_api.router)
 
 
 def ok(data=None, message="success"):
