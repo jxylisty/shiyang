@@ -51,6 +51,9 @@ export const getOpenIndex = () => api.get('/open')
 // ---- 周期报告 ----
 export const getCycleReport = (days = 21) => authApi.get('/report/cycle', { params: { days } })
 
+// ---- 节气推荐 ----
+export const getTermCurrent = (count = 4) => api.get('/term/current', { params: { count } })
+
 // ---- AI（SSE 用 fetch；key 可为空 → 后端回放预生成解读） ----
 export function streamAIReport(recipeId, key, onDelta, onDone, onError, provider = 'deepseek') {
   const kq = key ? `key=${encodeURIComponent(key)}&` : ''

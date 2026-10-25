@@ -3,6 +3,7 @@ import { ref, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { BadgeCheck, FlaskConical, ShieldAlert } from '@lucide/vue'
 import { listRecipes, matImg, getSafetyProfiles, safetyCheckBatch } from '../api'
+import TermCard from '../components/TermCard.vue'
 
 const route = useRoute()
 const items = ref([])
@@ -77,6 +78,9 @@ function onCoverErr(r) {
 
 <template>
   <div class="page">
+    <!-- 节气推荐（T2-9） -->
+    <TermCard style="margin-bottom: 12px;" />
+
     <van-search v-model="kw" placeholder="搜方子名，如：金银花 / 助眠" @update:model-value="onSearch" class="search-box" />
 
     <div class="filters">
