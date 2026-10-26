@@ -360,6 +360,28 @@ sp2 = {t.get("target_species") for t in tn2}
 check("open/compounds/柚皮素/targets species=all 含非人类", s == 200 and len(sp2) > 1,
       f"code={s} n={len(tn2)} species_n={len(sp2)}")
 
+# ---------- 清理测试数据（AGENTS.md §2.7：测完即删） ----------
+# 冒烟全程只用 uname 一个测试账号；直连本地 user.db 按规范顺序删除。
+# SMOKE_BASE 指向远端时无本地库可删，跳过并在汇总前提示。
+_smoke_cleaned = False
+if TOKEN and 'uname' in dir():
+    try:
+        from pathlib import Path as _Path
+        import sqlite3 as _sq
+        _udb = _Path(__file__).resolve().parents[1] / "data" / "user.db"
+        if _udb.exists():
+            _c = _sq.connect(_udb)
+            _c.execute("PRAGMA foreign_keys=OFF")
+            for _t in ("checkin", "favorite", "constitution_record", "family_member"):
+                _c.execute(f"DELETE FROM {_t} WHERE user_id=(SELECT id FROM user WHERE username=?)", (uname,))
+            _c.execute("DELETE FROM user WHERE username=?", (uname,))
+            _c.commit(); _c.close()
+            _smoke_cleaned = True
+    except Exception as e:
+        print(f"   冒烟清理失败（不影响冒烟结论）: {e}")
+if TOKEN and not _smoke_cleaned:
+    print(f"   注意：未清理冒烟测试账号 {uname}（远端库或删除失败），请手动清理")
+
 # ---------- 汇总 ----------
 fails = [r for r in results if not r[1]]
 print(f"\n===== 冒烟汇总: {len(results) - len(fails)}/{len(results)} 通过 =====")
