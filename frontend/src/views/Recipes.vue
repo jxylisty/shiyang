@@ -99,8 +99,8 @@ function onCoverErr(r) {
       <div class="filters">
         <div class="f-row f-type">
           <button class="seg-btn" :class="{ active: !type }" @click="pickType('')">全部</button>
-          <button class="seg-btn" :class="{ active: type === '茶饮' }" @click="pickType('茶饮')">🍵 茶饮</button>
-          <button class="seg-btn" :class="{ active: type === '药膳' }" @click="pickType('药膳')">🍲 药膳</button>
+          <button class="seg-btn" :class="{ active: type === '茶饮' }" @click="pickType('茶饮')"><AppIcon name="tea" :size="14" /> 茶饮</button>
+          <button class="seg-btn" :class="{ active: type === '药膳' }" @click="pickType('药膳')"><AppIcon name="dish" :size="14" /> 药膳</button>
         </div>
         <div class="f-row f-scenes">
           <button v-for="s in SCENES" :key="s" class="tag" :class="{ active: scene === s }" @click="pickScene(s)">{{ s }}</button>
@@ -182,7 +182,8 @@ function onCoverErr(r) {
   border-radius: 20px; padding: 2px; margin-bottom: 10px;
 }
 .seg-btn {
-  border: none; background: transparent; padding: 5px 14px; font-size: 13px;
+  display: inline-flex; align-items: center; gap: 4px;
+  border: none; background: transparent; padding: 5px 14px; font-size: 13px; font-weight: 600;
   border-radius: 16px; color: var(--ink-600); cursor: pointer;
   transition: all var(--dur-fast) ease;
 }

@@ -1,5 +1,6 @@
 <script setup>
 // 治愈系空状态：茶杯 + 上升蒸汽 + 轻摆叶片，替代 van-empty 默认图（不引 lottie）
+import AppIcon from './AppIcon.vue'
 defineProps({
   text: { type: String, default: '这里空空如也' },
 })
@@ -8,8 +9,8 @@ defineProps({
 <template>
   <div class="empty-motion">
     <div class="cup-wrap" aria-hidden="true">
-      <span class="leaf l1">🌿</span>
-      <span class="leaf l2">🍃</span>
+      <span class="leaf l1"><AppIcon name="herb" :size="15" /></span>
+      <span class="leaf l2"><AppIcon name="leaf" :size="15" /></span>
       <div class="cup">
         <span class="steam s1"></span>
         <span class="steam s2"></span>
@@ -47,7 +48,7 @@ defineProps({
   width: 84px; height: 8px; margin: 2px auto 0;
   background: var(--green-100); border-radius: 6px;
 }
-.leaf { position: absolute; font-size: 16px; opacity: .8; display: inline-block; animation: sway 3.4s ease-in-out infinite; transform-origin: bottom center; }
+.leaf { position: absolute; color: var(--green-600); opacity: .8; display: inline-flex; animation: sway 3.4s ease-in-out infinite; transform-origin: bottom center; }
 .l1 { top: -14px; left: -22px; }
 .l2 { top: 8px; right: -24px; animation-delay: 1.2s; }
 .e-text { margin-top: 14px; color: var(--ink-400); font-size: 13px; }
