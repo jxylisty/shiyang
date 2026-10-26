@@ -52,3 +52,16 @@
 | `43d92d6` | 方子库列表露出已收藏角标（朱砂星标，封面右上角） | `Recipes.vue` | build ✅ |
 
 **UX 线回归基线（2026-10-27 实测）**：端点 48 路径 / 52 端点（`app.openapi()`）；单测 **29 passed**；vite build 通过。
+
+## 质量审计线（2026-10-27：全仓审查缺口修补）
+
+| 内容 | 关键文件 | 验证 |
+|---|---|---|
+| 清理 user.db 残留：12 个历史测试账号（tester01/uitest01/smoke_*/t_* 等）及其打卡/收藏/档案，按 §2.7 顺序删除，清零 | `data/user.db`（不入库） | 清理后四表全 0，且确认无真实用户数据混入 |
+| 测试防复发：pytest 新增 autouse 兜底 fixture（用例后清理本用例新建的测试前缀账号，断言失败也清）；冒烟脚本收尾自动删自己的测试账号 | `backend/tests/conftest.py`（新） `scripts/smoke_test.py` | 全量套件跑完 user.db 四表全 0 ✅ |
+| 零覆盖服务补测：安全滤镜/我的茶罐/对比实验室/周期报告/节气 + user_service 密码哈希/令牌/校验规则单元级用例 | `tests/test_services_gap.py`（新） `tests/test_user_service.py`（新） | 单测 29 → **61 passed** ✅ |
+| 修复用户名校验漏洞：`str.isalnum()` 会放行中文（提示语说「字母数字下划线」实际却注册成功），收紧为 ASCII `[A-Za-z0-9_]` | `user_service.py register()` | 参数化用例覆盖（ab/超长/中文/空格/连字符）✅ |
+| 新增部署文档：环境变量（SHIYANG_JWT_SECRET 生产必设）、Nginx SSE 反代 `proxy_buffering off`、CORS 收紧建议、数据库重建/备份、上线检查清单 | `docs/DEPLOY.md`（新） | 文中路径与环境变量名逐一对照代码核实 |
+| 移除仓库根目录空文件 `wdj.html`（0 字节快照残留）；`logs_*.txt` 已被 .gitignore 覆盖无需处理 | `wdj.html`（删除） | `git rm` 生效 ✅ |
+
+**审计线回归基线（2026-10-27 实测）**：端点 48 路径 / 52 端点（`app.openapi()`）；单测 **61 passed**；测试后 user.db 零残留。

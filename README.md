@@ -35,6 +35,7 @@ shiyang/
 │   ├── 开源资源清单.md              # 开源数据/工具清单（2026-10 链接核查版）
 │   ├── API接口设计文档.md           # v0.2.0 基线 24 端点设计文档（规模现状见下行）
 │   ├── API扩展记录.md               # openapi 实测端点全清单与来源标注（2026-10-26：46 路径/50 端点）
+│   ├── DEPLOY.md                    # 部署指南：环境变量/Nginx SSE 反代/CORS/数据库重建/上线清单
 │   └── 数据库设计文档.md            # shiyang.db 16 表 + user.db 5 表设计文档（实测 2026-10-26）
 ├── backend/                         # FastAPI 后端（uvicorn app.main:app --port 8100）
 └── frontend/                        # Vue3 移动端优先前端（vite）
