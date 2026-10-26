@@ -1,8 +1,8 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import AppIcon from '../components/AppIcon.vue'
 import RecipeRow from '../components/RecipeRow.vue'
-import { getStats, listRecipes, matImg } from '../api'
+import { getStats, listRecipes, getTermCurrent, matImg } from '../api'
 import { useCountUp } from '../utils/motion'
 import TextReveal from '../components/TextReveal.vue'
 import CloudDivider from '../components/CloudDivider.vue'
@@ -16,16 +16,17 @@ const coverTry = ref(0)
 const cover = ref('')
 
 // 每个场景一个低饱和色调（bg 浅底 / fg 图标色），暗色模式统一回绿（见 .scene-icon 覆写）
-const scenes = [
-  { name: '护嗓润喉', desc: '咽干用嗓多', icon: 'throat', count: 13, bg: '#e5f3f0', fg: '#2d847b' },
-  { name: '熬夜护眼', desc: '屏幕眼干涩', icon: 'eye', count: 10, bg: '#eaf0f8', fg: '#4f729f' },
-  { name: '助眠', desc: '多梦入睡难', icon: 'moon', count: 13, bg: '#edeaf5', fg: '#6e629e' },
-  { name: '消化', desc: '餐后腹胀腻', icon: 'fruit', count: 11, bg: '#f8f0e0', fg: '#a7722d' },
-  { name: '换季调理', desc: '季节交替期', icon: 'season', count: 25, bg: '#edf4e5', fg: '#548744' },
-  { name: '经期温养', desc: '温和补养', icon: 'flower', count: 9, bg: '#f8ebf0', fg: '#9e5268' },
-]
+// count 为占位初值，onMounted 拉到全量方子后实算，避免硬编码随数据漂移
+const scenes = reactive([
+  { name: '护嗓润喉', desc: '咽干用嗓多', icon: 'throat', count: 0, bg: '#e5f3f0', fg: '#2d847b' },
+  { name: '熬夜护眼', desc: '屏幕眼干涩', icon: 'eye', count: 0, bg: '#eaf0f8', fg: '#4f729f' },
+  { name: '助眠', desc: '多梦入睡难', icon: 'moon', count: 0, bg: '#edeaf5', fg: '#6e629e' },
+  { name: '消化', desc: '餐后腹胀腻', icon: 'fruit', count: 0, bg: '#f8f0e0', fg: '#a7722d' },
+  { name: '换季调理', desc: '季节交替期', icon: 'season', count: 0, bg: '#edf4e5', fg: '#548744' },
+  { name: '经期温养', desc: '温和补养', icon: 'flower', count: 0, bg: '#f8ebf0', fg: '#9e5268' },
+])
 
-// 时令场景横滑卡（配图 → 场景第一个方子的首味配料图，无则渐变兜底）
+// 时令专区回退卡：节气服务请求失败时兜底（配图 → 场景第一个方子的首味配料图，无则渐变兜底）
 const SEASON_SCENES = [
   { name: '换季调理', img: '百合', count: 25, tag: '润燥清心' },
   { name: '护嗓润喉', img: '金银花', count: 13, tag: '生津利咽' },
@@ -34,6 +35,16 @@ const SEASON_SCENES = [
   { name: '熬夜护眼', img: '枸杞子', count: 10, tag: '清肝明目' },
   { name: '经期温养', img: '大枣', count: 9, tag: '温阳补血' },
 ]
+
+// 时令专区（真数据）：当前节气 + 主题方子；加载失败回退到上面写死的场景卡
+const termInfo = ref(null)
+const termRecipes = ref([])
+const termLoading = ref(true)
+
+const fmtDate = (d) => {
+  const [, m, day] = (d || '').split('-')
+  return m ? `${Number(m)}月${Number(day)}日` : ''
+}
 
 onMounted(async () => {
   const [statsR, showcaseR, sleepR] = await Promise.allSettled([
@@ -50,7 +61,7 @@ onMounted(async () => {
   if (showcaseR.status === 'fulfilled') showcaseRecipes.value = showcaseR.value.data.data.items
   if (sleepR.status === 'fulfilled') sleepRecipes.value = sleepR.value.data.data.items
 
-  // 今日推荐：按日期在全部方子里轮换，每天一款
+  // 全量方子一次拉取：今日推荐按日期轮换 + 场景卡计数实算
   try {
     const all = (await listRecipes({ size: 100 })).data.data.items
     if (all.length) {
@@ -58,8 +69,19 @@ onMounted(async () => {
       daily.value = all[day % all.length]
       coverTry.value = 0
       cover.value = matImg(daily.value.materials?.[0] || '')
+      for (const s of scenes) s.count = all.filter(r => r.scenes?.includes(s.name)).length
     }
   } catch { /* 推荐失败不影响首页 */ }
+
+  // 时令专区：后端节气引擎按当天日期算当前节气（寿星公式），失败回退写死场景卡
+  try {
+    const t = (await getTermCurrent(6)).data.data
+    if (t?.recipes?.length) {
+      termInfo.value = t
+      termRecipes.value = t.recipes
+    }
+  } catch { /* 静默回退 */ }
+  termLoading.value = false
 })
 
 // hero 数字滚动（useCountUp：source 有值即从当前值滚到目标）
@@ -169,9 +191,36 @@ function onDailyImgErr() {
       </router-link>
     </div>
 
-    <!-- 时令场景横滑（滚动条提示右侧还有内容，见 HScroll） -->
+    <!-- 时令专区：接后端节气引擎（按当天日期算节气），失败回退到场景卡 -->
     <div class="section-title">时令专区</div>
-    <HScroll class="season-wrap">
+
+    <template v-if="termInfo">
+      <div class="term-banner card">
+        <div class="tb-main">
+          <span class="tb-seal"><AppIcon name="season" :size="14" /></span>
+          <b class="tb-term">{{ termInfo.current.name }}</b>
+          <span class="tb-meta">{{ fmtDate(termInfo.current.date) }} 起 · 第 {{ termInfo.current.days_in }} 天</span>
+        </div>
+        <p class="tb-tip">{{ termInfo.current.theme.tip }}</p>
+        <router-link v-if="termInfo.scene" class="tb-more"
+                     :to="{ path: '/recipes', query: { scene: termInfo.scene } }">
+          {{ termInfo.current.name }}食养清单 · {{ termRecipes.length }} 款当令 →
+        </router-link>
+      </div>
+      <HScroll class="season-wrap">
+        <router-link v-for="r in termRecipes" :key="r.id" :to="`/recipes/${r.id}`" class="season-card pressable">
+          <img v-if="r.materials?.length" :src="matImg(r.materials[0])" alt="" loading="lazy"
+               @error="e => e.target.style.visibility = 'hidden'" />
+          <div class="s-overlay">
+            <span class="s-tag">{{ termInfo.scene }}</span>
+            <b>{{ r.name }}</b>
+            <span class="s-one">{{ r.oneliner }}</span>
+          </div>
+        </router-link>
+      </HScroll>
+    </template>
+
+    <HScroll v-else class="season-wrap">
       <router-link v-for="s in SEASON_SCENES" :key="s.name" :to="`/recipes?scene=${encodeURIComponent(s.name)}`" class="season-card pressable">
         <img :src="matImg(s.img)" alt="" loading="lazy" />
         <div class="s-overlay">
@@ -424,6 +473,27 @@ function onDailyImgErr() {
 }
 .s-overlay b { font-family: var(--font-serif); font-size: 14.5px; }
 .s-overlay span { font-size: 11px; opacity: .9; }
+.s-one {
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  line-height: 1.35; margin-top: 1px;
+}
+
+/* 节气横幅：真数据节气名 + 养生提示 + 清单入口 */
+.term-banner {
+  padding: 13px 16px; margin-bottom: 12px;
+  background: linear-gradient(135deg, var(--card) 55%, var(--green-50) 100%);
+}
+.tb-main { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.tb-seal {
+  align-self: center; display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+  background: var(--green-700); color: #fdfaf1;
+}
+.tb-term { font-family: var(--font-serif); font-size: 19px; color: var(--green-text); font-weight: 700; letter-spacing: .04em; }
+.tb-meta { font-size: 11px; color: var(--ink-400); }
+.tb-tip { font-size: 12.5px; color: var(--ink-600); margin: 7px 0 2px; line-height: 1.5; }
+.tb-more { font-size: 12.5px; color: var(--green-text); text-decoration: none; font-weight: 600; }
+.tb-more:hover { text-decoration: underline; }
 
 /* 证据链专区 */
 .zone-intro { font-size: 12.5px; color: var(--ink-600); margin-bottom: 12px; line-height: 1.5; }
