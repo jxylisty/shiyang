@@ -279,7 +279,9 @@ def list_compounds(min_prob: float = 0.5, limit: int = 50):
     conn = get_db()
     rows = conn.execute(
         "SELECT c.id,c.name,c.prob_cctcm,c.prob_herb,c.mw,c.logp,"
-        "c.radar_anti_inflammatory,c.radar_immune_regulation,c.radar_airway_repair "
+        "COALESCE(c.radar_anti_inflammatory_gsea,c.radar_anti_inflammatory) radar_anti_inflammatory,"
+        "COALESCE(c.radar_immune_regulation_gsea,c.radar_immune_regulation) radar_immune_regulation,"
+        "COALESCE(c.radar_airway_repair_gsea,c.radar_airway_repair) radar_airway_repair "
         "FROM compound c WHERE c.prob_cctcm>=? ORDER BY c.prob_cctcm DESC LIMIT ?",
         (min_prob, min(limit, 200))).fetchall()
     conn.close()

@@ -89,7 +89,9 @@ def compounds(min_prob: float = 0.0, limit: int = 200):
     try:
         rows = conn.execute(
             "SELECT id,name,mw,logp,prob_cctcm,prob_herb,"
-            "radar_anti_inflammatory,radar_immune_regulation,radar_airway_repair,target_count "
+            "COALESCE(radar_anti_inflammatory_gsea,radar_anti_inflammatory) radar_anti_inflammatory,"
+            "COALESCE(radar_immune_regulation_gsea,radar_immune_regulation) radar_immune_regulation,"
+            "COALESCE(radar_airway_repair_gsea,radar_airway_repair) radar_airway_repair,target_count "
             "FROM compound WHERE prob_cctcm>=? ORDER BY prob_cctcm DESC LIMIT ?",
             (min_prob, limit)).fetchall()
     finally:

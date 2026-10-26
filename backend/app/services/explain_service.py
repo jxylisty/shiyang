@@ -73,10 +73,10 @@ def compound_explain(name: str) -> dict | None:
         if not row:
             return None
         herbs = [r[0] for r in conn.execute(
-            "SELECT h.name FROM rel_herb_compound rc JOIN herb h ON h.id=rc.herb_id "
+            "SELECT h.name FROM rel_herb_compound_v2 rc JOIN herb h ON h.id=rc.herb_id "
             "WHERE rc.compound_id=?", (row["id"],)).fetchall()]
         herb_ids = [r[0] for r in conn.execute(
-            "SELECT herb_id FROM rel_herb_compound WHERE compound_id=?", (row["id"],)).fetchall()]
+            "SELECT herb_id FROM rel_herb_compound_v2 WHERE compound_id=?", (row["id"],)).fetchall()]
         # 「出现在哪些方子里」：经关联药材反查方子配料（成分词典页主体区块）
         recipes = []
         if herb_ids:

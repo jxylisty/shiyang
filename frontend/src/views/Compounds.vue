@@ -95,7 +95,7 @@ const probColor = (p) => p >= 0.9 ? 'var(--green-700)' : p >= 0.7 ? 'var(--amber
           </div>
         </router-link>
       </div>
-      <p class="disclaimer-note">入血概率为模型预测参考值；三维评分为文献富集参考分（0-100），非临床结论。</p>
+      <p class="disclaimer-note">入血概率为 PU-Learning 模型预测值；三维评分为 Enrichr 通路富集结果（0-100），非临床结论。</p>
     </template>
   </div>
 </template>
