@@ -31,7 +31,49 @@ export const getPathways = (id) => api.get(`/recipes/${id}/pathways`)
 export const compareRecipes = (a, b) => api.get('/recipes/compare', { params: { a, b } })
 
 // ---- 全局搜索 ----
-export const globalSearch = (q) => api.get('/search', { params: { q } })
+export const globalSearch = (q, limit) => api.get('/search', { params: limit ? { q, limit } : { q } })
+
+// ---- AI 助手对话（SSE，POST；后端 RAG 检索库内资料后流式回答） ----
+export function streamAssistantChat(question, onCitations, onDelta, onDone, onError,
+                                    { history = [], constitutionCode = null } = {}) {
+  const ctrl = new AbortController()
+  fetch('/api/v1/assistant/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    signal: ctrl.signal,
+    body: JSON.stringify({ question, history, constitution_code: constitutionCode }),
+  }).then(async (resp) => {
+    if (!resp.ok || !resp.body) {
+      let msg = 'AI 服务不可用'
+      try { msg = (await resp.json()).detail || msg } catch { /* ignore */ }
+      onError(msg)
+      return
+    }
+    const reader = resp.body.getReader()
+    const decoder = new TextDecoder()
+    let buf = '', full = ''
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      buf += decoder.decode(value, { stream: true })
+      const lines = buf.split('\n')
+      buf = lines.pop()
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue
+        const data = line.slice(6)
+        if (data === '[DONE]') { onDone(full); return }
+        try {
+          const j = JSON.parse(data)
+          if (j.error) { onError(j.error); return }
+          if (j.citations) { onCitations(j.citations, j.no_context) }
+          if (j.delta) { full += j.delta; onDelta(full) }
+        } catch { /* 忽略半包 */ }
+      }
+    }
+    onDone(full)
+  }).catch((e) => { if (e.name !== 'AbortError') onError(e.message) })
+  return () => ctrl.abort()
+}
 
 // ---- 我的茶罐（反向配伍） ----
 export const getPantryMaterials = () => api.get('/pantry/materials')

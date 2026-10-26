@@ -15,6 +15,7 @@ const NAV = [
   { to: '/pantry', name: '茶罐', icon: 'jar' },
   { to: '/herbs', name: '药材', icon: 'herb' },
   { to: '/compounds', name: '成分', icon: 'molecule' },
+  { to: '/assistant', name: '问一问', icon: 'chat' },
   { to: '/me', name: '我的', icon: 'user' },
 ]
 watch(() => route.meta.title, (t) => { document.title = t ? `${t} · 食养有据` : '食养有据' }, { immediate: true })
