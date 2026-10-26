@@ -1,8 +1,8 @@
 # API 扩展记录（v0.2.0 基线之后）
 
 - **实测方式**：`main.app.openapi()` 导出（非手抄），核实日期 **2026-10-27**。
-- **规模**：**48 条路径 / 52 个端点**。docs/API接口设计文档.md 所记「24 端点」为 v0.2.0 基线口径，已过时，本文档补充增量部分；基线接口的设计原则与响应约定仍以该文档为准。
-- ⚠️ **口径说明（数据真实）**：多工作线并行期间清单曾两次失真，最终于数据线提交 `578c54b` 后**重测复核**：本清单与届时 HEAD 完全一致（46 路径 / 50 端点，无未提交路由混入）。此后若再合并增量，须用文末命令重跑并更新本表。2026-10-27 UX 线新增 2 端点后重跑复核为 48 路径 / 52 端点。
+- **规模**：**49 条路径 / 53 个端点**。docs/API接口设计文档.md 所记「24 端点」为 v0.2.0 基线口径，已过时，本文档补充增量部分；基线接口的设计原则与响应约定仍以该文档为准。
+- ⚠️ **口径说明（数据真实）**：多工作线并行期间清单曾两次失真，最终于数据线提交 `578c54b` 后**重测复核**：本清单与届时 HEAD 完全一致（46 路径 / 50 端点，无未提交路由混入）。此后若再合并增量，须用文末命令重跑并更新本表。2026-10-27 UX 线新增 2 端点后复核 48 路径 / 52 端点；同日 AI 助手线新增 `/assistant/chat` 后复核 **49 路径 / 53 端点**。
 - **复核命令**（数据或代码变动后重新生成此清单）：
 
 ```bash
@@ -17,6 +17,7 @@ for p in sorted(main.app.openapi()['paths']):
 |---|---|---|
 | POST | /api/v1/auth/login | 基线（用户系统 P1.1） |
 | POST | /api/v1/auth/register | 基线 |
+| POST | /api/v1/assistant/chat | **AI助手线** 食养问答（SSE：citations 先行→delta→[DONE]；RAG 限定库内资料+强制引用编号，2026-10-27 提交 dd7653a；Key 走 X-AI-Key 头，无头时用平台级 ZeroGate 网关默认） |
 | GET | /api/v1/checkins | 基线（打卡 P2） |
 | POST / DELETE | /api/v1/checkins/{recipe_id} | 基线 |
 | GET | /api/v1/compounds | 基线 |
@@ -60,7 +61,7 @@ for p in sorted(main.app.openapi()['paths']):
 | POST | /api/v1/safety/check-batch | **T1-5** 批量人群安全检查 |
 | GET | /api/v1/safety/check/{recipe_id} | **T1-5** |
 | GET | /api/v1/safety/profiles | **T1-5** 五档人群档案 |
-| GET | /api/v1/search | 数据线（全局搜索，见提交 7db3875）；2026-10-27 UX 线扩域至配料名/药材别名/功效并带 matched_by（提交 72fcbf5），recipes 列表 q 同步扩域（提交 c5a4c39） |
+| GET | /api/v1/search | 数据线（全局搜索，见提交 7db3875）；2026-10-27 UX 线扩域至配料名/药材别名/功效并带 matched_by（提交 72fcbf5），recipes 列表 q 同步扩域（提交 c5a4c39）；同日加 `limit` 参数（默认 5 上限 20，独立搜索页用，提交 8f68fa1） |
 | GET | /api/v1/stats | 基线 |
 | GET | /api/v1/term/current | **T2-9** 当前节气+食养主题+推荐方 |
 

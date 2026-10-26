@@ -119,11 +119,11 @@ export function getLocalConstitution() {
 }
 
 // ---- AI（SSE 用 fetch；key 可为空 → 后端回放预生成解读） ----
+// key 走 X-AI-Key 请求头（不进 URL，避免被代理/访问日志记录）
 export function streamAIReport(recipeId, key, onDelta, onDone, onError, provider = 'deepseek') {
-  const kq = key ? `key=${encodeURIComponent(key)}&` : ''
-  const url = `/api/v1/recipes/${recipeId}/ai-report?${kq}provider=${provider}`
+  const url = `/api/v1/recipes/${recipeId}/ai-report?provider=${provider}`
   const ctrl = new AbortController()
-  fetch(url, { signal: ctrl.signal }).then(async (resp) => {
+  fetch(url, { signal: ctrl.signal, headers: key ? { 'X-AI-Key': key } : {} }).then(async (resp) => {
     if (!resp.ok || !resp.body) {
       // 预生成缺失（404）或其他错误，取后端 detail 提示
       let msg = 'AI 服务不可用'

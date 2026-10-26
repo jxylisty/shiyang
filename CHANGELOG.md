@@ -65,3 +65,16 @@
 | 移除仓库根目录空文件 `wdj.html`（0 字节快照残留）；`logs_*.txt` 已被 .gitignore 覆盖无需处理 | `wdj.html`（删除） | `git rm` 生效 ✅ |
 
 **审计线回归基线（2026-10-27 实测）**：端点 48 路径 / 52 端点（`app.openapi()`）；单测 **61 passed**；测试后 user.db 零残留。
+
+## 分页/独立搜索/AI 助手线（2026-10-27：便宜三件 + T3-11 RAG 问答）
+
+| 提交 | 功能 | 关键文件 | 验证 |
+|---|---|---|---|
+| `c6421a5` | 方子库真分页 + van-list 无限滚动（size 100→20，reqId 竞态保护，筛选变化重置页码） | `Recipes.vue` | build ✅ |
+| `8f68fa1` | 独立搜索页 `/search`（大搜索框+历史/快搜+三分组全量结果+深链）+ `/api/v1/search` limit 参数（默认 5 上限 20）+ searchPrefs 共享工具 | `Search.vue`（新） `searchPrefs.js`（新） `SearchBox.vue` `search_service.py` | 29 passed；build ✅ |
+| `98c2f60` | RAG 检索服务 `retrieve_context`：关键词漏斗（复用 global_search 扩域）→ 场景标签兜底 → 体质适宜兜底；产出 [F#]/[H#]/[C#] 编号块（≤6000 字符硬上限）+ citations 引用卡；无命中 no_context=true 诚实降级 | `rag_service.py`（新） | 11 例新测，52 passed ✅ |
+| `dd7653a` | `POST /api/v1/assistant/chat` SSE 端点：RAG 注入 + citations 先行事件 + Key 解析 X-AI-Key 头→ZeroGate 平台级默认（SHIYANG_AI_* 可覆盖，不落库）；`CHAT_SYSTEM_PROMPT` 强制引用编号/降级声明/禁疗效词红线 | `main.py` `ai_service.py` | 6 例 mock 测试 + 真 ZeroGate 端到端冒烟（带编号回答+降级声明均通过）；端点 52→53；67 passed ✅ |
+| `d98831f` | 「问一问」对话页 + 顶栏第 6 项：流式光标/停止生成/引用卡跳转/历史 20 轮/体质快捷注入/快捷提问 chips/AI 生成小标；**加粗**拆段渲染防注入 | `Assistant.vue`（新） `App.vue` `icons.js` `api/index.js` | headless Chrome CDP 实测：375px 顶栏 6 项不溢出、对话/引用跳转 `/recipes/1`/历史持久化/清空均通过 ✅ |
+| 本提交 | `streamAIReport` 的用户 Key 从 URL query 改 `X-AI-Key` 头（还债：不进 URL/日志） | `api/index.js` | build ✅ |
+
+**本线回归基线（2026-10-27 实测）**：端点 49 路径 / **53 端点**（`app.openapi()`）；单测 **67 passed**；vite build 通过。AI 链路只走本机 ZeroGate 网关（key=zerogate），不接触用户密钥文件。
