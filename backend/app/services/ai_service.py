@@ -14,6 +14,9 @@ import httpx
 
 DB_PATH = Path(__file__).resolve().parents[3] / "data" / "shiyang.db"
 
+# 三维机制评分的维度源自大创课题呼吸机制框架，仅适用于这些场景的方子
+RESP_SCENES = {"护嗓润喉", "久坐通气"}
+
 PROVIDER_DEFAULTS = {
     "openai": {"base_url": "https://api.openai.com/v1", "model": "gpt-4o"},
     "deepseek": {"base_url": "https://api.deepseek.com/v1", "model": "deepseek-chat"},
@@ -72,8 +75,9 @@ SYSTEM_PROMPT = """你是「食养有据」平台的食养科普助手。用户�
 1. 一句话讲清这个方的传统定位（引用配料功效逻辑，不要夸大）
 2. 结合成分数据（入血概率、三维评分）解释"凭什么值得喝"，把专业术语翻译成人话
 3. 冲泡/食用小贴士和禁忌提醒
-关于三维评分：其维度（抗炎/免疫调节/气道修复）来自本团队大创课题的机制研究框架，
-解读时作为成分生物活性的一般性参考提及即可，不要将其表述为该方对某场景的功效证明。
+关于三维评分：其维度（抗炎/免疫调节/气道修复）来自本团队大创课题的呼吸机制研究框架，
+仅当输入数据里出现"三维评分"字段时才可提及，且只作为成分生物活性的一般性参考，
+不得将其表述为该方对某场景的功效证明；若数据中没有该字段，不要自行编造此类评分。
 红线：绝不使用"治疗、疗效、治愈、抗癌"字样；必须保留"调理参考，不构成医疗建议"的定位；
 不确定的内容直说不确定；成分数据引用时保留数值。"""
 
@@ -95,9 +99,11 @@ def build_recipe_messages(recipe: dict, analysis: dict | None) -> list[dict]:
             "高入血概率成分Top5": [
                 {"名称": c.get("name"), "入血概率": c.get("prob_cctcm"), "来自": c.get("herbs", "")}
                 for c in (analysis.get("top_compounds") or [])[:5]],
-            "三维评分均值(抗炎/免疫/气道修复，源自大创课题机制研究框架)": analysis.get("radar_summary"),
             "主要靶点": [t["gene"] for t in (analysis.get("top_targets") or [])[:6]],
         }
+        # 三维维度是呼吸机制框架，只给呼吸/咽喉相关方子，避免 AI 对助眠/祛痘类强行解释"气道修复"
+        if RESP_SCENES & set(recipe.get("scenes") or []):
+            info["成分分析"]["三维评分均值(抗炎/免疫/气道修复，源自大创课题机制研究框架)"] = analysis.get("radar_summary")
     return [
         {"role": "system", "content": SYSTEM_PROMPT},
         {"role": "user", "content": "请解读这个方子：\n" + json.dumps(info, ensure_ascii=False, indent=1)},

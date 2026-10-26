@@ -78,9 +78,13 @@ async function draw(r) {
     r.analysis.top_compounds.slice(0, 4).forEach((cp, i) => {
       ctx.fillText(`· ${cp.name.slice(0, 16)}  入血概率 ${cp.prob_cctcm}`, 90, 416 + i * 30)
     })
-    const rs = r.analysis.radar_summary || {}
-    ctx.fillStyle = '#64736a'; ctx.font = '13px sans-serif'
-    ctx.fillText(`三维活性参考：抗炎 ${Math.round(rs.anti_inflammatory || 0)} / 免疫 ${Math.round(rs.immune_regulation || 0)} / 气道 ${Math.round(rs.airway_repair || 0)}`, 90, 550)
+    // 三维活性参考仅在呼吸/咽喉相关方子展示（维度源自大创课题呼吸机制框架）
+    const RESP_SCENES = ['护嗓润喉', '久坐通气']
+    if ((r.scenes || []).some(s => RESP_SCENES.includes(s))) {
+      const rs = r.analysis.radar_summary || {}
+      ctx.fillStyle = '#64736a'; ctx.font = '13px sans-serif'
+      ctx.fillText(`三维活性参考：抗炎 ${Math.round(rs.anti_inflammatory || 0)} / 免疫 ${Math.round(rs.immune_regulation || 0)} / 气道 ${Math.round(rs.airway_repair || 0)}`, 90, 550)
+    }
   }
   // 出处与品牌
   ctx.fillStyle = '#64736a'; ctx.font = '13px sans-serif'

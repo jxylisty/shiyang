@@ -72,6 +72,10 @@ const matLoaded = ref({})
 const onMatLoad = (name) => { matLoaded.value[name] = true }
 const probColor = (p) => p >= 0.9 ? 'var(--green-700)' : p >= 0.7 ? 'var(--amber-text)' : 'var(--ink-400)'
 const radarNames = { anti_inflammatory: '抗炎', immune_regulation: '免疫调节', airway_repair: '气道修复' }
+// 三维雷达的维度源自大创课题呼吸机制研究框架，仅在呼吸/咽喉相关方子展示；
+// 其余场景（助眠/祛痘/消化等）该框架不适用，页面只呈现成分-入血-靶点-出处这条通用证据链
+const RESP_SCENES = ['护嗓润喉', '久坐通气']
+const showRadar = computed(() => (recipe.value?.scenes || []).some(s => RESP_SCENES.includes(s)))
 // 三维均值可能带小数，条形图按 0-100 取整
 const radarSummary = computed(() => {
   const r = recipe.value?.analysis?.radar_summary
@@ -230,24 +234,24 @@ async function toggleCheckin() {
                 </div>
                 <div class="c-line2">
                   预测入血概率
-                  <span v-if="c.radar && c.radar[0] !== null" class="c-radar">抗炎{{ Math.round(c.radar[0]) }} 免疫{{ Math.round(c.radar[1]) }} 气道{{ Math.round(c.radar[2]) }}</span>
+                  <span v-if="showRadar && c.radar && c.radar[0] !== null" class="c-radar">抗炎{{ Math.round(c.radar[0]) }} 免疫{{ Math.round(c.radar[1]) }} 气道{{ Math.round(c.radar[2]) }}</span>
                 </div>
               </div>
 
-              <div v-if="radarSummary" class="radar-box">
+              <div v-if="radarSummary && showRadar" class="radar-box">
                 <p class="r-title">三维机制参考（成分均值，满分 100）</p>
                 <div v-for="(v, k) in radarSummary" :key="k" class="r-row">
                   <span class="r-name">{{ radarNames[k] || k }}</span>
                   <van-progress class="r-bar" :percentage="barsGrown ? Math.round(v) : 0" color="var(--green-600)" track-color="var(--green-100)" :show-pivot="false" />
                   <span class="r-val">{{ barsGrown ? Math.round(v) : 0 }}</span>
                 </div>
-                <p class="r-scope">三维维度沿用大创课题「中医治疗儿童哮喘」机制研究的靶点富集框架，此处作为成分生物活性的一般性参考，不代表该方对任一具体场景的功效评价。</p>
+                <p class="r-scope">本专区方子与大创课题「中医治疗儿童哮喘」的呼吸机制研究同属呼吸/咽喉方向，故沿用其靶点富集框架展示三维活性参考；该评分反映成分靶点的文献富集程度，不代表本方对该场景的功效。</p>
               </div>
 
               <p class="a-targets" v-if="recipe.analysis.top_targets?.length">
                 主要关联人类蛋白靶点：{{ recipe.analysis.top_targets.map(t => t.gene).join('、') }}
               </p>
-              <p class="a-disclaimer">入血概率为 PU-Learning 模型预测值；三维评分沿用大创课题靶点富集框架（抗炎/免疫/气道修复），为文献富集参考分而非临床结论。</p>
+              <p class="a-disclaimer">{{ showRadar ? '入血概率为 PU-Learning 模型预测值；三维评分沿用大创课题靶点富集框架（抗炎/免疫/气道修复），为文献富集参考分而非临床结论。' : '入血概率为 PU-Learning 模型预测值；成分与靶点关联来自公开数据库，均为研究参考而非临床结论。' }}</p>
             </div>
 
             <!-- 入血概率可解释（T1-4） -->
