@@ -114,11 +114,18 @@ def pick_image(keyword):
 
 
 def main(force=False):
-    credits, fetched, skipped = {}, 0, []
+    credits_file = OUT.parent / "credits.json"
+    # 先读回已有署名再合并，否则跳过项会被 None 覆盖、抹掉 CC BY 的署名义务
+    credits = {}
+    if credits_file.exists():
+        try:
+            credits = json.loads(credits_file.read_text(encoding="utf-8")).get("credits") or {}
+        except (ValueError, OSError):
+            credits = {}
+    fetched, skipped = 0, []
     for name, kw in MATERIALS.items():
         fp = OUT / f"{name}.jpg"
         if fp.exists() and not force:
-            credits[name] = json.loads((OUT.parent / "credits.json").read_text(encoding="utf-8"))["credits"][name] if (OUT.parent / "credits.json").exists() and False else credits.get(name)
             continue
         try:
             info = pick_image(kw)
@@ -137,11 +144,11 @@ def main(force=False):
             skipped.append(name)
             print(f"× {name}: {str(e)[:60]}")
 
-    (OUT.parent / "credits.json").write_text(
+    credits_file.write_text(
         json.dumps({"source": "Wikimedia Commons", "credits": credits}, ensure_ascii=False, indent=1),
         encoding="utf-8")
     print(f"\n拉取 {fetched} 张 | 跳过 {len(skipped)} 个: {'、'.join(skipped) or '无'}")
-    print(f"输出: {OUT} | 许可记录: {OUT.parent / 'credits.json'}")
+    print(f"输出: {OUT} | 许可记录: {credits_file}")
 
 
 if __name__ == "__main__":
