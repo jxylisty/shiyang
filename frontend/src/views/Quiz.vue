@@ -315,7 +315,7 @@ const mainName = computed(() => {
 /* 结果页揭示 */
 .result-hero { text-align: center; padding: 26px 16px; animation: rise .5s var(--ease-out-soft) backwards; }
 .result-hero .label { font-size: 12px; color: var(--ink-400); }
-.result-hero h2 { font-size: 26px; color: var(--green-700); margin: 6px 0; animation: pop .55s var(--ease-spring) .25s backwards; }
+.result-hero h2 { font-family: var(--font-serif); font-size: 26px; font-weight: 700; color: var(--green-700); margin: 6px 0; animation: pop .55s var(--ease-spring) .25s backwards; }
 .result-hero .principle { font-size: 13px; color: var(--ink-600); }
 .combined { margin-top: 8px; font-size: 12px; color: var(--amber-text); }
 

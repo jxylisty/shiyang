@@ -338,7 +338,7 @@ function buzz(ms) {
 .user-card { display: flex; align-items: center; gap: 14px; }
 .avatar { width: 52px; height: 52px; border-radius: 50%; background: var(--green-100); color: var(--green-700); font-size: 22px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
 .u-info { flex: 1; }
-.u-info b { font-size: 17px; display: block; }
+.u-info b { font-family: var(--font-serif); font-size: 18px; font-weight: 700; color: var(--ink-900); display: block; }
 .u-info span { font-size: 12px; color: var(--ink-400); }
 .rec-row { display: flex; align-items: center; gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--green-50); }
 .rec-row:last-of-type { border-bottom: none; }

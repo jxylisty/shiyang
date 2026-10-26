@@ -1,9 +1,9 @@
 <script setup>
-// 药材图鉴：34 味药食同源药材，图 + 性味 + 功效摘要，点开看归经/化合物数
+// 药材图鉴：网格卡片，点开弹窗显示性味归经、功效与成分数（对标中华本草/药典）
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { listHerbs, matImg } from '../api'
 import AppIcon from '../components/AppIcon.vue'
+import { listHerbs, matImg } from '../api'
 
 const route = useRoute()
 const items = ref([])
@@ -24,13 +24,14 @@ async function load() {
   loading.value = true
   loadError.value = false
   try {
-    const d = (await listHerbs(kw.value.trim())).data.data
-    if (id !== reqId) return   // 已有更新的请求发出，丢弃本次结果
+    const q = kw.value.trim()
+    const d = (await listHerbs(q)).data.data
+    if (id !== reqId) return
     items.value = d.items
-    // 全局搜索跳转：?h=药材名 → 数据到位后直接打开详情弹窗
-    const h = route.query.h
-    if (h) {
-      const hit = items.value.find(x => x.name === h)
+    // 路由带 ?h=药材名 时（如顶栏全局搜索跳过来）自动弹详情
+    const target = route.query.h
+    if (target && !active.value) {
+      const hit = items.value.find(x => x.name === target)
       if (hit) active.value = hit
     }
   } catch {
@@ -39,10 +40,12 @@ async function load() {
     items.value = []
   } finally { if (id === reqId) loading.value = false }
 }
+
 function onSearch() {
   if (timer) clearTimeout(timer)
-  timer = setTimeout(load, 300)
+  timer = setTimeout(load, 250)
 }
+
 onMounted(load)
 
 const hideImg = (name) => { imgFailed.value[name] = true }
@@ -50,23 +53,27 @@ const hideImg = (name) => { imgFailed.value[name] = true }
 
 <template>
   <div class="page">
-    <van-search v-model="kw" placeholder="搜药材名或拼音，如：枸杞 / jujube" @update:model-value="onSearch" class="search-box" />
+    <div class="card search-card">
+      <van-search v-model="kw" placeholder="搜药材名 / 性味 / 功效（如：枸杞 / 甘 / 润肺）" @update:model-value="onSearch" class="search-box" />
+    </div>
 
+    <!-- 骨架屏：15 个占位卡片 -->
     <div v-if="loading" class="herb-grid">
-      <div v-for="i in 8" :key="i" class="card herb-card">
+      <div v-for="i in 15" :key="i" class="card herb-card">
         <div class="h-img sk-anim"></div>
         <div class="sk-line w70 sk-anim"></div>
         <div class="sk-line w50 sk-anim"></div>
       </div>
     </div>
     <van-empty v-else-if="loadError" image="error" description="服务暂时不可用，请稍后重试" />
-    <van-empty v-else-if="!items.length" image="search" description="没有找到相关药材" />
+    <van-empty v-else-if="!items.length" image="search" description="未找到匹配药材，换个词试试" />
 
     <template v-else>
-      <p class="count">共 {{ items.length }} 味 · 点开看性味归经与成分</p>
+      <p class="count">共 <b>{{ items.length }}</b> 味药食同源药材</p>
       <div class="herb-grid">
-        <button v-for="(h, i) in items" :key="h.id" class="card herb-card"
-                :style="{ '--d': `${Math.min(i, 16) * 40}ms` }" @click="active = h">
+        <button v-for="(h, i) in items" :key="h.id" class="card herb-card pressable"
+                :style="{ '--d': `${Math.min(i, 20) * 25}ms` }"
+                @click="active = h">
           <div class="h-img">
             <img v-if="!imgFailed[h.name]" :src="matImg(h.name)" :alt="h.name" loading="lazy" @error="hideImg(h.name)" />
             <span v-else class="h-fallback"><AppIcon name="herb" :size="30" /></span>
@@ -108,28 +115,34 @@ const hideImg = (name) => { imgFailed.value[name] = true }
 </template>
 
 <style scoped>
-.search-box { margin-bottom: 10px; padding: 0; background: transparent; }
-.count { font-size: 12px; color: var(--ink-400); margin-bottom: 10px; }
+.search-card { padding: 12px 14px; margin-bottom: 12px; }
+.search-box { padding: 0; background: transparent; }
+.count { font-size: 12.5px; color: var(--ink-400); margin-bottom: 10px; }
+.count b { color: var(--ink-900); font-variant-numeric: tabular-nums; }
+
 .herb-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-@media (min-width: 900px) { .herb-grid { grid-template-columns: repeat(5, 1fr); } }
+@media (min-width: 600px) { .herb-grid { grid-template-columns: repeat(4, 1fr); gap: 12px; } }
+@media (min-width: 900px) { .herb-grid { grid-template-columns: repeat(5, 1fr); gap: 14px; } }
+
 .herb-card {
-  padding: 10px 8px; text-align: center; cursor: pointer; border: none; font: inherit;
-  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 12px 8px; text-align: center; cursor: pointer; border: 1px solid var(--card-border); font: inherit;
+  display: flex; flex-direction: column; align-items: center; gap: 3px; margin-bottom: 0;
   animation: rise .4s var(--ease-out-soft) backwards; animation-delay: var(--d, 0ms);
-  transition: scale var(--dur-fast) var(--ease-snap);
+  transition: transform var(--dur-fast) var(--ease-snap), box-shadow var(--dur-med) ease;
 }
 .herb-card:active { scale: 0.95; }
 .h-img {
   width: 100%; aspect-ratio: 1; border-radius: 10px; overflow: hidden;
   background: var(--green-50); margin-bottom: 6px; position: relative;
+  border: 1px solid rgba(0,0,0,0.03);
 }
 .h-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .h-fallback { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--tile-ink); }
-.h-name { font-size: 14px; }
+.h-name { font-family: var(--font-serif); font-size: 15px; color: var(--ink-900); font-weight: 700; }
 .h-nature { font-size: 11px; color: var(--amber-text); }
-.h-count { font-size: 10px; color: var(--ink-400); }
+.h-count { font-size: 10.5px; color: var(--ink-400); font-variant-numeric: tabular-nums; }
 
-/* 骨架屏（shimmer 与 .sk-anim 均用全局定义，style.css） */
+/* 骨架屏 */
 .sk-line { height: 12px; border-radius: 6px; width: 80%; }
 .sk-line.w70 { width: 70%; }
 .sk-line.w50 { width: 50%; }
@@ -140,19 +153,19 @@ const hideImg = (name) => { imgFailed.value[name] = true }
 .hd-in { animation: rise .4s var(--ease-out-soft) backwards; animation-delay: calc(var(--i) * 60ms); }
 
 /* 详情弹层 */
-.h-popup-wide { width: 520px; max-width: 92vw; }
-.h-detail { padding: 20px 16px; max-height: 80vh; overflow-y: auto; }
+.h-popup-wide { width: 520px; max-width: 92vw; border-radius: 16px; border: 1px solid var(--card-border); }
+.h-detail { padding: 22px 18px; max-height: 80vh; overflow-y: auto; }
 .hd-head { display: flex; gap: 14px; align-items: center; margin-bottom: 14px; }
-.hd-img { width: 72px; flex-shrink: 0; }
-.hd-head h3 { font-size: 19px; }
-.hd-sub { font-size: 13px; color: var(--amber-text); margin-top: 2px; }
+.hd-img { width: 72px; flex-shrink: 0; border-radius: 12px; }
+.hd-head h3 { font-family: var(--font-serif); font-size: 20px; font-weight: 700; color: var(--ink-900); }
+.hd-sub { font-size: 13px; color: var(--amber-text); margin-top: 3px; }
 .hd-sec { padding: 10px 0; border-top: 1px dashed var(--green-100); }
 .hd-sec b { font-size: 12px; color: var(--green-700); display: block; margin-bottom: 4px; }
 .hd-sec p { font-size: 13.5px; color: var(--ink-600); line-height: 1.7; }
 .hd-comp { display: flex; align-items: baseline; gap: 7px; }
 .hd-num { font-size: 22px; font-weight: 700; color: var(--green-700); font-variant-numeric: tabular-nums; }
-.hd-goto { display: inline-flex; align-items: center; gap: 3px; margin-top: 6px; font-size: 12.5px; color: var(--green-700); text-decoration: none; }
+.hd-goto { display: inline-flex; align-items: center; gap: 3px; margin-top: 6px; font-size: 12.5px; color: var(--green-700); text-decoration: none; font-weight: 500; }
 .hd-goto:hover { text-decoration: underline; }
 .hd-note { font-size: 11px; color: var(--ink-400); margin-top: 6px; }
-.hd-close { margin-top: 14px; }
+.hd-close { margin-top: 16px; }
 </style>

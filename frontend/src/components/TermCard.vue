@@ -50,10 +50,10 @@ const fmtDate = (d) => {
 </template>
 
 <style scoped>
-.term-card { padding: 14px 16px; }
+.term-card { padding: 14px 16px; background: linear-gradient(135deg, var(--card) 60%, var(--green-50) 100%); }
 .t-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
 .t-cur { display: flex; align-items: center; gap: 6px; color: var(--green-700); }
-.t-cur b { font-size: 16px; color: var(--ink-900); }
+.t-cur b { font-family: var(--font-serif); font-size: 17px; color: var(--green-700); font-weight: 700; }
 .t-date { font-size: 11px; color: var(--ink-400); }
 .t-next { font-size: 11px; color: var(--ink-600); display: inline-flex; align-items: center; gap: 3px; }
 .t-tip { font-size: 12px; color: var(--ink-600); margin: 8px 0 10px; }

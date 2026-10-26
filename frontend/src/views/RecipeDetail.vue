@@ -363,7 +363,7 @@ async function toggleCheckin() {
 .detail-grid { display: block; }
 @media (min-width: 900px) {
   .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 20px; align-items: start; }
-  .col-side { position: sticky; top: 74px; }
+  /* col-side 自然流动 */
 }
 
 /* 可视化专区：证据链 / 网络图 / 通路富集 三卡并排，避免全堆在右列造成左右失衡 */
@@ -403,7 +403,7 @@ async function toggleCheckin() {
   .h-cover { width: 64px; height: 64px; border-radius: 10px; }
 }
 .h-top { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
-.h-top h2 { font-size: 20px; }
+.h-top h2 { font-family: var(--font-serif); font-size: 22px; font-weight: 700; color: var(--ink-900); letter-spacing: 0.02em; }
 .h-one { font-size: 13px; color: var(--ink-600); margin: 6px 0; }
 .tag.lab { background: var(--green-700); color: #fff; border-color: var(--green-700); }
 .h-ops { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }

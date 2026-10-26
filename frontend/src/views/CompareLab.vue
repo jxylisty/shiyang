@@ -220,7 +220,7 @@ function poly(vals) {
 
 <style scoped>
 .head-card { text-align: center; padding: 20px 16px; }
-.lab-title { font-size: 18px; display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--green-700); }
+.lab-title { font-family: var(--font-serif); font-size: 19px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--green-700); }
 .lab-sub { font-size: 12px; color: var(--ink-400); margin: 6px 0 14px; }
 .pick-row { display: flex; align-items: center; gap: 8px; }
 .pick {
