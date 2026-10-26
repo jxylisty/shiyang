@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { makeNavHooks, tween, afterPaint } from '../utils/motion'
-import { getQuestionnaire, submitQuiz, saveRecord, isLoggedIn, listFamilyMembers } from '../api'
+import { getQuestionnaire, submitQuiz, saveRecord, isLoggedIn, listFamilyMembers, saveLocalConstitution } from '../api'
 
 const items = ref({})          // {code: [题...]}
 const order = ref([])          // 维度顺序
@@ -147,6 +147,8 @@ async function submit() {
     const res = (await submitQuiz(answers.value)).data.data
     result.value = res
     clearProgress()
+    // 本地暂存判定结果（登录与否都存）：首页「为你推荐」等处免重测即可用
+    saveLocalConstitution(res.judged, res.transformed)
     // 已登录 → 自动存入体质档案（可挂家庭成员；失败不打断展示）
     if (isLoggedIn()) {
       saveRecord(res.judged, res.transformed, answers.value,

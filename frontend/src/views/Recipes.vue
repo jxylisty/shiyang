@@ -14,6 +14,8 @@ const loadError = ref(false)
 const type = ref('')
 const scene = ref(route.query.scene || '')
 const kw = ref(route.query.q || '')
+// 体质筛选（/recipes?constitution=气虚，首页「为你推荐」深链入口）
+const constitution = ref(route.query.constitution || '')
 
 // ---- 慢病安全滤镜（T1-5）：人群模式 ----
 const profiles = ref([])
@@ -49,6 +51,7 @@ async function load() {
     const params = { size: 100 }
     if (type.value) params.type = type.value
     if (scene.value) params.scene = scene.value
+    if (constitution.value) params.constitution = constitution.value
     if (kw.value.trim()) params.q = kw.value.trim()
     const d = (await listRecipes(params)).data.data
     if (id !== reqId) return   // 已有更新的请求发出，丢弃本次结果
@@ -69,6 +72,7 @@ function onSearch() {
 
 onMounted(load)
 watch(() => route.query.scene, (s) => { scene.value = s || ''; load() })
+watch(() => route.query.constitution, (c) => { constitution.value = c || ''; load() })
 // 人群档案清单加载一次
 getSafetyProfiles().then(({ data }) => { profiles.value = data.data.items }).catch(() => {})
 function pickScene(s) { scene.value = scene.value === s ? '' : s; load() }
@@ -104,6 +108,8 @@ function onCoverErr(r) {
         </div>
         <div class="f-row f-scenes">
           <button v-for="s in SCENES" :key="s" class="tag" :class="{ active: scene === s }" @click="pickScene(s)">{{ s }}</button>
+          <!-- 体质筛选：深链带入时显示，点击取消 -->
+          <button v-if="constitution" class="tag active" @click="constitution = ''; load()">{{ constitution }}适宜 ×</button>
         </div>
       </div>
 

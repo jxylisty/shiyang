@@ -59,6 +59,23 @@ export const getCycleReport = (days = 21) => authApi.get('/report/cycle', { para
 // ---- 节气推荐 ----
 export const getTermCurrent = (count = 4) => api.get('/term/current', { params: { count } })
 
+// ---- 「为你推荐」（千人千面） ----
+export const getMyRecommend = (count = 4) => authApi.get('/me/recommend', { params: { count } })
+export const guestRecommend = (judged, count = 4) => api.post('/constitution/recommend', { judged, count })
+
+// ---- 本地体质暂存（未登录也能驱动推荐；登录用户后端有档案为准） ----
+const LOCAL_CONST_KEY = 'shiyang_constitution_local_v1'
+export function saveLocalConstitution(judged, transformed) {
+  try {
+    localStorage.setItem(LOCAL_CONST_KEY, JSON.stringify({
+      judged, transformed, ts: Date.now(),
+    }))
+  } catch { /* 存储不可用静默 */ }
+}
+export function getLocalConstitution() {
+  try { return JSON.parse(localStorage.getItem(LOCAL_CONST_KEY) || 'null') } catch { return null }
+}
+
 // ---- AI（SSE 用 fetch；key 可为空 → 后端回放预生成解读） ----
 export function streamAIReport(recipeId, key, onDelta, onDone, onError, provider = 'deepseek') {
   const kq = key ? `key=${encodeURIComponent(key)}&` : ''

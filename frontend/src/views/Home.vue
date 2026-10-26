@@ -7,6 +7,7 @@ import { useCountUp } from '../utils/motion'
 import TextReveal from '../components/TextReveal.vue'
 import CloudDivider from '../components/CloudDivider.vue'
 import HScroll from '../components/HScroll.vue'
+import ForYou from '../components/ForYou.vue'
 
 const stats = ref(null)
 const showcaseRecipes = ref([])   // 证据链专区示例方
@@ -14,6 +15,7 @@ const sleepRecipes = ref([])
 const daily = ref(null)        // 今日推荐
 const coverTry = ref(0)
 const cover = ref('')
+const fyouActive = ref(false)  // ForYou 渲染出个性化推荐时隐藏通用今日推荐
 
 // 每个场景一个低饱和色调（bg 浅底 / fg 图标色），暗色模式统一回绿（见 .scene-icon 覆写）
 // count 为占位初值，onMounted 拉到全量方子后实算，避免硬编码随数据漂移
@@ -157,9 +159,11 @@ function onDailyImgErr() {
       </div>
     </div>
 
-    <!-- 今日推荐 -->
-    <div class="section-title">今日推荐</div>
-    <router-link v-if="daily" :to="`/recipes/${daily.id}`" class="card daily pressable">
+    <!-- 为你推荐（千人千面三态）：有个性化数据时替换通用今日推荐，避免两块推荐并存 -->
+    <ForYou @active="fyouActive = true" />
+    <template v-if="!fyouActive">
+      <div class="section-title">今日推荐</div>
+      <router-link v-if="daily" :to="`/recipes/${daily.id}`" class="card daily pressable">
       <!-- 水印暗字：笺纸上的淡墨大字，宽屏留白处的主要视觉填充 -->
       <span class="d-watermark" aria-hidden="true">食养</span>
       <div class="d-cover">
@@ -179,6 +183,7 @@ function onDailyImgErr() {
         </div>
       </div>
     </router-link>
+    </template>
 
     <!-- 场景入口 -->
     <div class="section-title">按场景找茶饮</div>
