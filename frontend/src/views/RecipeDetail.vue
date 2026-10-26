@@ -45,8 +45,9 @@ onMounted(async () => {
   try {
     recipe.value = (await getRecipe(route.params.id)).data.data
     pushHistory({ id: recipe.value.id, name: recipe.value.name, type: recipe.value.type, oneliner: recipe.value.oneliner })
-    // 下一帧再给进度条终值：让 van-progress 的 width transition 从 0 播到目标
-    requestAnimationFrame(() => requestAnimationFrame(() => { barsGrown.value = true }))
+    // 下一拍再给进度条终值：让 van-progress 的 width transition 从 0 播到目标
+    // （setTimeout 替代 rAF：隐藏页签里 rAF 不触发会让进度条定格 0）
+    setTimeout(() => setTimeout(() => { barsGrown.value = true }, 16), 16)
   } catch { error.value = '加载失败' }
   getExposure(route.params.id).then(({ data }) => { exposure.value = data.data }).catch(() => {})
   syncFavState()
@@ -255,7 +256,7 @@ async function toggleCheckin() {
             <div class="section-title">成分 - 靶点网络图</div>
             <div class="card">
               <NetworkGraph :recipe-id="route.params.id" />
-              <p class="a-disclaimer">力导向布局：节点可拖拽，双指/滚轮缩放。仅展示 Top 成分与其高频靶点。</p>
+              <p class="a-disclaimer">力导向布局：节点可拖拽，双指/滚轮缩放。仅展示 Top 成分与其高频靶点（人类蛋白，非人物种数据已过滤）。</p>
             </div>
           </template>
           <div v-else class="card">
@@ -270,6 +271,7 @@ async function toggleCheckin() {
                 <span class="e-comp">{{ e.compound }}</span>
                 <span class="e-src">{{ e.herb }} {{ e.grams }}g</span>
                 <span class="e-val">≈ {{ e.est_mg_min }}–{{ e.est_mg_max }} mg</span>
+                <span v-if="e.absorbed_mg_max != null" class="e-abs">吸收 {{ e.absorbed_mg_min }}–{{ e.absorbed_mg_max }} mg · 入血概率 {{ e.prob_cctcm }}</span>
               </div>
               <p class="a-disclaimer">{{ exposure.note }}</p>
             </div>
@@ -353,6 +355,14 @@ async function toggleCheckin() {
 
 .a-targets { font-size: 12px; color: var(--ink-600); margin-top: 12px; }
 .a-disclaimer { font-size: 11px; color: var(--ink-400); margin-top: 10px; line-height: 1.5; }
+
+/* 暴露量行：成分 / 来源 / 摄入量 / 吸收期望 */
+.exp-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; padding: 7px 0; border-bottom: 1px dashed var(--green-50); font-size: 12.5px; }
+.e-comp { font-weight: 600; }
+.e-src { color: var(--ink-400); font-size: 11.5px; }
+.e-val { font-variant-numeric: tabular-nums; color: var(--ink-600); }
+.e-abs { flex-basis: 100%; font-size: 11.5px; color: var(--green-700); font-variant-numeric: tabular-nums; }
+.exp-row:last-child { border-bottom: none; }
 
 .source p { font-size: 13px; color: var(--ink-600); }
 .source a { font-size: 13px; color: var(--green-700); text-decoration: none; display: inline-block; margin-top: 4px; }

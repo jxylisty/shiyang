@@ -101,23 +101,33 @@ def compounds(min_prob: float = 0.0, limit: int = 200):
 
 
 @router.get("/compounds/{name}/targets")
-def compound_targets(name: str):
+def compound_targets(name: str, species: str = "human"):
+    """成分-靶点关系。默认只返回人类蛋白靶点；species=all 时返回全物种（含小鼠/大鼠等实验数据）。"""
     conn = _db()
     try:
         row = conn.execute("SELECT id,name,mw,logp,prob_cctcm FROM compound WHERE name=?", (name,)).fetchone()
         if not row:
             conn.close()
             raise HTTPException(404, "化合物不存在")
+        where = "WHERE rc.compound_id=?"
+        params = [row["id"]]
+        if species == "human":
+            where += " AND t.species='Homo sapiens'"
         links = conn.execute(
-            "SELECT target_gene,activity_type,activity_value,activity_unit,reference,source_db "
-            "FROM rel_compound_target WHERE compound_id=?", (row["id"],)).fetchall()
+            f"SELECT rc.target_gene,rc.activity_type,rc.activity_value,rc.activity_unit,"
+            f"rc.reference,rc.source_db,t.species AS target_species "
+            f"FROM rel_compound_target rc JOIN target t ON t.gene=rc.target_gene {where}",
+            params).fetchall()
     finally:
         conn.close()
     items = [dict(l) | ({"pmid": l["reference"], "pubmed_url": f"https://pubmed.ncbi.nlm.nih.gov/{l['reference']}/"}
                         if (l["reference"] or "").isdigit() else {})
              for l in links]
+    note = ("仅返回人类蛋白靶点（Homo sapiens）；传 species=all 可看全物种实验数据"
+            if species == "human" else "含非人物种（小鼠/大鼠/斑马鱼等）实验数据，注意区分")
     return {"code": 0, "message": "success",
-            "data": {"compound": dict(row), "targets": items}, "meta": _meta(len(items))}
+            "data": {"compound": dict(row), "targets": items, "note": note},
+            "meta": _meta(len(items))}
 
 
 @router.get("/constitutions")

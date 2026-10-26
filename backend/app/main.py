@@ -586,9 +586,12 @@ def network(rid: int, max_compounds: int = 6, max_targets: int = 12):
         edges.append({"source": "recipe", "target": cid})
     if names:
         ph = ",".join("?" * len(names))
+        # 仅取人类蛋白靶点：非人物种（小鼠/大鼠/斑马鱼等）关系不进用户可见网络
         links = conn.execute(
-            f"SELECT compound_id, target_gene FROM rel_compound_target rc "
-            f"JOIN compound c ON c.id=rc.compound_id WHERE c.name IN ({ph})", names).fetchall()
+            f"SELECT rc.compound_id, rc.target_gene FROM rel_compound_target rc "
+            f"JOIN compound c ON c.id=rc.compound_id "
+            f"JOIN target t ON t.gene=rc.target_gene AND t.species='Homo sapiens' "
+            f"WHERE c.name IN ({ph})", names).fetchall()
         tcount = {}
         for row in links:
             tcount.setdefault(row["target_gene"], []).append(row["compound_id"])
@@ -607,7 +610,8 @@ def network(rid: int, max_compounds: int = 6, max_targets: int = 12):
                     edges.append({"source": f"c:{cname_by_id[cid]}", "target": f"t:{gene}"})
     conn.close()
     return ok({"nodes": nodes, "edges": edges,
-               "legend": ["方子", "活性成分", "作用靶点"]})
+               "legend": ["方子", "活性成分", "作用靶点"],
+               "note": "仅展示人类蛋白靶点（Homo sapiens），非人物种关系已过滤"})
 
 
 @app.get("/api/v1/constitution/{code}")
