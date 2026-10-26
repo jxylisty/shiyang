@@ -1,0 +1,4 @@
+# 测试专用依赖（正式依赖见 requirements.txt，生产部署不装本文件）
+# 运行：cd backend && python -X utf8 -m pip install -r requirements-dev.txt
+#       cd backend && python -X utf8 -m pytest tests/ -v
+pytest>=8.0
