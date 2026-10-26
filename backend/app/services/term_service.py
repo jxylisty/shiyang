@@ -117,6 +117,16 @@ def recommend(rid_count: int = 4) -> dict:
             "SELECT id,name,type,oneliner,scenes,constitutions_suitable FROM recipe "
             "WHERE status != '弃用' AND scenes LIKE ? ORDER BY analysis_ready DESC, id LIMIT ?",
             (f'%{scene}%', rid_count)).fetchall()
+        # 封面用首味配料（与方子列表同口径），一次查询取每方最小 id 的配料名
+        first_mat = {}
+        if rows:
+            ph = ",".join("?" * len(rows))
+            for m in conn.execute(
+                    f"SELECT recipe_id, name FROM rel_recipe_material "
+                    f"WHERE recipe_id IN ({ph}) AND id IN "
+                    f"(SELECT MIN(id) FROM rel_recipe_material WHERE recipe_id IN ({ph}) GROUP BY recipe_id)",
+                    [r["id"] for r in rows] * 2).fetchall():
+                first_mat[m["recipe_id"]] = m["name"]
     finally:
         conn.close()
     items = []
@@ -125,7 +135,8 @@ def recommend(rid_count: int = 4) -> dict:
         if scene in scenes:
             items.append({"id": r["id"], "name": r["name"], "type": r["type"],
                           "oneliner": r["oneliner"], "scenes": scenes,
-                          "constitutions_suitable": json.loads(r["constitutions_suitable"] or "[]")})
+                          "constitutions_suitable": json.loads(r["constitutions_suitable"] or "[]"),
+                          "materials": [first_mat[r["id"]]] if r["id"] in first_mat else []})
     info["scene"] = scene
     info["recipes"] = items
     return info

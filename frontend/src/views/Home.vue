@@ -53,6 +53,9 @@ onMounted(async () => {
     if (all.length) {
       const day = Math.floor(Date.now() / 86400000)
       daily.value = all[day % all.length]
+      // 封面默认取首味配料图；加载失败时 onDailyImgErr 依次换下一味，全失败才回退图标
+      coverTry.value = 0
+      cover.value = matImg(daily.value.materials?.[0] || '')
     }
   } catch { /* 推荐失败不影响首页 */ }
 })
@@ -104,7 +107,7 @@ function onDailyImgErr() {
     <div class="section-title">今日推荐</div>
     <router-link v-if="daily" :to="`/recipes/${daily.id}`" class="card daily">
       <div class="d-cover">
-        <img v-if="cover !== ''" :src="cover || matImg(daily.materials?.[0] || '')" alt="" loading="lazy" @error="onDailyImgErr" />
+        <img v-if="cover" :src="cover" alt="" loading="lazy" @error="onDailyImgErr" />
         <span v-else class="d-fallback"><AppIcon :name="daily.type === '药膳' ? 'dish' : 'tea'" :size="34" /></span>
         <span class="d-type">{{ daily.type }}</span>
       </div>

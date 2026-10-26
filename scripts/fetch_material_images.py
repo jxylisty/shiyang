@@ -61,6 +61,8 @@ MATERIALS = {
     "白糖": "white sugar", "猪肉": "raw pork meat",
     # 补搜词：首轮无命中/429 的品种
     "百合": "lilium bulb food", "天冬2": "Asparagus cochinchinensis dried",
+    # 药材图鉴缺图 2 味（2026-10）
+    "橘红": "dried tangerine peel", "花椒": "Sichuan peppercorns",
 }
 
 UA = {"User-Agent": "ShiyangStudentProject/0.2 (educational, non-commercial; contact: campus)"}

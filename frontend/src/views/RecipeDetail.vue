@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { BadgeCheck, Clock, ExternalLink, Star, StarOff, CheckCircle2, ArrowUp } from '@lucide/vue'
 import AppIcon from '../components/AppIcon.vue'
 import { showSuccessToast } from 'vant'
-import { getRecipe, getExposure, addFavorite, removeFavorite, listFavorites, isLoggedIn, pushHistory, doCheckin, undoCheckin } from '../api'
+import { getRecipe, getExposure, addFavorite, removeFavorite, listFavorites, isLoggedIn, pushHistory, doCheckin, undoCheckin, matImg } from '../api'
 import { afterPaint } from '../utils/motion'
 import AIReport from '../components/AIReport.vue'
 import NetworkGraph from '../components/NetworkGraph.vue'
@@ -67,8 +67,8 @@ function backTop() {
 const fmtGrams = (m) => m.grams ? `${m.grams}g` : (m.note?.includes('未标克数') ? '适量' : '适量*')
 
 // 配料图片：构建期预拉取到 /img/materials/{name}.jpg（Wikimedia Commons，许可见页脚）
+// 统一走 api 的 matImg（含异名映射：地黄→玉竹、当归→党参、猪脊骨→猪骨等），避免录入名与图名不一致时漏图
 // 没有图的物料 img 加载失败时隐藏占位、显示首字方块
-const matImg = (name) => `/img/materials/${encodeURIComponent(name)}.jpg`
 const hideImg = (e) => { e.target.style.display = 'none' }
 const matLoaded = ref({})
 const onMatLoad = (name) => { matLoaded.value[name] = true }

@@ -4,6 +4,7 @@
  */
 import { ref, onMounted } from 'vue'
 import { Sprout, CalendarClock } from '@lucide/vue'
+import AppIcon from './AppIcon.vue'
 import { getTermCurrent, matImg } from '../api'
 
 const info = ref(null)
@@ -33,7 +34,10 @@ const fmtDate = (d) => {
     <p class="t-tip">{{ info.current.theme.tip }}</p>
     <div class="t-recipes" v-if="info.recipes.length">
       <router-link v-for="r in info.recipes.slice(0, 3)" :key="r.id" :to="`/recipes/${r.id}`" class="t-r pressable">
-        <img :src="matImg(r.name.slice(0, 2))" alt="" loading="lazy" @error="e => e.target.style.display = 'none'" />
+        <span class="t-r-img">
+          <img v-if="r.materials?.length" :src="matImg(r.materials[0])" alt="" loading="lazy" @error="e => e.target.style.display = 'none'" />
+          <AppIcon v-else :name="r.type === '药膳' ? 'dish' : 'tea'" :size="18" />
+        </span>
         <div>
           <b>{{ r.name }}</b>
           <span>{{ r.oneliner }}</span>
@@ -56,8 +60,10 @@ const fmtDate = (d) => {
 .t-recipes { display: flex; flex-direction: column; gap: 8px; }
 .t-r { display: flex; gap: 10px; align-items: center; text-decoration: none; color: inherit;
        padding: 8px; border-radius: 10px; background: var(--green-50); }
-.t-r img { width: 38px; height: 38px; border-radius: 8px; object-fit: cover; flex-shrink: 0;
-           background: linear-gradient(135deg, var(--green-600), var(--green-900)); }
+.t-r-img { width: 38px; height: 38px; border-radius: 8px; flex-shrink: 0; overflow: hidden;
+           display: flex; align-items: center; justify-content: center;
+           background: var(--green-100); color: var(--green-700); }
+.t-r-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .t-r b { font-size: 13px; display: block; }
 .t-r span { font-size: 11px; color: var(--ink-600); display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
 .t-more { display: inline-block; margin-top: 10px; font-size: 12px; color: var(--green-700); text-decoration: none; }

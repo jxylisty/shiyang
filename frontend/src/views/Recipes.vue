@@ -75,8 +75,13 @@ function pickScene(s) { scene.value = scene.value === s ? '' : s; load() }
 function pickType(t) { type.value = type.value === t ? '' : t; load() }
 
 // 封面：首味配料图，加载失败换次味，全失败落品牌渐变兜底
+// _cover 未取过图时为 undefined → 用 coverOf 首味；取完所有配料仍失败才置 '' 放弃
 function coverOf(r) {
   return r.materials?.length ? matImg(r.materials[0]) : ''
+}
+function coverSrc(r) {
+  if (r._cover === '') return ''
+  return r._cover || coverOf(r)
 }
 function onCoverErr(r) {
   r._try = (r._try ?? 0) + 1
@@ -132,7 +137,7 @@ function onCoverErr(r) {
                    class="card recipe-card with-cover pressable" :style="{ '--i': i, '--d': `${Math.min(i, 12) * 40}ms` }"
                    :class="{ 'safety-block': safetyMap[r.id]?.verdict === 'block' }">
         <div class="rc-cover" :class="{ 'rc-cover-fb': r.type === '药膳' }">
-          <img v-if="r._cover !== ''" :src="r._cover || coverOf(r)" alt="" loading="lazy" @error="onCoverErr(r)" />
+          <img v-if="coverSrc(r)" :src="coverSrc(r)" alt="" loading="lazy" @error="onCoverErr(r)" />
           <span v-else class="rc-cover-fallback"><AppIcon :name="r.type === '药膳' ? 'dish' : 'tea'" :size="32" /></span>
           <span class="rc-type">{{ r.type }}</span>
         </div>
