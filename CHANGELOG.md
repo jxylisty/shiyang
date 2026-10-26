@@ -38,3 +38,17 @@
 - 单测：`cd backend && python -X utf8 -m pytest tests/ -v` → **23 passed**（本文档撰写时为 14，数据线补充测试后 2026-10-26 复核实测 23）
 - 构建：`cd frontend && npx vite build` → 通过
 - T1/T2 全部端点在数据重建（`8c47247`）后复测通过（对比 Jaccard 由 0.333 变 0.667 属归属修复的正常反映，接口如实读取最新库）
+
+## UX 体验线（2026-10-27：搜索增强 + 首页时令接真节气 + 千人千面推荐）
+
+| 提交 | 功能 | 关键文件 | 验证 |
+|---|---|---|---|
+| `72fcbf5` | 搜索扩域：全局搜索方子加配料名、药材加别名/功效，每条带 matched_by 命中来源标注 | `search_service.py` | 实测「枸杞」命中配料含枸杞子方、「润肺」命中功效·润肺药材；**29 passed** ✅ |
+| `c5a4c39` | 列表页 q 扩域：兑现搜索框「搜方子名、体质需求或药材」承诺（此前只搜名称） | `main.py list_recipes` | 实测「气虚」24 方、「枸杞」9 方；26 passed ✅ |
+| `2f956bc` | 搜索面板升级：matched_by 标签 + 最近搜索（本地 8 条）+ 快搜词 | `SearchBox.vue` | vite build ✅ |
+| `a72915c` | 首页时令专区接真节气：节气横幅（霜降·第 N 天·tip）+ 当令方真数据横滑，失败回退写死场景卡；场景卡计数改实算 | `Home.vue` | 实测当前霜降·换季调理 6 款当令；build ✅ |
+| `b82a68d` | 「为你推荐」服务 + 双端点：`GET /me/recommend`（登录，档案+收藏打卡+节气）、`POST /constitution/recommend`（游客），每条带 reasons | `rec_service.py` `main.py` | 全流程测试（注册→存档→收藏→打卡→推荐，测试数据已清理）；端点 50→52；29 passed ✅ |
+| `868c4c4` | 首页三态「为你推荐」：ForYou 自包含组件（登录/本地暂存/未测引导），渲染成功时替换通用今日推荐；Quiz 结果本地暂存；列表支持 `?constitution=` 深链 | `ForYou.vue` `Quiz.vue` `Recipes.vue` `api/index.js` | build ✅ |
+| `43d92d6` | 方子库列表露出已收藏角标（朱砂星标，封面右上角） | `Recipes.vue` | build ✅ |
+
+**UX 线回归基线（2026-10-27 实测）**：端点 48 路径 / 52 端点（`app.openapi()`）；单测 **29 passed**；vite build 通过。

@@ -1,8 +1,8 @@
 # API 扩展记录（v0.2.0 基线之后）
 
-- **实测方式**：`main.app.openapi()` 导出（非手抄），核实日期 **2026-10-26**。
-- **规模**：**46 条路径 / 50 个端点**。docs/API接口设计文档.md 所记「24 端点」为 v0.2.0 基线口径，已过时，本文档补充增量部分；基线接口的设计原则与响应约定仍以该文档为准。
-- ⚠️ **口径说明（数据真实）**：多工作线并行期间清单曾两次失真，最终于数据线提交 `578c54b` 后**重测复核**：本清单与届时 HEAD 完全一致（46 路径 / 50 端点，无未提交路由混入）。此后若再合并增量，须用文末命令重跑并更新本表。
+- **实测方式**：`main.app.openapi()` 导出（非手抄），核实日期 **2026-10-27**。
+- **规模**：**48 条路径 / 52 个端点**。docs/API接口设计文档.md 所记「24 端点」为 v0.2.0 基线口径，已过时，本文档补充增量部分；基线接口的设计原则与响应约定仍以该文档为准。
+- ⚠️ **口径说明（数据真实）**：多工作线并行期间清单曾两次失真，最终于数据线提交 `578c54b` 后**重测复核**：本清单与届时 HEAD 完全一致（46 路径 / 50 端点，无未提交路由混入）。此后若再合并增量，须用文末命令重跑并更新本表。2026-10-27 UX 线新增 2 端点后重跑复核为 48 路径 / 52 端点。
 - **复核命令**（数据或代码变动后重新生成此清单）：
 
 ```bash
@@ -23,6 +23,7 @@ for p in sorted(main.app.openapi()['paths']):
 | GET | /api/v1/constitution/questionnaire | 基线 |
 | POST / GET | /api/v1/constitution/records | 基线；POST 增加 member_id（T2-8） |
 | POST | /api/v1/constitution/submit | 基线 |
+| POST | /api/v1/constitution/recommend | **UX线** 为你推荐·游客态（body 传本地暂存 judged，2026-10-27 提交 b82a68d；注册在 {code} 之前） |
 | GET | /api/v1/constitution/{code} | 基线 |
 | GET | /api/v1/evidence/levels | **T1-3** 证据分级定义（A/B/C） |
 | GET | /api/v1/evidence/recipe/{rid} | **T1-3** 单方三级证据链+PMID 链接 |
@@ -36,6 +37,7 @@ for p in sorted(main.app.openapi()['paths']):
 | GET | /api/v1/health | 基线 |
 | GET | /api/v1/herbs | 基线 |
 | GET | /api/v1/me | 基线 |
+| GET | /api/v1/me/recommend | **UX线** 为你推荐·登录态（体质档案+收藏打卡偏好+当令节气，2026-10-27 提交 b82a68d） |
 | GET | /api/v1/open | **T1-6** 开放数据自描述索引 |
 | GET | /api/v1/open/catalog | **T1-6** 药食同源目录（实测 34 条命中药材） |
 | GET | /api/v1/open/compounds | **T1-6** |
@@ -58,7 +60,7 @@ for p in sorted(main.app.openapi()['paths']):
 | POST | /api/v1/safety/check-batch | **T1-5** 批量人群安全检查 |
 | GET | /api/v1/safety/check/{recipe_id} | **T1-5** |
 | GET | /api/v1/safety/profiles | **T1-5** 五档人群档案 |
-| GET | /api/v1/search | 数据线（全局搜索，见提交 7db3875） |
+| GET | /api/v1/search | 数据线（全局搜索，见提交 7db3875）；2026-10-27 UX 线扩域至配料名/药材别名/功效并带 matched_by（提交 72fcbf5），recipes 列表 q 同步扩域（提交 c5a4c39） |
 | GET | /api/v1/stats | 基线 |
 | GET | /api/v1/term/current | **T2-9** 当前节气+食养主题+推荐方 |
 
