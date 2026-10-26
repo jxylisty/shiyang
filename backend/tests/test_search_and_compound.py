@@ -104,6 +104,87 @@ def test_recipes_list_q_searches_beyond_name():
     assert d["total"] > 0, f"配料名「{mat_name}」应命中至少一个方子"
 
 
+# ---------- 「为你推荐」（千人千面） ----------
+
+def test_guest_recommend_rejects_bad_body():
+    resp = client.post("/api/v1/constitution/recommend", json={"judged": {"combined": []}})
+    assert resp.status_code == 422
+    resp = client.post("/api/v1/constitution/recommend", json={"judged": {"combined": ["不是体质"]}})
+    assert resp.status_code == 422
+
+
+def test_guest_recommend_with_local_judged():
+    # 用真实量表算一份气虚判定（期望值从数据侧构造，不写死方子名）
+    from services import constitution_service as cs
+    items, _ = cs.get_questionnaire()
+    qixu_qi = [4] * len(items["qixu"])
+    others = {c: [2] * len(q) for c, q in items.items() if c != "qixu"}
+    answers = {"qixu": qixu_qi, **others}
+    transformed = cs.calc_transformed(answers)
+    judged = cs.judge(transformed)
+    d = _data(client.post("/api/v1/constitution/recommend", params={"count": 4},
+                          json={"judged": judged}).json() if False else
+              client.post("/api/v1/constitution/recommend",
+                          json={"judged": judged, "count": 4}))
+    assert d["has_constitution"] is True
+    assert d["main_constitution"] == "气虚质"
+    assert d["items"] and len(d["items"]) <= 4
+    for it in d["items"]:
+        assert it["reasons"], "每条推荐必须带理由"
+    # 气虚相宜的方子必须排最前（体质分最高）
+    assert "气虚" in d["items"][0]["reasons"][0]
+    assert d["disclaimer"]
+
+
+def test_me_recommend_requires_auth_and_full_flow():
+    # 注册→登录→存体质记录→收藏/打卡→推荐，测完按 §2.7 顺序清理
+    import time
+    from services import user_service as us
+    uname = f"t_reco_{int(time.time())}"
+    reg = client.post("/api/v1/auth/register", json={"username": uname, "password": "test1234"})
+    assert reg.status_code == 200, reg.text
+    token = client.post("/api/v1/auth/login", json={"username": uname, "password": "test1234"}).json()["data"]["token"]
+    auth = {"Authorization": f"Bearer {token}"}
+
+    # 未存体质记录时：has_constitution=False 但仍有当令推荐
+    d = _data(client.get("/api/v1/me/recommend", headers=auth))
+    assert d["has_constitution"] is False and d["items"]
+
+    # 存气虚记录 + 收藏 + 打卡 → 主体质应生效
+    from services import constitution_service as cs
+    items, _ = cs.get_questionnaire()
+    answers = {"qixu": [4] * len(items["qixu"]),
+               **{c: [2] * len(q) for c, q in items.items() if c != "qixu"}}
+    transformed = cs.calc_transformed(answers)
+    judged = cs.judge(transformed)
+    assert _data(client.post("/api/v1/constitution/records", headers=auth,
+                             json={"judged": judged, "transformed": transformed, "answers": answers}))["id"]
+    # 找一个含气虚相宜的方子收藏+打卡
+    d = _data(client.post("/api/v1/constitution/recommend", json={"judged": judged}))
+    rid = next((i["id"] for i in d["items"] if "气虚" in i["reasons"][0]), None)
+    if rid:
+        assert client.post(f"/api/v1/favorites/{rid}", headers=auth).status_code == 200
+        assert client.post(f"/api/v1/checkins/{rid}", headers=auth).status_code == 200
+    d = _data(client.get("/api/v1/me/recommend", headers=auth))
+    assert d["has_constitution"] is True and d["main_constitution"] == "气虚质"
+    if rid:
+        assert any("气虚" in it["reasons"][0] for it in d["items"][:2])
+
+    # 清理：外键关闭后按 checkin→favorite→constitution_record→user 顺序删
+    conn = us.db()
+    try:
+        conn.execute("PRAGMA foreign_keys=OFF")
+        if rid:
+            conn.execute("DELETE FROM checkin WHERE user_id=(SELECT id FROM user WHERE username=?)", (uname,))
+            conn.execute("DELETE FROM favorite WHERE user_id=(SELECT id FROM user WHERE username=?)", (uname,))
+        conn.execute("DELETE FROM constitution_record WHERE user_id=(SELECT id FROM user WHERE username=?)", (uname,))
+        conn.execute("DELETE FROM user WHERE username=?", (uname,))
+        conn.commit()
+    finally:
+        conn.close()
+    assert us.db().execute("SELECT 1 FROM user WHERE username=?", (uname,)).fetchone() is None
+
+
 # ---------- 成分词典（explain 扩展字段） ----------
 
 def _any_compound_name():

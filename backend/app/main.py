@@ -529,6 +529,32 @@ def term_current(count: int = 4):
     return ok(terms.recommend(max(1, min(count, 8))))
 
 
+# ==================== 「为你推荐」（千人千面） ====================
+# 注意：/constitution/recommend 字面量路径必须注册在 /constitution/{code} 之前（§5.1 路由顺序坑）
+
+from services import rec_service as rec  # noqa: E402
+
+
+class GuestJudgeBody(BaseModel):
+    judged: dict
+
+
+@app.get("/api/v1/me/recommend")
+def me_recommend(authorization: str | None = Header(None), count: int = 4):
+    """登录用户推荐：最新体质记录 + 收藏/打卡偏好 + 当令节气"""
+    uid = auth_uid(authorization)
+    return ok(rec.recommend_for_user(uid, max(1, min(count, 8))))
+
+
+@app.post("/api/v1/constitution/recommend")
+def guest_recommend(body: GuestJudgeBody, count: int = 4):
+    """游客推荐：body 传本地暂存的体质判定结果（combined 至少一项）"""
+    try:
+        return ok(rec.recommend_for_guest(body.judged, max(1, min(count, 8))))
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+
+
 # ==================== AI 流式解读（P1.2，SSE；P2 支持预生成回放） ====================
 
 @app.get("/api/v1/recipes/{rid}/ai-report")
