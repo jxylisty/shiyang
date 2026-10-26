@@ -47,28 +47,63 @@ async function runSafety() {
 
 const SCENES = ['护嗓润喉', '熬夜护眼', '换季调理', '助眠', '消化', '控糖轻养', '控油祛痘', '久坐通气', '情绪舒压', '经期温养']
 
+// ---- 分页加载（van-list 无限滚动）：筛选/搜索变化重置回第 1 页 ----
+const PAGE_SIZE = 20
+const page = ref(1)
+const listLoading = ref(false)   // van-list 追加页加载中
+const finished = ref(false)      // 全部加载完
+
 let searchTimer = null
 let reqId = 0
+async function fetchPage(p) {
+  const params = { page: p, size: PAGE_SIZE }
+  if (type.value) params.type = type.value
+  if (scene.value) params.scene = scene.value
+  if (constitution.value) params.constitution = constitution.value
+  if (kw.value.trim()) params.q = kw.value.trim()
+  const d = (await listRecipes(params)).data.data
+  return d
+}
+
 async function load() {
+  // 首屏/筛选变化：重置列表从第 1 页拉，骨架屏转
   const id = ++reqId
   loading.value = true
   loadError.value = false
+  page.value = 1
+  finished.value = false
   try {
-    const params = { size: 100 }
-    if (type.value) params.type = type.value
-    if (scene.value) params.scene = scene.value
-    if (constitution.value) params.constitution = constitution.value
-    if (kw.value.trim()) params.q = kw.value.trim()
-    const d = (await listRecipes(params)).data.data
+    const d = await fetchPage(1)
     if (id !== reqId) return   // 已有更新的请求发出，丢弃本次结果
     items.value = d.items
     total.value = d.total
+    if (d.items.length >= d.total) finished.value = true
     runSafety()
   } catch {
     if (id !== reqId) return
     loadError.value = true
     items.value = []
   } finally { if (id === reqId) loading.value = false }
+}
+
+// van-list @load：追加下一页（loading 由 van-list 控制，请求完必须置回 false）
+async function onLoadMore() {
+  if (loading.value || finished.value) return
+  const id = reqId
+  try {
+    const next = page.value + 1
+    const d = await fetchPage(next)
+    if (id !== reqId) return   // 期间发生了筛选重置，丢弃
+    page.value = next
+    items.value = items.value.concat(d.items)
+    total.value = d.total
+    if (items.value.length >= d.total) finished.value = true
+    runSafety()   // 增量页也过安全批检（runSafety 全量重跑，简单可靠）
+  } catch {
+    finished.value = true   // 追加失败按到底处理，不打断已展示内容
+  } finally {
+    listLoading.value = false
+  }
 }
 
 function onSearch() {
@@ -150,39 +185,42 @@ function onCoverErr(r) {
     <van-empty v-else-if="loadError" image="error" description="服务暂时不可用，请稍后重试" />
     <van-empty v-else-if="!items.length" image="search" description="这个组合下暂无方子，换个筛选试试" />
 
-    <div v-else class="recipe-list">
-      <router-link v-for="(r, i) in items" :key="r.id" :to="`/recipes/${r.id}`"
-                   class="card recipe-card with-cover pressable" :style="{ '--i': i, '--d': `${Math.min(i, 12) * 40}ms` }"
-                   :class="{ 'safety-block': safetyMap[r.id]?.verdict === 'block' }">
-        <div class="rc-cover">
-          <img v-if="coverSrc(r)" :src="coverSrc(r)" alt="" loading="lazy" @error="onCoverErr(r)" />
-          <span v-else class="rc-cover-fallback"><AppIcon :name="r.type === '药膳' ? 'dish' : 'tea'" :size="32" /></span>
-          <span class="rc-type">{{ r.type }}</span>
-          <!-- 已收藏角标：逛库时认出收藏过的（详情页收藏后列表同步可见） -->
-          <span v-if="favIds.has(r.id)" class="rc-fav" title="已收藏"><AppIcon name="sparkles" :size="11" /></span>
-        </div>
-        <div class="rc-main">
-          <div class="rc-top">
-            <span class="rc-name">{{ r.name }}</span>
-            <span v-if="r.duration" class="rc-dur">{{ r.duration }}</span>
+    <van-list v-else v-model:loading="listLoading" :finished="finished" finished-text="没有更多了"
+              @load="onLoadMore" :immediate-check="false">
+      <div class="recipe-list">
+        <router-link v-for="(r, i) in items" :key="r.id" :to="`/recipes/${r.id}`"
+                     class="card recipe-card with-cover pressable" :style="{ '--i': Math.min(i % 20, 12), '--d': `${Math.min(i % 20, 12) * 40}ms` }"
+                     :class="{ 'safety-block': safetyMap[r.id]?.verdict === 'block' }">
+          <div class="rc-cover">
+            <img v-if="coverSrc(r)" :src="coverSrc(r)" alt="" loading="lazy" @error="onCoverErr(r)" />
+            <span v-else class="rc-cover-fallback"><AppIcon :name="r.type === '药膳' ? 'dish' : 'tea'" :size="32" /></span>
+            <span class="rc-type">{{ r.type }}</span>
+            <!-- 已收藏角标：逛库时认出收藏过的（详情页收藏后列表同步可见） -->
+            <span v-if="favIds.has(r.id)" class="rc-fav" title="已收藏"><AppIcon name="sparkles" :size="11" /></span>
           </div>
-          <p class="rc-one">{{ r.oneliner }}</p>
-          <div v-if="r.materials?.length" class="rc-mats">
-            <span>配料：</span>{{ r.materials.slice(0, 4).join(' · ') }}
+          <div class="rc-main">
+            <div class="rc-top">
+              <span class="rc-name">{{ r.name }}</span>
+              <span v-if="r.duration" class="rc-dur">{{ r.duration }}</span>
+            </div>
+            <p class="rc-one">{{ r.oneliner }}</p>
+            <div v-if="r.materials?.length" class="rc-mats">
+              <span>配料：</span>{{ r.materials.slice(0, 4).join(' · ') }}
+            </div>
+            <div v-if="safetyMap[r.id]?.verdict === 'block'" class="rc-safety block">
+              <ShieldAlert :size="12" /> {{ safetyMap[r.id].blocks[0].reason }}<span v-if="safetyMap[r.id].blocks.length > 1"> 等</span>
+            </div>
+            <div v-else-if="safetyMap[r.id]?.verdict === 'warn'" class="rc-safety warn">
+              <ShieldAlert :size="12" /> {{ safetyMap[r.id].warns[0].reason }}<span v-if="safetyMap[r.id].warns.length > 1"> 等</span>
+            </div>
+            <div class="rc-bottom">
+              <span v-for="s in r.scenes.slice(0, 2)" :key="s" class="tag">{{ s }}</span>
+              <span v-if="r.analysis_ready" class="tag lab"><BadgeCheck :size="12" :stroke-width="2.4" /> 成分有据</span>
+            </div>
           </div>
-          <div v-if="safetyMap[r.id]?.verdict === 'block'" class="rc-safety block">
-            <ShieldAlert :size="12" /> {{ safetyMap[r.id].blocks[0].reason }}<span v-if="safetyMap[r.id].blocks.length > 1"> 等</span>
-          </div>
-          <div v-else-if="safetyMap[r.id]?.verdict === 'warn'" class="rc-safety warn">
-            <ShieldAlert :size="12" /> {{ safetyMap[r.id].warns[0].reason }}<span v-if="safetyMap[r.id].warns.length > 1"> 等</span>
-          </div>
-          <div class="rc-bottom">
-            <span v-for="s in r.scenes.slice(0, 2)" :key="s" class="tag">{{ s }}</span>
-            <span v-if="r.analysis_ready" class="tag lab"><BadgeCheck :size="12" :stroke-width="2.4" /> 成分有据</span>
-          </div>
-        </div>
-      </router-link>
-    </div>
+        </router-link>
+      </div>
+    </van-list>
   </div>
 </template>
 
