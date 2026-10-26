@@ -97,9 +97,45 @@ def test_recipe_genes_are_human_protein_only():
     assert not bad, f"基因集混入非人类蛋白: {[dict(b) for b in bad][:3]}"
 
 
-def test_cache_roundtrip():
-    """save → cached 往返一致，且 KEGG 副列表不丢"""
+@pytest.fixture
+def restore_pathway_row():
+    """快照并恢复 recipe_pathway 行——测试不得污染知识库（AGENTS.md §2.7）"""
     rid = _recipe_with_analysis()
+    conn = sqlite3.connect(DB)
+    conn.row_factory = sqlite3.Row
+    try:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS recipe_pathway (
+                recipe_id INTEGER PRIMARY KEY REFERENCES recipe(id),
+                gene_count INTEGER, pathways TEXT, pathways_kegg TEXT,
+                status TEXT, library TEXT, generated_at TEXT)""")
+        conn.commit()
+        row = conn.execute("SELECT * FROM recipe_pathway WHERE recipe_id=?",
+                           (rid,)).fetchone()
+        snapshot = dict(row) if row else None
+    finally:
+        conn.close()
+    yield rid
+    conn = sqlite3.connect(DB)
+    try:
+        if snapshot:
+            conn.execute(
+                "INSERT OR REPLACE INTO recipe_pathway "
+                "(recipe_id,gene_count,pathways,pathways_kegg,status,library,generated_at) "
+                "VALUES (?,?,?,?,?,?,?)",
+                (snapshot["recipe_id"], snapshot["gene_count"], snapshot["pathways"],
+                 snapshot["pathways_kegg"], snapshot["status"], snapshot["library"],
+                 snapshot["generated_at"]))
+        else:
+            conn.execute("DELETE FROM recipe_pathway WHERE recipe_id=?", (rid,))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def test_cache_roundtrip(restore_pathway_row):
+    """save → cached 往返一致，且 KEGG 副列表不丢"""
+    rid = restore_pathway_row
     fake = {"status": "ok", "n_genes": 12,
             "pathways": [{"term": "Apoptotic Process", "term_zh": "凋亡过程",
                           "p_value": 1e-10, "overlap_count": 5, "overlap": ["TP53"]}],
@@ -114,9 +150,9 @@ def test_cache_roundtrip():
 
 # ---------- API ----------
 
-def test_pathways_api_returns_cached_without_network():
+def test_pathways_api_returns_cached_without_network(restore_pathway_row):
     """有缓存时接口必须能离线返回（预生成过的方子不依赖第三方可用性）"""
-    rid = _recipe_with_analysis()
+    rid = restore_pathway_row
     ps.save(rid, {"status": "ok", "n_genes": 9,
                   "pathways": [{"term": "Immune Response", "term_zh": "免疫反应",
                                 "p_value": 1e-8, "overlap_count": 4, "overlap": []}],
