@@ -12,6 +12,10 @@ const loadError = ref(false)
 const kw = ref('')
 const active = ref(null)      // popup 详情
 const imgFailed = ref({})
+// 桌面端详情用居中弹窗，手机保持底部抽屉（van-popup--bottom 只有 left:0，宽屏下 margin auto 不生效）
+const mqWide = window.matchMedia('(min-width: 900px)')
+const isWide = ref(mqWide.matches)
+mqWide.addEventListener('change', (e) => { isWide.value = e.matches })
 
 let timer = null
 let reqId = 0
@@ -75,8 +79,9 @@ const hideImg = (name) => { imgFailed.value[name] = true }
     </template>
 
     <!-- 详情弹层 -->
-    <van-popup :show="!!active" position="bottom" round
-               :style="{ maxWidth: '750px', margin: '0 auto' }" @update:show="() => active = null" @click-overlay="active = null">
+    <van-popup :show="!!active" :position="isWide ? 'center' : 'bottom'" round
+               :class="{ 'h-popup-wide': isWide }"
+               @update:show="() => active = null" @click-overlay="active = null">
       <div class="h-detail" v-if="active">
         <div class="hd-head">
           <div class="h-img hd-img">
@@ -92,11 +97,11 @@ const hideImg = (name) => { imgFailed.value[name] = true }
         <div class="hd-sec hd-in" style="--i: 2" v-if="active.functions"><b>功效</b><p>{{ active.functions }}</p></div>
         <div class="hd-sec hd-in" style="--i: 3">
           <b>成分数据</b>
-          <p>关联 <b class="hd-num">{{ active.compound_count }}</b> 个活性成分（含预测入血概率与靶点数据），
-             可在<a href="/compounds" class="hd-link">成分库</a>按「来源药材」继续查看。</p>
+          <p class="hd-comp">关联 <span class="hd-num">{{ active.compound_count }}</span> 个活性成分，含预测入血概率与靶点数据</p>
+          <router-link to="/compounds" class="hd-goto">到成分库按「来源药材」继续查看<AppIcon name="chevron" :size="12" :stroke-width="2.4" /></router-link>
         </div>
         <p class="hd-note hd-in" style="--i: 4" v-if="active.food_catalog_batch">卫健委药食同源目录：第 {{ active.food_catalog_batch }} 批</p>
-        <button class="btn block hd-close hd-in" style="--i: 5" @click="active = null">关闭</button>
+        <button class="btn ghost block hd-close hd-in" style="--i: 5" @click="active = null">关闭</button>
       </div>
     </van-popup>
   </div>
@@ -119,7 +124,7 @@ const hideImg = (name) => { imgFailed.value[name] = true }
   background: var(--green-50); margin-bottom: 6px; position: relative;
 }
 .h-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.h-fallback { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 700; color: var(--green-700); }
+.h-fallback { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--tile-ink); }
 .h-name { font-size: 14px; }
 .h-nature { font-size: 11px; color: var(--amber-text); }
 .h-count { font-size: 10px; color: var(--ink-400); }
@@ -135,7 +140,8 @@ const hideImg = (name) => { imgFailed.value[name] = true }
 .hd-in { animation: rise .4s var(--ease-out-soft) backwards; animation-delay: calc(var(--i) * 60ms); }
 
 /* 详情弹层 */
-.h-detail { padding: 20px 16px; }
+.h-popup-wide { width: 520px; max-width: 92vw; }
+.h-detail { padding: 20px 16px; max-height: 80vh; overflow-y: auto; }
 .hd-head { display: flex; gap: 14px; align-items: center; margin-bottom: 14px; }
 .hd-img { width: 72px; flex-shrink: 0; }
 .hd-head h3 { font-size: 19px; }
@@ -143,8 +149,10 @@ const hideImg = (name) => { imgFailed.value[name] = true }
 .hd-sec { padding: 10px 0; border-top: 1px dashed var(--green-100); }
 .hd-sec b { font-size: 12px; color: var(--green-700); display: block; margin-bottom: 4px; }
 .hd-sec p { font-size: 13.5px; color: var(--ink-600); line-height: 1.7; }
-.hd-num { color: var(--green-700); }
-.hd-link { color: var(--green-700); }
+.hd-comp { display: flex; align-items: baseline; gap: 7px; }
+.hd-num { font-size: 22px; font-weight: 700; color: var(--green-700); font-variant-numeric: tabular-nums; }
+.hd-goto { display: inline-flex; align-items: center; gap: 3px; margin-top: 6px; font-size: 12.5px; color: var(--green-700); text-decoration: none; }
+.hd-goto:hover { text-decoration: underline; }
 .hd-note { font-size: 11px; color: var(--ink-400); margin-top: 6px; }
 .hd-close { margin-top: 14px; }
 </style>

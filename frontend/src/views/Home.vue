@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import AppIcon from '../components/AppIcon.vue'
+import RecipeRow from '../components/RecipeRow.vue'
 import { getStats, listRecipes, matImg } from '../api'
 import { useCountUp } from '../utils/motion'
 import TextReveal from '../components/TextReveal.vue'
@@ -12,13 +13,14 @@ const daily = ref(null)        // 今日推荐
 const coverTry = ref(0)
 const cover = ref('')
 
+// 每个场景一个低饱和色调（bg 浅底 / fg 图标色），暗色模式统一回绿（见 .scene-icon 覆写）
 const scenes = [
-  { name: '护嗓润喉', desc: '咽干用嗓多', icon: 'throat' },
-  { name: '熬夜护眼', desc: '屏幕眼干涩', icon: 'eye' },
-  { name: '助眠', desc: '多梦入睡难', icon: 'moon' },
-  { name: '消化', desc: '餐后腹胀腻', icon: 'fruit' },
-  { name: '换季调理', desc: '季节交替期', icon: 'season' },
-  { name: '经期温养', desc: '温和补养', icon: 'flower' },
+  { name: '护嗓润喉', desc: '咽干用嗓多', icon: 'throat', count: 13, bg: '#e2f1ef', fg: '#3a8f86' },
+  { name: '熬夜护眼', desc: '屏幕眼干涩', icon: 'eye', count: 10, bg: '#e9eef6', fg: '#5b7ba6' },
+  { name: '助眠', desc: '多梦入睡难', icon: 'moon', count: 13, bg: '#ebe8f3', fg: '#7a6fa8' },
+  { name: '消化', desc: '餐后腹胀腻', icon: 'fruit', count: 11, bg: '#f6eedd', fg: '#b07d3a' },
+  { name: '换季调理', desc: '季节交替期', icon: 'season', count: 25, bg: '#e9f1e0', fg: '#5f8f4e' },
+  { name: '经期温养', desc: '温和补养', icon: 'flower', count: 9, bg: '#f6e9ee', fg: '#a85f74' },
 ]
 
 // 时令场景横滑卡（配图 → 场景第一个方子的首味配料图，无则渐变兜底）
@@ -122,10 +124,11 @@ function onDailyImgErr() {
     <!-- 场景入口 -->
     <div class="section-title">按场景找茶饮</div>
     <div class="scene-grid">
-      <router-link v-for="(s, i) in scenes" :key="s.name" :to="`/recipes?scene=${encodeURIComponent(s.name)}`" class="scene card pressable" :style="{ '--i': i }">
+      <router-link v-for="(s, i) in scenes" :key="s.name" :to="`/recipes?scene=${encodeURIComponent(s.name)}`" class="scene card pressable" :style="{ '--i': i, '--tint-bg': s.bg, '--tint-fg': s.fg }">
         <span class="scene-icon"><AppIcon :name="s.icon" :size="22" /></span>
         <span class="name">{{ s.name }}</span>
         <span class="desc">{{ s.desc }}</span>
+        <span class="scene-foot">{{ s.count }} 方<AppIcon name="chevron" :size="11" :stroke-width="2.4" /></span>
       </router-link>
     </div>
 
@@ -151,20 +154,14 @@ function onDailyImgErr() {
         <span class="chain-step">作用靶点</span><i>→</i>
         <span class="chain-step">数据出处</span>
       </div>
-      <router-link v-for="r in showcaseRecipes" :key="r.id" :to="`/recipes/${r.id}`" class="recipe-row">
-        <div class="r-name">{{ r.name }}</div>
-        <div class="r-one">{{ r.oneliner }}</div>
-      </router-link>
+      <RecipeRow v-for="r in showcaseRecipes" :key="r.id" :recipe="r" />
       <router-link to="/recipes" class="zone-more">逛逛全部 {{ stats?.stats.recipe ?? '' }} 个方子 →</router-link>
     </div>
 
     <!-- 日常轻养 -->
     <div class="section-title">日常轻养</div>
     <div class="card">
-      <router-link v-for="r in sleepRecipes" :key="r.id" :to="`/recipes/${r.id}`" class="recipe-row">
-        <div class="r-name">{{ r.name }}</div>
-        <div class="r-one">{{ r.oneliner }}</div>
-      </router-link>
+      <RecipeRow v-for="r in sleepRecipes" :key="r.id" :recipe="r" />
     </div>
 
     <!-- 数据资产入口 -->
@@ -210,7 +207,7 @@ function onDailyImgErr() {
 .daily { display: flex; gap: 12px; padding: 12px; text-decoration: none; color: inherit; align-items: stretch; animation: rise .45s var(--ease-out-soft) .1s backwards; }
 .d-cover { position: relative; width: 92px; min-height: 92px; border-radius: 10px; overflow: hidden; background: var(--green-100); flex-shrink: 0; }
 .d-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.d-fallback { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--green-700); }
+.d-fallback { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--tile-ink); }
 .d-type { position: absolute; left: 0; bottom: 0; font-size: 10px; color: #fff; background: rgba(29, 74, 56, 0.75); padding: 1px 7px; border-radius: 0 8px 0 0; }
 .d-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .d-name { font-size: 16px; }
@@ -219,10 +216,13 @@ function onDailyImgErr() {
 
 .scene-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 .scene { display: flex; flex-direction: column; align-items: center; padding: 14px 6px; text-decoration: none; color: inherit; animation: rise .45s var(--ease-out-soft) backwards; animation-delay: calc(var(--i) * 50ms); }
-.scene-icon { display: flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: 50%; background: var(--green-50); border: 1px solid var(--green-100); color: var(--green-700); margin-bottom: 8px; transition: scale var(--dur-fast) var(--ease-snap), background var(--dur-fast) ease; }
-.scene:active .scene-icon { scale: 1.15; background: var(--green-100); }
+.scene-icon { display: flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: 50%; background: var(--tint-bg, var(--green-50)); color: var(--tint-fg, var(--tile-ink)); border: 1px solid rgba(0,0,0,.04); margin-bottom: 8px; transition: scale var(--dur-fast) var(--ease-snap); }
+.scene:active .scene-icon { scale: 1.15; }
+/* 暗色模式：浅色调底会刺眼，统一收回品牌绿 */
+:root[data-theme="dark"] .scene-icon { background: var(--green-100); color: var(--tile-ink); }
 .scene .name { font-size: 14px; font-weight: 600; color: var(--green-700); }
 .scene .desc { font-size: 11px; color: var(--ink-400); }
+.scene-foot { display: inline-flex; align-items: center; gap: 2px; margin-top: 8px; font-size: 11px; color: var(--ink-400); font-variant-numeric: tabular-nums; }
 
 /* 时令横滑 */
 .season-scroll { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 6px; margin: 0 -16px; padding-left: 16px; padding-right: 16px; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }

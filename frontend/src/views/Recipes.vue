@@ -136,7 +136,7 @@ function onCoverErr(r) {
       <router-link v-for="(r, i) in items" :key="r.id" :to="`/recipes/${r.id}`"
                    class="card recipe-card with-cover pressable" :style="{ '--i': i, '--d': `${Math.min(i, 12) * 40}ms` }"
                    :class="{ 'safety-block': safetyMap[r.id]?.verdict === 'block' }">
-        <div class="rc-cover" :class="{ 'rc-cover-fb': r.type === '药膳' }">
+        <div class="rc-cover">
           <img v-if="coverSrc(r)" :src="coverSrc(r)" alt="" loading="lazy" @error="onCoverErr(r)" />
           <span v-else class="rc-cover-fallback"><AppIcon :name="r.type === '药膳' ? 'dish' : 'tea'" :size="32" /></span>
           <span class="rc-type">{{ r.type }}</span>
@@ -187,11 +187,10 @@ function onCoverErr(r) {
 .recipe-card.with-cover { display: flex; padding: 12px; gap: 12px; align-items: stretch; }
 .rc-cover {
   position: relative; width: 86px; min-height: 86px; border-radius: 10px; overflow: hidden;
-  background: linear-gradient(135deg, var(--green-600), var(--green-900)); flex-shrink: 0;
+  background: var(--green-100); flex-shrink: 0;
 }
 .rc-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.rc-cover-fb { background: linear-gradient(135deg, var(--amber-600), #8a5a1d); }
-.rc-cover-fallback { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 30px; font-weight: 700; color: rgba(255,255,255,.9); }
+.rc-cover-fallback { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--tile-ink); }
 .rc-type {
   position: absolute; left: 0; bottom: 0; font-size: 10px; color: #fff;
   background: rgba(29, 74, 56, 0.75); padding: 1px 7px; border-radius: 0 8px 0 0;

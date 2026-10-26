@@ -5,6 +5,8 @@
   --green-600: #359068;
   --green-100: #e8f4ee;
   --green-50: #f4faf7;
+  /* 图标 tile 前景色：浅底用深绿，暗色模式下提亮保证对比度 */
+  --tile-ink: var(--green-700);
   --amber-600: #c98a2d;
   --amber-text: #8a5f16;
   --amber-50: #fdf6e9;
@@ -14,7 +16,7 @@
   --ink-900: #1f2b26;
   --ink-600: #55645d;
   --ink-400: #64736a;
-  --bg: #f6f9f7;
+  --bg: #edf3ee;
   --card: #ffffff;
   --radius: 14px;
   --shadow: 0 2px 10px rgba(31, 74, 56, 0.07);
@@ -160,8 +162,17 @@ body {
 .topbar nav a {
   text-decoration: none; color: var(--ink-600); font-size: 14px;
   padding: 4px 10px; border-radius: 18px;
+  display: inline-flex; align-items: center; gap: 5px;
+  transition: background var(--dur-fast) ease, color var(--dur-fast) ease;
 }
+.topbar nav a:hover { background: var(--green-50); color: var(--green-700); }
 .topbar nav a.router-link-exact-active { background: var(--green-100); color: var(--green-700); font-weight: 600; }
+@media (max-width: 420px) {
+  .topbar .logo { font-size: 16px; }
+  .topbar .logo small { display: none; }
+  .topbar nav a { padding: 6px 8px; font-size: 13px; white-space: nowrap; }
+  .topbar nav a .nav-label { display: none; }
+}
 
 /* 底部免责声明 */
 .disclaimer {
@@ -221,6 +232,7 @@ body {
 :root[data-theme="dark"] {
   --green-50: #1c2b24;
   --green-100: #24382e;
+  --tile-ink: #7fc9a5;
   --amber-50: #332a1a;
   --red-50: #3a2622;
   --ink-900: #e4ece7;

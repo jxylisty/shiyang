@@ -7,6 +7,15 @@ import { makeNavHooks } from './utils/motion'
 
 const route = useRoute()
 const router = useRouter()
+
+// 顶栏导航：自绘图标 + 文字（≤420px 只留图标），让人一眼看出可点
+const NAV = [
+  { to: '/recipes', name: '方子库', icon: 'book' },
+  { to: '/pantry', name: '茶罐', icon: 'jar' },
+  { to: '/herbs', name: '药材', icon: 'herb' },
+  { to: '/compounds', name: '成分', icon: 'molecule' },
+  { to: '/me', name: '我的', icon: 'user' },
+]
 watch(() => route.meta.title, (t) => { document.title = t ? `${t} · 食养有据` : '食养有据' }, { immediate: true })
 
 // 路由过渡 JS 钩子（setTimeout 收尾，隐藏页签不卡死）：
@@ -18,11 +27,9 @@ const { enter: pageEnter, leave: pageLeave } = makeNavHooks({ getDir: () => rout
   <header class="topbar">
     <router-link to="/" class="logo"><AppIcon name="leaf" class="logo-icon" :size="20" :stroke-width="2.2" />食养有据<small>药食同源 · 成分有据</small></router-link>
     <nav>
-      <router-link to="/recipes">方子库</router-link>
-      <router-link to="/pantry">茶罐</router-link>
-      <router-link to="/herbs">药材</router-link>
-      <router-link to="/compounds">成分</router-link>
-      <router-link to="/me">我的</router-link>
+      <router-link v-for="n in NAV" :key="n.to" :to="n.to">
+        <AppIcon :name="n.icon" :size="15" :stroke-width="2" /><span class="nav-label">{{ n.name }}</span>
+      </router-link>
     </nav>
     <SearchBox />
   </header>
