@@ -43,6 +43,50 @@ def test_search_no_hit():
     assert d["recipes"] == [] and d["herbs"] == [] and d["compounds"] == []
 
 
+def test_search_recipe_matched_by_material():
+    # 期望值从库实时构造（数据重建不碎）：任取一味配料名，应能搜到含它的方子且 matched_by 标注配料
+    import sqlite3
+    from services.explain_service import DB_PATH
+    conn = sqlite3.connect(f"file:{DB_PATH.as_posix()}?mode=ro", uri=True)
+    row = conn.execute(
+        "SELECT m.name, r.name FROM rel_recipe_material m JOIN recipe r ON r.id=m.recipe_id "
+        "WHERE r.status != '弃用' AND m.name NOT IN (SELECT name FROM recipe) LIMIT 1"
+    ).fetchone()
+    conn.close()
+    if not row:
+        return  # 库无配料数据则跳过
+    mat_name, _ = row
+    d = _data(client.get("/api/v1/search", params={"q": mat_name}))
+    hit = [r for r in d["recipes"] if mat_name in r.get("matched_by", "")]
+    assert hit, f"配料名「{mat_name}」应命中至少一个方子并标注 matched_by"
+
+
+def test_search_herb_matched_by_alias_or_function():
+    # 找一个仅靠别名或功效（非名称/拼音）命中的药材来验证扩域
+    import sqlite3
+    from services.explain_service import DB_PATH
+    conn = sqlite3.connect(f"file:{DB_PATH.as_posix()}?mode=ro", uri=True)
+    rows = conn.execute(
+        "SELECT name, alias, functions FROM herb WHERE alias IS NOT NULL AND alias != ''").fetchall()
+    conn.close()
+    target = None
+    for name, alias, funcs in rows:
+        alias_parts = [a.strip() for a in (alias or "").replace("，", ",").replace("、", ",").split(",") if a.strip()]
+        func_parts = [f.strip() for f in (funcs or "").replace("，", ",").replace(";", ";").split(",") if f.strip()]
+        for part in alias_parts + func_parts:
+            if part not in name and len(part) >= 2:
+                target = (name, part)
+                break
+        if target:
+            break
+    if not target:
+        return  # 无可用别名/功效语料则跳过
+    herb_name, part = target
+    d = _data(client.get("/api/v1/search", params={"q": part}))
+    assert any(h["name"] == herb_name for h in d["herbs"]), \
+        f"药材「{herb_name}」应通过别名/功效「{part}」被搜到"
+
+
 # ---------- 成分词典（explain 扩展字段） ----------
 
 def _any_compound_name():
