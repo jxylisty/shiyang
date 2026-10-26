@@ -72,11 +72,11 @@ function saveKey() {
 .ai-key-toggle { border: none; background: none; color: var(--green-700); font-size: 12px; cursor: pointer; padding: 0; }
 .key-wrap { overflow: hidden; }
 .ai-key {
-  width: 100%; padding: 10px 12px; border: 1px solid #e5efe9; border-radius: 10px;
-  font-size: 13px; margin-top: 8px; outline: none; background: #fff; box-sizing: border-box;
+  width: 100%; padding: 10px 12px; border: 1px solid var(--green-100); border-radius: 10px;
+  font-size: 13px; margin-top: 8px; outline: none; background: var(--card); color: var(--ink-900); box-sizing: border-box;
   transition: border-color var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
 }
-.ai-key:focus { border-color: #359068; box-shadow: 0 0 0 3px rgba(53, 144, 104, 0.08); }
+.ai-key:focus { border-color: var(--green-600); box-shadow: 0 0 0 3px rgba(53, 144, 104, 0.08); }
 .ai-key-save { margin-top: 8px; font-size: 12px; padding: 7px 14px; }
 .ai-key-note { font-size: 11px; color: var(--ink-400); margin-top: 6px; }
 .ai-key-note a { color: var(--green-700); }
@@ -87,11 +87,11 @@ function saveKey() {
 .ai-fade-enter-active, .ai-fade-leave-active { transition: opacity .25s ease, transform .25s var(--ease-out-soft); }
 .ai-fade-enter-from, .ai-fade-leave-to { opacity: 0; transform: translateY(6px); }
 .ai-stream { white-space: pre-wrap; }
-.ai-text { font-size: 13.5px; line-height: 1.8; color: #1f2b26; }
-.cursor { animation: blink 1s infinite; color: #2e7d5b; }
+.ai-text { font-size: 13.5px; line-height: 1.8; color: var(--ink-900); }
+.cursor { animation: blink 1s infinite; color: var(--green-600); }
 @keyframes blink { 50% { opacity: 0; } }
 /* 生成中三点跳动 */
-.ai-status { font-size: 12px; color: #359068; margin-top: 8px; }
+.ai-status { font-size: 12px; color: var(--green-600); margin-top: 8px; }
 .ai-dots { display: inline-block; margin-right: 4px; }
 .ai-dots::after {
   content: "…"; display: inline-block; overflow: hidden; vertical-align: bottom;

@@ -14,6 +14,31 @@ let ro = null
 
 const COLORS = ['#2e7d5b', '#c98a2d', '#5b7fa6']
 
+// ECharts 画在 canvas 上，不认 CSS var()——文字/边线色必须按当前主题给字面值
+const THEME = {
+  light: { text: '#1f2b26', sub: '#55645d', edge: '#c3d8cd' },
+  dark: { text: '#e4ece7', sub: '#a3b3ab', edge: '#3a4a42' },
+}
+const themeColors = () => (document.documentElement.dataset.theme === 'dark' ? THEME.dark : THEME.light)
+
+let lastData = null
+function buildOption(d) {
+  const tc = themeColors()
+  return {
+    tooltip: { confine: true, formatter: (p) => p.dataType === 'node' ? p.data.name : '' },
+    legend: { data: d.legend, bottom: 0, itemWidth: 10, itemHeight: 10, textStyle: { fontSize: 11, color: tc.sub } },
+    series: [{
+      type: 'graph', layout: 'force', roam: true, draggable: true,
+      force: { repulsion: 130, edgeLength: [40, 90], gravity: 0.08 },
+      categories: d.legend.map((name) => ({ name })),
+      color: COLORS,
+      label: { show: true, fontSize: 10, color: tc.text, formatter: (p) => p.data.name.length > 8 ? p.data.name.slice(0, 8) + '…' : p.data.name },
+      data: d.nodes.map((n) => ({ ...n, symbolSize: n.value })),
+      links: d.edges.map((e) => ({ source: e.source, target: e.target, lineStyle: { color: tc.edge, width: 1 } })),
+    }],
+  }
+}
+
 async function render() {
   loading.value = true
   ready.value = false
@@ -22,20 +47,9 @@ async function render() {
     const d = data.data
     if (!d.nodes || d.nodes.length <= 1) { empty.value = true; return }
     empty.value = false
+    lastData = d
     if (!chart) chart = echarts.init(el.value)
-    chart.setOption({
-      tooltip: { confine: true, formatter: (p) => p.dataType === 'node' ? p.data.name : '' },
-      legend: { data: d.legend, bottom: 0, itemWidth: 10, itemHeight: 10, textStyle: { fontSize: 11, color: '#55645d' } },
-      series: [{
-        type: 'graph', layout: 'force', roam: true, draggable: true,
-        force: { repulsion: 130, edgeLength: [40, 90], gravity: 0.08 },
-        categories: d.legend.map((name) => ({ name })),
-        color: COLORS,
-        label: { show: true, fontSize: 10, color: '#1f2b26', formatter: (p) => p.data.name.length > 8 ? p.data.name.slice(0, 8) + '…' : p.data.name },
-        data: d.nodes.map((n) => ({ ...n, symbolSize: n.value })),
-        links: d.edges.map((e) => ({ source: e.source, target: e.target, lineStyle: { color: '#c3d8cd', width: 1 } })),
-      }],
-    })
+    chart.setOption(buildOption(d))
     requestAnimationFrame(() => { ready.value = true })
   } catch { empty.value = true }
   finally { loading.value = false }

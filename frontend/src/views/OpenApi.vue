@@ -85,7 +85,7 @@ async function copy(path) {
 .ep-row { display: flex; align-items: center; gap: 8px; }
 .ep-path { font-size: 12px; font-family: ui-monospace, Consolas, monospace; color: var(--green-700);
            background: var(--green-50); padding: 4px 8px; border-radius: 8px; word-break: break-all; flex: 1; }
-.copy-btn { border: 1px solid var(--green-100); background: #fff; border-radius: 8px; padding: 5px;
+.copy-btn { border: 1px solid var(--green-100); background: var(--card); border-radius: 8px; padding: 5px;
             color: var(--green-700); cursor: pointer; flex-shrink: 0; display: inline-flex; }
 .ep-desc { font-size: 12px; color: var(--ink-600); margin-top: 6px; }
 .code { font-size: 12px; font-family: ui-monospace, Consolas, monospace; background: var(--green-50);

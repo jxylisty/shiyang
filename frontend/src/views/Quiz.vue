@@ -290,7 +290,7 @@ const mainName = computed(() => {
 .q-text { font-size: 17px; font-weight: 600; min-height: 76px; }
 .opts { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 10px; }
 .opt {
-  border: 1px solid var(--green-100); background: #fff; border-radius: 10px; padding: 12px 0; font-size: 13px; color: var(--ink-600); cursor: pointer;
+  border: 1px solid var(--green-100); background: var(--card); border-radius: 10px; padding: 12px 0; font-size: 13px; color: var(--ink-600); cursor: pointer;
   transition: background var(--dur-fast) ease, color var(--dur-fast) ease, border-color var(--dur-fast) ease, scale var(--dur-fast) var(--ease-snap);
 }
 .opt:active { scale: 0.94; }

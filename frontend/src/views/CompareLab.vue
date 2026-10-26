@@ -228,7 +228,7 @@ function poly(vals) {
   background: var(--green-50); font-size: 14px; font-weight: 600; color: var(--ink-600);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer;
 }
-.pick.done { border-style: solid; border-color: var(--green-600); background: #fff; color: var(--ink-900); }
+.pick.done { border-style: solid; border-color: var(--green-600); background: var(--card); color: var(--ink-900); }
 .vs { color: var(--ink-400); flex-shrink: 0; }
 .lab-btn { margin-top: 12px; width: 100%; }
 .lab-btn:disabled { opacity: .5; }
