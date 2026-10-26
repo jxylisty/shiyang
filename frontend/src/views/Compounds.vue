@@ -46,7 +46,8 @@ const probColor = (p) => p >= 0.9 ? 'var(--green-700)' : p >= 0.7 ? 'var(--amber
   <div class="page">
     <div class="card intro">
       <b class="intro-title">活性成分数据图鉴</b>
-      <p>来自大创课题「中药入血成分预测」的 PU-Learning 双模型（ccTCM / HERB）预测结果。入血概率越高，代表该成分进入血液并产生全身靶点作用的概率越大。</p>
+      <p>数据来自南京中医药大学赵玉男老师团队自建的 <b>ccTCM 2.0</b> 数据库，入血概率由 PU-Learning 模型预测（ROC-AUC 0.903）。</p>
+      <p class="intro-note">提示：入血概率表示成分<b>在血中被检出的倾向</b>，不是口服吸收率。大分子皂苷吸收率低但血中可检出，模型仍可能给高分。</p>
     </div>
 
     <div class="f-row">
@@ -108,6 +109,7 @@ const probColor = (p) => p >= 0.9 ? 'var(--green-700)' : p >= 0.7 ? 'var(--amber
 }
 .intro-title { font-family: var(--font-serif); font-size: 17px; letter-spacing: 0.02em; }
 .intro p { font-size: 13px; opacity: .9; margin-top: 6px; line-height: 1.6; }
+.intro .intro-note { font-size: 11.5px; opacity: .72; border-top: 1px solid rgba(255,255,255,.15); padding-top: 6px; margin-top: 8px; }
 
 .f-row { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 12px; }
 .level {

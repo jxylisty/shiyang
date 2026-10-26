@@ -52,6 +52,13 @@ watch(() => props.recipeId, load, { immediate: true })
       </div>
     </div>
     <p class="xp-note">{{ data.note }}</p>
+    <details class="xp-scope">
+      <summary>这个概率不是"吸收率"（点开看说明）</summary>
+      <p>模型预测的是成分<b>在血中被检出的倾向</b>，不是口服吸收百分比。所以会出现反直觉情况：
+        人参皂苷这类大分子虽然吸收率低，但肠道菌群代谢后仍能在血中检出，模型给高分；
+        挥发性小分子萜类虽然容易吸收，但代谢快、血中难检出，模型给低分。这由训练标签的定义决定，不是模型错误。</p>
+      <p>数据来源：南京中医药大学赵玉男老师团队自建 ccTCM 2.0 数据库；模型 ROC-AUC 0.903，平台以 prob ≥ 0.7 为展示阈值，仅用于成分排序参考。</p>
+    </details>
   </div>
 </template>
 
@@ -78,5 +85,10 @@ watch(() => props.recipeId, load, { immediate: true })
 .xp-val i { font-style: normal; font-size: 10px; color: var(--ink-400); }
 .xp-say { font-size: 12px; color: var(--ink-600); line-height: 1.6; margin-top: 4px; }
 .xp-note { font-size: 11px; color: var(--ink-400); margin-top: 8px; line-height: 1.6; }
+.xp-scope { margin-top: 10px; border-top: 1px dashed var(--green-100); padding-top: 8px; }
+.xp-scope summary { font-size: 11.5px; color: var(--green-700); cursor: pointer; font-weight: 600; list-style: none; }
+.xp-scope summary::-webkit-details-marker { display: none; }
+.xp-scope summary::before { content: 'ⓘ '; }
+.xp-scope p { font-size: 11px; color: var(--ink-600); line-height: 1.65; margin-top: 6px; }
 .xp-dict { border: none; background: none; color: var(--green-700); font-size: 12px; cursor: pointer; padding: 2px 0 0; font-family: inherit; }
 </style>
