@@ -27,6 +27,7 @@ export const getStats = () => api.get('/stats')
 export const getExposure = (id) => api.get(`/recipes/${id}/exposure`)
 export const getNetwork = (id) => api.get(`/recipes/${id}/network`)
 export const getEvidenceChain = (id) => api.get(`/recipes/${id}/chain`)
+export const getPathways = (id) => api.get(`/recipes/${id}/pathways`)
 export const compareRecipes = (a, b) => api.get('/recipes/compare', { params: { a, b } })
 
 // ---- 全局搜索 ----

@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { BadgeCheck, Clock, ExternalLink, Star, StarOff, CheckCircle2, ArrowUp } from '@lucide/vue'
 import AppIcon from '../components/AppIcon.vue'
 import { showSuccessToast } from 'vant'
-import { getRecipe, getExposure, addFavorite, removeFavorite, listFavorites, isLoggedIn, pushHistory, doCheckin, undoCheckin, matImg } from '../api'
+import { getRecipe, getExposure, getPathways, addFavorite, removeFavorite, listFavorites, isLoggedIn, pushHistory, doCheckin, undoCheckin, matImg } from '../api'
 import { afterPaint } from '../utils/motion'
 import AIReport from '../components/AIReport.vue'
 import NetworkGraph from '../components/NetworkGraph.vue'
@@ -19,6 +19,7 @@ const router = useRouter()
 const recipe = ref(null)
 const error = ref('')
 const exposure = ref(null)
+const pathways = ref(null)
 const favBusy = ref(false)
 const favState = ref({})
 const matFailed = ref({})
@@ -52,6 +53,7 @@ onMounted(async () => {
     afterPaint(() => { barsGrown.value = true })
   } catch { error.value = '加载失败' }
   getExposure(route.params.id).then(({ data }) => { exposure.value = data.data }).catch(() => {})
+  getPathways(route.params.id).then(({ data }) => { pathways.value = data.data }).catch(() => {})
   syncFavState()
   window.addEventListener('scroll', onScroll, { passive: true })
 })
@@ -195,6 +197,20 @@ async function toggleCheckin() {
             <p v-if="recipe.materials.some(m => !m.grams)" class="m-note">* 原始来源未标注克数或写"适量"，请按口味与体质酌情增减</p>
           </div>
 
+          <!-- 暴露量估计：由本页配方的克重 × 文献含量推出，紧贴配方展示 -->
+          <template v-if="exposure && exposure.items.length">
+            <div class="section-title">每杯实际摄入多少（估计）</div>
+            <div class="card">
+              <div v-for="(e, i) in exposure.items.slice(0, 8)" :key="e.compound + i" class="exp-row">
+                <span class="e-comp">{{ e.compound }}</span>
+                <span class="e-src">{{ e.herb }} {{ e.grams }}g</span>
+                <span class="e-val">≈ {{ e.est_mg_min }}–{{ e.est_mg_max }} mg</span>
+                <span v-if="e.absorbed_mg_max != null" class="e-abs">吸收 {{ e.absorbed_mg_min }}–{{ e.absorbed_mg_max }} mg · 入血概率 {{ e.prob_cctcm }}</span>
+              </div>
+              <p class="a-disclaimer">{{ exposure.note }}</p>
+            </div>
+          </template>
+
           <!-- 做法 -->
           <div class="section-title">做法</div>
           <div class="card">
@@ -258,39 +274,10 @@ async function toggleCheckin() {
 
             <!-- 入血概率可解释（T1-4） -->
             <ExplainPanel :recipe-id="recipe.id" style="margin-bottom: 12px;" />
-
-            <!-- 四层证据链（核心卖点可视化） -->
-            <div class="section-title">证据链全景</div>
-            <div class="card">
-              <p class="chain-intro">方子 → 药材（克重） → 活性成分（入血概率） → 作用靶点，一条链看完这个方子凭什么有用。</p>
-              <EvidenceChain :recipe-id="route.params.id" />
-              <p class="a-disclaimer">连线粗细代表配料克重/成分关联强度；药材-成分归属来自文献含量表（含实测含量区间），靶点仅人类蛋白。</p>
-            </div>
-
-            <!-- 成分-靶点网络图 -->
-            <div class="section-title">成分 - 靶点网络图</div>
-            <div class="card">
-              <NetworkGraph :recipe-id="route.params.id" />
-              <p class="a-disclaimer">力导向布局：节点可拖拽，双指/滚轮缩放。仅展示 Top 成分与其高频靶点（人类蛋白，非人物种数据已过滤）。</p>
-            </div>
           </template>
           <div v-else class="card">
             <van-empty image="search" description="该方配料以普通食材为主，暂无成分分析（营养素视角开发中）" />
           </div>
-
-          <!-- 暴露量估计 -->
-          <template v-if="exposure && exposure.items.length">
-            <div class="section-title">每杯实际摄入多少（估计）</div>
-            <div class="card">
-              <div v-for="(e, i) in exposure.items.slice(0, 8)" :key="e.compound + i" class="exp-row">
-                <span class="e-comp">{{ e.compound }}</span>
-                <span class="e-src">{{ e.herb }} {{ e.grams }}g</span>
-                <span class="e-val">≈ {{ e.est_mg_min }}–{{ e.est_mg_max }} mg</span>
-                <span v-if="e.absorbed_mg_max != null" class="e-abs">吸收 {{ e.absorbed_mg_min }}–{{ e.absorbed_mg_max }} mg · 入血概率 {{ e.prob_cctcm }}</span>
-              </div>
-              <p class="a-disclaimer">{{ exposure.note }}</p>
-            </div>
-          </template>
 
           <!-- AI 解读 -->
           <template v-if="recipe.analysis">
@@ -301,6 +288,45 @@ async function toggleCheckin() {
           </template>
         </div>
       </div>
+
+      <!-- ===== 可视化专区（全宽，三卡并排）=====
+           证据链/网络图/通路富集都是"看图"型内容，原本堆在右列导致左右严重失衡；
+           移出网格单独成区，桌面端三栏并排、平板两栏、手机单栏 -->
+      <template v-if="recipe.analysis">
+        <div class="viz-zone">
+          <div class="viz-item">
+            <div class="section-title">证据链全景</div>
+            <div class="card viz-card">
+              <p class="chain-intro">方子 → 药材（克重） → 活性成分（入血概率） → 作用靶点。</p>
+              <EvidenceChain :recipe-id="route.params.id" />
+              <p class="a-disclaimer">连线粗细代表配料克重/成分关联强度；药材-成分归属来自文献含量表（含实测含量区间），靶点仅人类蛋白。</p>
+            </div>
+          </div>
+          <div class="viz-item">
+            <div class="section-title">成分 - 靶点网络图</div>
+            <div class="card viz-card">
+              <NetworkGraph :recipe-id="route.params.id" />
+              <p class="a-disclaimer">力导向布局：节点可拖拽，双指/滚轮缩放。仅展示 Top 成分与其高频靶点（人类蛋白，非人物种数据已过滤）。</p>
+            </div>
+          </div>
+          <div class="viz-item">
+            <div class="section-title">通路富集</div>
+            <div class="card viz-card">
+              <template v-if="pathways && pathways.status === 'ok'">
+                <p class="pw-intro">本方成分靶点集合的 KEGG / GO 富集（共 {{ pathways.n_genes }} 个人类蛋白靶点）：</p>
+                <div v-for="(p, i) in pathways.pathways.slice(0, 6)" :key="p.term + i" class="pw-row">
+                  <span class="pw-name">{{ p.term_zh || p.term }}</span>
+                  <span class="pw-p">p={{ p.p_value }}</span>
+                </div>
+                <p class="a-disclaimer">{{ pathways.note }}</p>
+              </template>
+              <van-empty v-else-if="pathways && pathways.status === 'insufficient'"
+                         image="search" :description="pathways.note" />
+              <p v-else class="a-disclaimer">{{ pathways ? pathways.note : '通路富集数据加载中…' }}</p>
+            </div>
+          </div>
+        </div>
+      </template>
 
       <!-- 返回顶部浮钮（长页移动端） -->
       <Transition name="fade-up">
@@ -318,6 +344,24 @@ async function toggleCheckin() {
   .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 20px; align-items: start; }
   .col-side { position: sticky; top: 74px; }
 }
+
+/* 可视化专区：证据链 / 网络图 / 通路富集 三卡并排，避免全堆在右列造成左右失衡 */
+.viz-zone { margin-top: 4px; }
+.viz-zone .viz-item { min-width: 0; }
+@media (min-width: 720px) {
+  .viz-zone { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 20px; align-items: start; }
+}
+@media (min-width: 1280px) {
+  .viz-zone { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+.viz-card { min-height: 300px; }
+
+/* 通路富集 */
+.pw-intro { font-size: 12px; color: var(--ink-600); margin-bottom: 10px; line-height: 1.6; }
+.pw-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 0; border-bottom: 1px dashed var(--green-50); font-size: 12.5px; }
+.pw-row:last-of-type { border-bottom: none; }
+.pw-name { font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+.pw-p { color: var(--ink-400); font-size: 11px; font-variant-numeric: tabular-nums; white-space: nowrap; flex-shrink: 0; }
 
 /* 加载骨架 */
 .mat-skl { display: flex; align-items: center; gap: 10px; padding: 8px 0; }
@@ -339,7 +383,7 @@ async function toggleCheckin() {
 .mat:last-of-type { border-bottom: none; }
 .m-img { width: 44px; height: 44px; border-radius: 10px; object-fit: cover; flex-shrink: 0; background: var(--green-50); opacity: 0; scale: 0.92; transition: opacity .35s ease, scale .35s var(--ease-snap); }
 .m-img.loaded { opacity: 1; scale: 1; }
-.m-img-fallback { display: flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 700; color: var(--green-700); opacity: 1; scale: 1; }
+.m-img-fallback { display: flex; align-items: center; justify-content: center; color: var(--tile-ink); opacity: 1; scale: 1; }
 .m-main { flex: 1; }
 .m-name { font-size: 15px; font-weight: 600; }
 .m-kind { font-size: 10px; padding: 1px 7px; border-radius: 8px; background: var(--green-100); color: var(--green-700); margin-left: 8px; }
