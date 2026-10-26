@@ -35,6 +35,6 @@
 ## 当前回归基线（2026-10-26 实测）
 
 - 端点：46 路径 / 50 端点（`app.openapi()` 实测）
-- 单测：`cd backend && python -X utf8 -m pytest tests/ -v` → **14 passed**
+- 单测：`cd backend && python -X utf8 -m pytest tests/ -v` → **23 passed**（本文档撰写时为 14，数据线补充测试后 2026-10-26 复核实测 23）
 - 构建：`cd frontend && npx vite build` → 通过
 - T1/T2 全部端点在数据重建（`8c47247`）后复测通过（对比 Jaccard 由 0.333 变 0.667 属归属修复的正常反映，接口如实读取最新库）

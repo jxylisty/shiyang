@@ -69,7 +69,7 @@
 cd backend && python -X utf8 -c "import sys; sys.path.insert(0,'app'); import main; \
   s=main.app.openapi(); print('paths', len(s['paths']), 'endpoints', sum(len(v) for v in s['paths'].values()))"
 
-# 单测（2026-10-26 实测 14 passed）
+# 单测（2026-10-26 复测 23 passed；数量随测试线补用例增长，以实际运行为准，别抄文档）
 cd backend && python -X utf8 -m pytest tests/ -v
 
 # 冒烟（TestClient，不占端口；注意测试数据清理规则见 §2.7）
