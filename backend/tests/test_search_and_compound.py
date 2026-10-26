@@ -87,6 +87,23 @@ def test_search_herb_matched_by_alias_or_function():
         f"药材「{herb_name}」应通过别名/功效「{part}」被搜到"
 
 
+def test_recipes_list_q_searches_beyond_name():
+    # 列表页 q 承诺「搜方子名、体质需求或药材」：用一味配料名应命中含它的方子（而不仅是名称）
+    import sqlite3
+    from services.explain_service import DB_PATH
+    conn = sqlite3.connect(f"file:{DB_PATH.as_posix()}?mode=ro", uri=True)
+    row = conn.execute(
+        "SELECT m.name FROM rel_recipe_material m JOIN recipe r ON r.id=m.recipe_id "
+        "WHERE r.status != '弃用' AND m.name NOT IN (SELECT name FROM recipe) LIMIT 1"
+    ).fetchone()
+    conn.close()
+    if not row:
+        return
+    mat_name = row[0]
+    d = _data(client.get("/api/v1/recipes", params={"q": mat_name, "size": 100}))
+    assert d["total"] > 0, f"配料名「{mat_name}」应命中至少一个方子"
+
+
 # ---------- 成分词典（explain 扩展字段） ----------
 
 def _any_compound_name():

@@ -103,10 +103,16 @@ def list_recipes(type: str | None = None, scene: str | None = None,
     where, params = ["status != '弃用'"], []
     if type:
         where.append("type=?"); params.append(type)
-    if q:
-        where.append("name LIKE ?"); params.append(f"%{q}%")
     sql = f"SELECT id,name,type,oneliner,scenes,constitutions_suitable,duration,analysis_ready FROM recipe WHERE {' AND '.join(where)}"
     rows = conn.execute(sql, params).fetchall()
+    # q 兑现搜索框承诺（搜方子名、体质需求或药材）：名称/简介/场景/体质/配料名内存过滤，
+    # 配料名需查关联表所以不走 SQL；与 scene/constitution 同在内存层，and 语义一致
+    mat_recipe_ids = set()
+    if q:
+        for row in conn.execute(
+                "SELECT DISTINCT recipe_id FROM rel_recipe_material WHERE name LIKE ?",
+                (f"%{q}%",)):
+            mat_recipe_ids.add(row["recipe_id"])
     out = []
     for r in rows:
         scenes = json.loads(r["scenes"] or "[]")
@@ -114,6 +120,10 @@ def list_recipes(type: str | None = None, scene: str | None = None,
         if scene and scene not in scenes:
             continue
         if constitution and constitution not in suits:
+            continue
+        if q and not (q in r["name"] or q in (r["oneliner"] or "")
+                      or any(q in s for s in scenes) or any(q in s for s in suits)
+                      or r["id"] in mat_recipe_ids):
             continue
         out.append({"id": r["id"], "name": r["name"], "type": r["type"], "oneliner": r["oneliner"],
                     "scenes": scenes, "constitutions_suitable": suits, "duration": r["duration"],
