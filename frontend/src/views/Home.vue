@@ -1,11 +1,12 @@
 <script setup>
-import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
+import { ref, onMounted } from 'vue'
 import AppIcon from '../components/AppIcon.vue'
 import RecipeRow from '../components/RecipeRow.vue'
 import { getStats, listRecipes, matImg } from '../api'
 import { useCountUp } from '../utils/motion'
 import TextReveal from '../components/TextReveal.vue'
 import CloudDivider from '../components/CloudDivider.vue'
+import HScroll from '../components/HScroll.vue'
 
 const stats = ref(null)
 const showcaseRecipes = ref([])   // 证据链专区示例方
@@ -84,44 +85,6 @@ function onDailyImgErr() {
   coverTry.value += 1
   cover.value = coverTry.value < mats.length ? matImg(mats[coverTry.value]) : ''
 }
-
-// ---- 时令横滑的自绘滚动条 ----
-// 只在内容真的溢出时才显示；滑块宽度与位置按 scrollWidth/clientWidth 实时换算
-const seasonEl = ref(null)
-const seasonScrollable = ref(false)
-const seasonRatio = ref(1)      // 可视宽度 / 内容宽度
-const seasonProgress = ref(0)   // 0~1 已滚动比例
-
-function syncSeasonBar() {
-  const el = seasonEl.value
-  if (!el) return
-  const max = el.scrollWidth - el.clientWidth
-  seasonScrollable.value = max > 1
-  seasonRatio.value = el.scrollWidth ? el.clientWidth / el.scrollWidth : 1
-  seasonProgress.value = max > 0 ? el.scrollLeft / max : 0
-}
-function onSeasonScroll() { syncSeasonBar() }
-
-const thumbStyle = computed(() => {
-  const w = Math.max(seasonRatio.value * 100, 12)   // 最窄 12%，避免滑块小到看不见
-  const left = seasonProgress.value * (100 - w)
-  return { width: `${w}%`, left: `${left}%` }
-})
-
-let seasonRO = null
-onMounted(() => {
-  syncSeasonBar()
-  // 视口变化会改变可容纳卡片数（溢出与否随之变化），用 ResizeObserver 跟随
-  if (seasonEl.value && window.ResizeObserver) {
-    seasonRO = new ResizeObserver(syncSeasonBar)
-    seasonRO.observe(seasonEl.value)
-  }
-  window.addEventListener('resize', syncSeasonBar)
-})
-onBeforeUnmount(() => {
-  seasonRO?.disconnect()
-  window.removeEventListener('resize', syncSeasonBar)
-})
 </script>
 
 <template>
@@ -206,25 +169,18 @@ onBeforeUnmount(() => {
       </router-link>
     </div>
 
-    <!-- 时令场景横滑 -->
+    <!-- 时令场景横滑（滚动条提示右侧还有内容，见 HScroll） -->
     <div class="section-title">时令专区</div>
-    <div class="season-wrap">
-      <div class="season-scroll" ref="seasonEl" @scroll="onSeasonScroll">
-        <router-link v-for="s in SEASON_SCENES" :key="s.name" :to="`/recipes?scene=${encodeURIComponent(s.name)}`" class="season-card pressable">
-          <img :src="matImg(s.img)" alt="" loading="lazy" />
-          <div class="s-overlay">
-            <span class="s-tag">{{ s.tag }}</span>
-            <b>{{ s.name }}</b>
-            <span>{{ s.count }} 款适宜方</span>
-          </div>
-        </router-link>
-      </div>
-      <!-- 自绘滚动条：Chrome 用浮层滚动条不占位、静止即淡出，内容被裁也看不出可滑，
-           故用固定可见的轨道 + 滑块明确提示「右边还有」 -->
-      <div v-show="seasonScrollable" class="season-bar" aria-hidden="true">
-        <span class="season-thumb" :style="thumbStyle"></span>
-      </div>
-    </div>
+    <HScroll class="season-wrap">
+      <router-link v-for="s in SEASON_SCENES" :key="s.name" :to="`/recipes?scene=${encodeURIComponent(s.name)}`" class="season-card pressable">
+        <img :src="matImg(s.img)" alt="" loading="lazy" />
+        <div class="s-overlay">
+          <span class="s-tag">{{ s.tag }}</span>
+          <b>{{ s.name }}</b>
+          <span>{{ s.count }} 款适宜方</span>
+        </div>
+      </router-link>
+    </HScroll>
 
     <CloudDivider label="有据可溯" />
 
@@ -441,27 +397,12 @@ onBeforeUnmount(() => {
   border: 1px solid rgba(120, 95, 60, 0.1);
 }
 
-/* 时令横滑 */
-.season-wrap { position: relative; }
-.season-scroll {
-  display: flex; gap: 12px; overflow-x: auto; padding-bottom: 4px;
+/* 时令横滑：滚动容器与滚动条由 HScroll 提供，这里只写卡片排布 */
+.season-wrap :deep(.h-scroll) {
+  display: flex; gap: 12px; padding-bottom: 4px;
   margin: 0 -16px; padding-left: 16px; padding-right: 16px;
-  scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;   /* 原生条隐藏，改用下方自绘条（浮层条静止淡出不可靠） */
+  scroll-snap-type: x mandatory;
 }
-.season-scroll::-webkit-scrollbar { display: none; }
-/* 自绘滚动条：轨道常显，滑块随滚动实时移动 */
-.season-bar {
-  position: relative; height: 5px; margin: 10px 0 2px;
-  background: rgba(120, 95, 60, 0.13); border-radius: 3px; overflow: hidden;
-}
-.season-thumb {
-  position: absolute; top: 0; height: 100%;
-  background: rgba(120, 95, 60, 0.55); border-radius: 3px;
-  transition: left .12s linear;
-}
-:root[data-theme="dark"] .season-bar { background: rgba(230, 221, 204, 0.12); }
-:root[data-theme="dark"] .season-thumb { background: rgba(230, 221, 204, 0.45); }
 .season-card {
   position: relative; flex: 0 0 136px; height: 160px; border-radius: 14px; overflow: hidden;
   scroll-snap-align: start; text-decoration: none; background: var(--green-100);
@@ -534,7 +475,7 @@ onBeforeUnmount(() => {
   .hero:hover { transform: perspective(900px) rotateX(calc((var(--my, 50%) - 50%) / -40)) rotateY(calc((var(--mx, 50%) - 50%) / 60)); }
 
   .scene-grid { grid-template-columns: repeat(6, 1fr); gap: 12px; }
-  .season-scroll { margin: 0; padding-left: 0; padding-right: 0; }
+  .season-wrap :deep(.h-scroll) { margin: 0; padding-left: 0; padding-right: 0; }
   .season-card { flex: 0 0 150px; height: 175px; }
 
   /* 宽屏证据链：节点等分撑开，箭头居中，读起来是一条完整的链 */
