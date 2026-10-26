@@ -110,7 +110,9 @@ def parse_token(token: str) -> dict | None:
 
 
 def register(username: str, password: str, nickname: str | None = None) -> dict:
-    if not (3 <= len(username) <= 20) or not username.replace("_", "").isalnum():
+    # 仅 ASCII 字母数字下划线：str.isalnum() 会放行中文等全角字符，与提示语不符
+    import re
+    if not (3 <= len(username) <= 20) or not re.fullmatch(r"[A-Za-z0-9_]+", username):
         raise ValueError("用户名需3-20位字母数字下划线")
     if len(password) < 6:
         raise ValueError("密码至少6位")
