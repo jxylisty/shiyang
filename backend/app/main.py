@@ -582,8 +582,117 @@ async def ai_report(rid: int, key: str | None = Query(None), provider: str = "de
                              headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
 
-# ==================== 暴露量估计（P2.5） ====================
+# ==================== 四层证据链 Sankey 数据 ====================
 
+@app.get("/api/v1/recipes/{rid}/chain")
+def evidence_chain(rid: int, max_herbs: int = 6, max_compounds: int = 10,
+                   max_targets: int = 10):
+    """方子 → 药材(克重) → 活性成分(入血概率) → 人类蛋白靶点，四层证据链。
+    归属关系取自 rel_herb_compound_v2（原始文献含量表重建，非旧错乱表）。"""
+    max_herbs = max(1, min(max_herbs, 12))
+    max_compounds = max(1, min(max_compounds, 20))
+    max_targets = max(1, min(max_targets, 20))
+    conn = get_db()
+    r = conn.execute("SELECT name FROM recipe WHERE id=?", (rid,)).fetchone()
+    if not r:
+        conn.close()
+        raise HTTPException(404, "方子不存在")
+
+    # 药材层：有成分数据的配料，按克重降序
+    herbs = conn.execute("""
+        SELECT m.herb_id, m.name, m.grams FROM rel_recipe_material m
+        WHERE m.recipe_id=? AND m.herb_id IS NOT NULL AND m.herb_id IN (
+            SELECT DISTINCT herb_id FROM rel_herb_compound_v2)
+        ORDER BY COALESCE(m.grams, 0) DESC LIMIT ?""", (rid, max_herbs)).fetchall()
+    if not herbs:
+        conn.close()
+        return ok({"nodes": [], "links": [], "levels": ["方子", "药材", "活性成分", "作用靶点"]})
+
+    herb_ids = [h["herb_id"] for h in herbs]
+    hp = ",".join("?" * len(herb_ids))
+
+    # 成分层：这些药材的真实成分，按入血概率降序取 Top N
+    comps = conn.execute(f"""
+        SELECT c.id, c.name, c.prob_cctcm,
+               GROUP_CONCAT(DISTINCT h.name) AS herbs
+        FROM rel_herb_compound_v2 rc
+        JOIN compound c ON c.id = rc.compound_id
+        JOIN herb h ON h.id = rc.herb_id
+        WHERE rc.herb_id IN ({hp})
+        GROUP BY c.id ORDER BY c.prob_cctcm DESC LIMIT ?""",
+        (*herb_ids, max_compounds)).fetchall()
+    if not comps:
+        conn.close()
+        return ok({"nodes": [], "links": [], "levels": ["方子", "药材", "活性成分", "作用靶点"]})
+
+    comp_ids = [c["id"] for c in comps]
+    cp = ",".join("?" * len(comp_ids))
+
+    # 靶点层：成分关联的人类蛋白
+    targets = conn.execute(f"""
+        SELECT t.gene, COUNT(DISTINCT rt.compound_id) c
+        FROM rel_compound_target rt
+        JOIN target t ON t.gene = rt.target_gene
+        WHERE t.target_type='Protein' AND t.species='Homo sapiens'
+          AND rt.compound_id IN ({cp})
+        GROUP BY t.gene ORDER BY c DESC LIMIT ?""", (*comp_ids, max_targets)).fetchall()
+
+    nodes, links = [], []
+
+    def nid(level, key):
+        return f"{level}:{key}"
+
+    nodes.append({"name": r["name"], "depth": 0, "kind": "recipe"})
+    for h in herbs:
+        nodes.append({"name": h["name"], "depth": 1, "kind": "herb",
+                      "value": h["grams"]})
+    for c in comps:
+        nodes.append({"name": c["name"], "depth": 2, "kind": "compound",
+                      "value": round(c["prob_cctcm"], 2)})
+    for t in targets:
+        nodes.append({"name": t["gene"], "depth": 3, "kind": "target"})
+
+    for h in herbs:
+        links.append({"source": r["name"], "target": h["name"],
+                      "value": h["grams"] or 5})
+    # 药材 → 成分（真实归属，来自重建表）
+    hc = conn.execute(f"""
+        SELECT h.name hn, c.name cn, c.prob_cctcm p
+        FROM rel_herb_compound_v2 rc
+        JOIN compound c ON c.id = rc.compound_id
+        JOIN herb h ON h.id = rc.herb_id
+        WHERE rc.herb_id IN ({hp}) AND rc.compound_id IN ({cp})""",
+        (*herb_ids, *comp_ids)).fetchall()
+    for row in hc:
+        links.append({"source": row["hn"], "target": row["cn"],
+                      "value": round(1 + (row["p"] or 0) * 4, 2)})
+    # 成分 → 靶点
+    ct = conn.execute(f"""
+        SELECT c.name cn, t.gene g FROM rel_compound_target rt
+        JOIN compound c ON c.id = rt.compound_id
+        JOIN target t ON t.gene = rt.target_gene
+        WHERE t.target_type='Protein' AND t.species='Homo sapiens'
+          AND rt.compound_id IN ({cp})""", comp_ids).fetchall()
+    tg = {t["gene"] for t in targets}
+    for row in ct:
+        if row["g"] in tg:
+            links.append({"source": row["cn"], "target": row["g"], "value": 1})
+    conn.close()
+
+    # 同名节点去重（药材名/成分名/基因名可能重复）
+    seen, uniq = set(), []
+    for n in nodes:
+        k = (n["depth"], n["name"])
+        if k in seen:
+            continue
+        seen.add(k)
+        uniq.append(n)
+    return ok({"nodes": uniq, "links": links,
+               "levels": ["方子", "药材", "活性成分", "作用靶点"],
+               "note": "药材-成分归属来自文献含量表重建；靶点仅人类蛋白"})
+
+
+# ==================== 暴露量估计（P2.5） ====================
 @app.get("/api/v1/recipes/{rid}/exposure")
 def exposure(rid: int):
     result = es.estimate(rid)

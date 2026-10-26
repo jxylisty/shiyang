@@ -3,7 +3,7 @@
 // 药材行 → /herbs?h=名（Herbs.vue 读 query 打开详情弹窗）；成分行 → /compounds/:name 词典页
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Search } from '@lucide/vue'
+import AppIcon from './AppIcon.vue'
 import { globalSearch } from '../api'
 
 const router = useRouter()
@@ -53,7 +53,7 @@ const probColor = (p) => p >= 0.9 ? 'var(--green-700)' : p >= 0.7 ? 'var(--amber
 <template>
   <div class="gsearch" ref="boxRef">
     <div class="gs-input">
-      <Search :size="15" :stroke-width="2.2" />
+      <AppIcon name="search" :size="15" :stroke-width="2.2" />
       <input v-model="q" type="search" placeholder="搜方子 / 药材 / 成分" @input="onInput" @focus="q.trim() && (open = true)" />
     </div>
     <transition name="gs-fade">

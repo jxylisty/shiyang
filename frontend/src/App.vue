@@ -1,7 +1,7 @@
 <script setup>
 import { useRoute, useRouter } from 'vue-router'
 import { watch } from 'vue'
-import { Leaf } from '@lucide/vue'
+import AppIcon from './components/AppIcon.vue'
 import SearchBox from './components/SearchBox.vue'
 import { makeNavHooks } from './utils/motion'
 
@@ -16,7 +16,7 @@ const { enter: pageEnter, leave: pageLeave } = makeNavHooks({ getDir: () => rout
 
 <template>
   <header class="topbar">
-    <router-link to="/" class="logo"><Leaf class="logo-icon" :size="20" :stroke-width="2.2" />食养有据<small>药食同源 · 成分有据</small></router-link>
+    <router-link to="/" class="logo"><AppIcon name="leaf" class="logo-icon" :size="20" :stroke-width="2.2" />食养有据<small>药食同源 · 成分有据</small></router-link>
     <nav>
       <router-link to="/recipes">方子库</router-link>
       <router-link to="/pantry">茶罐</router-link>

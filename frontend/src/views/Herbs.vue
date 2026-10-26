@@ -3,6 +3,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { listHerbs, matImg } from '../api'
+import AppIcon from '../components/AppIcon.vue'
 
 const route = useRoute()
 const items = ref([])
@@ -64,7 +65,7 @@ const hideImg = (name) => { imgFailed.value[name] = true }
                 :style="{ '--d': `${Math.min(i, 16) * 40}ms` }" @click="active = h">
           <div class="h-img">
             <img v-if="!imgFailed[h.name]" :src="matImg(h.name)" :alt="h.name" loading="lazy" @error="hideImg(h.name)" />
-            <span v-else class="h-fallback">{{ h.name[0] }}</span>
+            <span v-else class="h-fallback"><AppIcon name="herb" :size="30" /></span>
           </div>
           <b class="h-name">{{ h.name }}</b>
           <span class="h-nature" v-if="h.nature || h.flavor">{{ [h.nature, h.flavor].filter(Boolean).join(' · ') }}</span>
@@ -80,7 +81,7 @@ const hideImg = (name) => { imgFailed.value[name] = true }
         <div class="hd-head">
           <div class="h-img hd-img">
             <img v-if="!imgFailed[active.name]" :src="matImg(active.name)" :alt="active.name" @error="hideImg(active.name)" />
-            <span v-else class="h-fallback">{{ active.name[0] }}</span>
+            <span v-else class="h-fallback"><AppIcon name="herb" :size="30" /></span>
           </div>
           <div>
             <h3 class="pop-text">{{ active.name }}</h3>

@@ -2,11 +2,13 @@
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { BadgeCheck, Clock, ExternalLink, Star, StarOff, CheckCircle2, ArrowUp } from '@lucide/vue'
+import AppIcon from '../components/AppIcon.vue'
 import { showSuccessToast } from 'vant'
 import { getRecipe, getExposure, addFavorite, removeFavorite, listFavorites, isLoggedIn, pushHistory, doCheckin, undoCheckin } from '../api'
 import { afterPaint } from '../utils/motion'
 import AIReport from '../components/AIReport.vue'
 import NetworkGraph from '../components/NetworkGraph.vue'
+import EvidenceChain from '../components/EvidenceChain.vue'
 import SharePoster from '../components/SharePoster.vue'
 import SafetyBanner from '../components/SafetyBanner.vue'
 import EvidenceCard from '../components/EvidenceCard.vue'
@@ -182,7 +184,7 @@ async function toggleCheckin() {
             <div v-for="(m, mi) in recipe.materials" :key="m.name" class="mat" :style="{ '--i': mi }">
               <img v-if="!matFailed[m.name]" :src="matImg(m.name)" :alt="m.name" class="m-img" :class="{ loaded: matLoaded[m.name] }" loading="lazy"
                    @load="onMatLoad(m.name)" @error="matFailed[m.name] = true" />
-              <div v-else class="m-img m-img-fallback">{{ m.name[0] }}</div>
+              <div v-else class="m-img m-img-fallback"><AppIcon :name="m.material_type === 'herb' ? 'herb' : 'leaf'" :size="22" /></div>
               <div class="m-main">
                 <span class="m-name">{{ m.name }}</span>
                 <span class="m-kind" :class="m.material_type">{{ m.material_type === 'herb' ? '药食同源' : '食材' }}</span>
@@ -256,6 +258,14 @@ async function toggleCheckin() {
 
             <!-- 入血概率可解释（T1-4） -->
             <ExplainPanel :recipe-id="recipe.id" style="margin-bottom: 12px;" />
+
+            <!-- 四层证据链（核心卖点可视化） -->
+            <div class="section-title">证据链全景</div>
+            <div class="card">
+              <p class="chain-intro">方子 → 药材（克重） → 活性成分（入血概率） → 作用靶点，一条链看完这个方子凭什么有用。</p>
+              <EvidenceChain :recipe-id="route.params.id" />
+              <p class="a-disclaimer">连线粗细代表配料克重/成分关联强度；药材-成分归属来自文献含量表（含实测含量区间），靶点仅人类蛋白。</p>
+            </div>
 
             <!-- 成分-靶点网络图 -->
             <div class="section-title">成分 - 靶点网络图</div>
@@ -361,6 +371,7 @@ async function toggleCheckin() {
 
 .a-targets { font-size: 12px; color: var(--ink-600); margin-top: 12px; }
 .a-disclaimer { font-size: 11px; color: var(--ink-400); margin-top: 10px; line-height: 1.5; }
+.chain-intro { font-size: 12.5px; color: var(--ink-600); margin-bottom: 8px; line-height: 1.55; }
 
 /* 暴露量行：成分 / 来源 / 摄入量 / 吸收期望 */
 .exp-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; padding: 7px 0; border-bottom: 1px dashed var(--green-50); font-size: 12.5px; }

@@ -1,6 +1,6 @@
 <script setup>
-import { ref, markRaw, onMounted } from 'vue'
-import { Leaf, Eye, Moon, CupSoda, LeafyGreen, Flower2 } from '@lucide/vue'
+import { ref, onMounted } from 'vue'
+import AppIcon from '../components/AppIcon.vue'
 import { getStats, listRecipes, matImg } from '../api'
 import { useCountUp } from '../utils/motion'
 import TextReveal from '../components/TextReveal.vue'
@@ -13,12 +13,12 @@ const coverTry = ref(0)
 const cover = ref('')
 
 const scenes = [
-  { name: '护嗓润喉', desc: '咽干用嗓多', icon: markRaw(Leaf) },
-  { name: '熬夜护眼', desc: '屏幕眼干涩', icon: markRaw(Eye) },
-  { name: '助眠', desc: '多梦入睡难', icon: markRaw(Moon) },
-  { name: '消化', desc: '餐后腹胀腻', icon: markRaw(CupSoda) },
-  { name: '换季调理', desc: '季节交替期', icon: markRaw(LeafyGreen) },
-  { name: '经期温养', desc: '温和补养', icon: markRaw(Flower2) },
+  { name: '护嗓润喉', desc: '咽干用嗓多', icon: 'throat' },
+  { name: '熬夜护眼', desc: '屏幕眼干涩', icon: 'eye' },
+  { name: '助眠', desc: '多梦入睡难', icon: 'moon' },
+  { name: '消化', desc: '餐后腹胀腻', icon: 'fruit' },
+  { name: '换季调理', desc: '季节交替期', icon: 'season' },
+  { name: '经期温养', desc: '温和补养', icon: 'flower' },
 ]
 
 // 时令场景横滑卡（配图 → 场景第一个方子的首味配料图，无则渐变兜底）
@@ -105,7 +105,7 @@ function onDailyImgErr() {
     <router-link v-if="daily" :to="`/recipes/${daily.id}`" class="card daily">
       <div class="d-cover">
         <img v-if="cover !== ''" :src="cover || matImg(daily.materials?.[0] || '')" alt="" loading="lazy" @error="onDailyImgErr" />
-        <span v-else class="d-fallback">{{ (daily.materials?.[0]?.name || daily.name)[0] }}</span>
+        <span v-else class="d-fallback"><AppIcon :name="daily.type === '药膳' ? 'dish' : 'tea'" :size="34" /></span>
         <span class="d-type">{{ daily.type }}</span>
       </div>
       <div class="d-main">
@@ -120,7 +120,7 @@ function onDailyImgErr() {
     <div class="section-title">按场景找茶饮</div>
     <div class="scene-grid">
       <router-link v-for="(s, i) in scenes" :key="s.name" :to="`/recipes?scene=${encodeURIComponent(s.name)}`" class="scene card pressable" :style="{ '--i': i }">
-        <span class="scene-icon"><component :is="s.icon" :size="22" :stroke-width="1.8" /></span>
+        <span class="scene-icon"><AppIcon :name="s.icon" :size="22" /></span>
         <span class="name">{{ s.name }}</span>
         <span class="desc">{{ s.desc }}</span>
       </router-link>
@@ -205,9 +205,9 @@ function onDailyImgErr() {
 
 /* 今日推荐 */
 .daily { display: flex; gap: 12px; padding: 12px; text-decoration: none; color: inherit; align-items: stretch; animation: rise .45s var(--ease-out-soft) .1s backwards; }
-.d-cover { position: relative; width: 92px; min-height: 92px; border-radius: 10px; overflow: hidden; background: linear-gradient(135deg, var(--green-600), var(--green-900)); flex-shrink: 0; }
+.d-cover { position: relative; width: 92px; min-height: 92px; border-radius: 10px; overflow: hidden; background: var(--green-100); flex-shrink: 0; }
 .d-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.d-fallback { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 700; color: rgba(255,255,255,.9); }
+.d-fallback { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--green-700); }
 .d-type { position: absolute; left: 0; bottom: 0; font-size: 10px; color: #fff; background: rgba(29, 74, 56, 0.75); padding: 1px 7px; border-radius: 0 8px 0 0; }
 .d-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .d-name { font-size: 16px; }
@@ -216,7 +216,7 @@ function onDailyImgErr() {
 
 .scene-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 .scene { display: flex; flex-direction: column; align-items: center; padding: 14px 6px; text-decoration: none; color: inherit; animation: rise .45s var(--ease-out-soft) backwards; animation-delay: calc(var(--i) * 50ms); }
-.scene-icon { display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 12px; background: var(--green-50); color: var(--green-700); margin-bottom: 8px; transition: scale var(--dur-fast) var(--ease-snap), background var(--dur-fast) ease; }
+.scene-icon { display: flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: 50%; background: var(--green-50); border: 1px solid var(--green-100); color: var(--green-700); margin-bottom: 8px; transition: scale var(--dur-fast) var(--ease-snap), background var(--dur-fast) ease; }
 .scene:active .scene-icon { scale: 1.15; background: var(--green-100); }
 .scene .name { font-size: 14px; font-weight: 600; color: var(--green-700); }
 .scene .desc { font-size: 11px; color: var(--ink-400); }

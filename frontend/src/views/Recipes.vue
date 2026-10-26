@@ -2,6 +2,7 @@
 import { ref, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { BadgeCheck, FlaskConical, ShieldAlert } from '@lucide/vue'
+import AppIcon from '../components/AppIcon.vue'
 import { listRecipes, matImg, getSafetyProfiles, safetyCheckBatch } from '../api'
 import TermCard from '../components/TermCard.vue'
 
@@ -132,7 +133,7 @@ function onCoverErr(r) {
                    :class="{ 'safety-block': safetyMap[r.id]?.verdict === 'block' }">
         <div class="rc-cover" :class="{ 'rc-cover-fb': r.type === '药膳' }">
           <img v-if="r._cover !== ''" :src="r._cover || coverOf(r)" alt="" loading="lazy" @error="onCoverErr(r)" />
-          <span v-else class="rc-cover-fallback">{{ (r.materials?.[0] || r.name)[0] }}</span>
+          <span v-else class="rc-cover-fallback"><AppIcon :name="r.type === '药膳' ? 'dish' : 'tea'" :size="32" /></span>
           <span class="rc-type">{{ r.type }}</span>
         </div>
         <div class="rc-main">
