@@ -117,6 +117,51 @@ def build_recipe_messages(recipe: dict, analysis: dict | None) -> list[dict]:
     ]
 
 
+# ---------- AI 助手对话（T3-11：RAG 限定库内资料 + 强制引用编号） ----------
+
+CHAT_SYSTEM_PROMPT = """你是「食养有据」平台的食养问答助手，回答基于平台方子库/药材库/成分库的检索资料。
+
+铁律（优先级最高）：
+1. 回答必须仅基于下方「库内资料」；资料没有的直接说「知识库未收录，你可以在顶部搜索里换个关键词试试」，不编造方子、药材、成分或数据。
+2. 提及任何方子/药材/成分时必须带上其编号，如 [F12][H3][C5]，用户能点开引用卡核对出处。
+3. 不得输出资料之外的功效主张；不使用「治疗、疗效、治愈、抗癌」字样；不说「包治」「根治」。
+4. 入血概率是模型预测值，不等于吸收率/生物利用度，引用时保留数值并说明是预测。
+5. 禁忌信息（资料中给出时）必须提醒；涉及疾病症状建议就医，保持「健康参考，不构成医疗建议」定位。
+
+风格：通俗友好的中文，100~250 字；可以先一句话回应需求，再列资料里最对口的 1-3 个方子或要点；
+适合的方子给一句「为什么适合」（体质/场景/配料逻辑），引用编号紧跟在名称后。
+库内资料为空时（无「库内资料」段）：只回答一般性食养常识（如喝水规律、作息建议），
+并必须在回答第一行写明「（以下回答未引用库内数据，仅供参考）」。"""
+
+
+def build_chat_messages(question: str, context: dict, history: list[dict] | None = None,
+                        constitution_name: str | None = None) -> list[dict]:
+    """RAG 资料 + 会话历史 → 对话 messages。
+
+    context 为 rag_service.retrieve_context() 的返回；no_context 时不给「库内资料」段，
+    由 system prompt 让模型第一行声明降级。history 只保留 role/content。
+    """
+    parts = [CHAT_SYSTEM_PROMPT]
+    if constitution_name:
+        parts.append(f"用户体质：{constitution_name}（来自平台体质测评，可作为方子适宜度参考，非医学结论）。")
+    if context and context.get("blocks"):
+        parts.append("库内资料（每条以 [F#]/[H#]/[C#] 编号，引用时必须保留编号）：\n"
+                     + "\n".join(f"- {b}" for b in context["blocks"]))
+    else:
+        parts.append("库内资料：（本次检索无命中，按降级规则回答）")
+    parts.append(f"用户问题：{question}")
+    system = "\n\n".join(parts)
+
+    msgs: list[dict] = [{"role": "system", "content": system}]
+    for m in (history or [])[-6:]:
+        role = m.get("role")
+        content = (m.get("content") or "").strip()
+        if role in ("user", "assistant") and content:
+            msgs.append({"role": role, "content": content[:500]})
+    msgs.append({"role": "user", "content": question})
+    return msgs
+
+
 # ---------- 预生成解读（P2：AI 免门槛） ----------
 
 def _pregen_db():

@@ -5,6 +5,7 @@
 """
 import asyncio
 import json
+import os
 import sqlite3
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -554,6 +555,51 @@ def guest_recommend(body: GuestJudgeBody, count: int = 4):
         return ok(rec.recommend_for_guest(body.judged, max(1, min(count, 8))))
     except ValueError as e:
         raise HTTPException(422, str(e))
+
+
+# ==================== AI 助手对话（T3-11：RAG 限定库内 + 强制引用，SSE） ====================
+
+from services import rag_service as rag  # noqa: E402
+
+
+class AssistantChatBody(BaseModel):
+    question: str = Field(..., min_length=1, max_length=300)
+    history: list[dict] = Field(default_factory=list, description="[{role, content}] 最多6条")
+    constitution_code: str | None = None
+
+
+@app.post("/api/v1/assistant/chat")
+async def assistant_chat(body: AssistantChatBody,
+                         key: str | None = Query(None),
+                         x_ai_key: str | None = Header(None, alias="X-AI-Key")):
+    """食养问答：RAG 检索库内资料 → 流式回答。SSE 事件：delta / citations / error / [DONE]"""
+    question = body.question.strip()
+    if not question:
+        raise HTTPException(422, "问题不能为空")
+    ctx = rag.retrieve_context(question, body.constitution_code)
+    messages = ai.build_chat_messages(question, ctx, body.history, ctx.get("constitution"))
+
+    async def gen():
+        # citations 先行发出：前端在打字开始前就能渲染引用卡
+        yield f"data: {json.dumps({'citations': ctx['citations'], 'no_context': ctx['no_context'], 'disclaimer': DISCLAIMER}, ensure_ascii=False)}\n\n"
+        # Key 解析：X-AI-Key 头 → ZeroGate 平台级默认（本机网关，key=zerogate，不落库不进日志）
+        user_key = (x_ai_key or key or "").strip() or None
+        api_key, base_url, model = user_key, "", ""
+        if not api_key:
+            api_key = os.environ.get("SHIYANG_AI_KEY") or "zerogate"
+            base_url = os.environ.get("SHIYANG_AI_BASE_URL") or "http://127.0.0.1:7863/v1"
+            model = os.environ.get("SHIYANG_AI_MODEL") or "deepseek-v4-flash"
+        try:
+            async for chunk in ai.stream_chat(messages, api_key, "deepseek", base_url, model):
+                yield f"data: {json.dumps({'delta': chunk}, ensure_ascii=False)}\n\n"
+            yield "data: [DONE]\n\n"
+        except ai.AIConfigError as e:
+            yield f"data: {json.dumps({'error': e.message, 'code': e.code}, ensure_ascii=False)}\n\n"
+        except Exception as e:
+            yield f"data: {json.dumps({'error': f'AI 服务异常: {e}', 'code': 'gateway_down'}, ensure_ascii=False)}\n\n"
+
+    return StreamingResponse(gen(), media_type="text/event-stream",
+                             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
 
 # ==================== AI 流式解读（P1.2，SSE；P2 支持预生成回放） ====================
