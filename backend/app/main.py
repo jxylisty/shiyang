@@ -322,8 +322,9 @@ def list_foods(q: str | None = None):
 # ==================== 全局搜索 ====================
 
 @app.get("/api/v1/search")
-def global_search(q: str = ""):
-    return ok(search.global_search(q))
+def global_search(q: str | None = None, limit: int = 5):
+    """全局聚合搜索（顶栏下拉用默认 5；独立搜索页传大 limit）；空关键词返回空分组"""
+    return ok(search.global_search(q or "", max(1, min(limit, 20))))
 
 
 # ==================== 系统 ====================

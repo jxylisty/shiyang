@@ -11,7 +11,7 @@ from pathlib import Path
 
 DB_PATH = Path(__file__).resolve().parents[3] / "data" / "shiyang.db"
 
-LIMIT = 5
+LIMIT = 5  # 顶栏下拉默认每类条数；端点可传 limit 覆盖（独立搜索页用大值）
 
 
 def _db():
@@ -20,14 +20,14 @@ def _db():
     return conn
 
 
-def _search_recipes(conn, q: str, kw: str) -> list:
+def _search_recipes(conn, q: str, kw: str, limit: int = LIMIT) -> list:
     """方子按 名称/一句话/场景/配料名 匹配，标注 matched_by"""
     rows = conn.execute(
         "SELECT id,name,type,oneliner,scenes,constitutions_suitable FROM recipe "
         "WHERE status != '弃用' AND (name LIKE ? OR oneliner LIKE ? OR scenes LIKE ? "
         "OR id IN (SELECT recipe_id FROM rel_recipe_material WHERE name LIKE ?)) "
         "ORDER BY analysis_ready DESC, id LIMIT ?",
-        (kw, kw, kw, kw, LIMIT)).fetchall()
+        (kw, kw, kw, kw, limit)).fetchall()
     out = []
     for r in rows:
         matched = []
@@ -50,13 +50,13 @@ def _search_recipes(conn, q: str, kw: str) -> list:
     return out
 
 
-def _search_herbs(conn, q: str, kw: str) -> list:
+def _search_herbs(conn, q: str, kw: str, limit: int = LIMIT) -> list:
     """药材按 名称/拼音/别名/功效 匹配，标注 matched_by"""
     rows = conn.execute(
         "SELECT id,name,category,nature,flavor,functions,compound_count,alias "
         "FROM herb WHERE name LIKE ? OR pinyin LIKE ? OR alias LIKE ? OR functions LIKE ? "
         "ORDER BY compound_count DESC LIMIT ?",
-        (kw, f"{q}%", kw, kw, LIMIT)).fetchall()
+        (kw, f"{q}%", kw, kw, limit)).fetchall()
     out = []
     for r in rows:
         matched = []
@@ -75,7 +75,7 @@ def _search_herbs(conn, q: str, kw: str) -> list:
     return out
 
 
-def global_search(q: str) -> dict:
+def global_search(q: str, limit: int = LIMIT) -> dict:
     q = (q or "").strip()
     empty = {"query": q, "recipes": [], "herbs": [], "compounds": []}
     if not q:
@@ -83,13 +83,13 @@ def global_search(q: str) -> dict:
     kw = f"%{q}%"
     conn = _db()
     try:
-        recipes = _search_recipes(conn, q, kw)
-        herbs = _search_herbs(conn, q, kw)
+        recipes = _search_recipes(conn, q, kw, limit)
+        herbs = _search_herbs(conn, q, kw, limit)
         compounds = conn.execute(
             "SELECT id,name,mw,logp,prob_cctcm,target_count "
             "FROM compound WHERE name LIKE ? AND prob_cctcm IS NOT NULL "
             "ORDER BY prob_cctcm DESC LIMIT ?",
-            (kw, LIMIT)).fetchall()
+            (kw, limit)).fetchall()
     finally:
         conn.close()
     return {

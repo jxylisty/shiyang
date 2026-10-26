@@ -6,6 +6,7 @@ import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import AppIcon from './AppIcon.vue'
 import { globalSearch } from '../api'
+import { loadHistory as loadSearchHistory, saveHistory as saveSearchHistory, clearHistory as clearSearchHistory, QUICK_WORDS } from '../utils/searchPrefs'
 
 const router = useRouter()
 const q = ref('')
@@ -18,31 +19,8 @@ const boxRef = ref(null)
 let timer = null
 let reqId = 0
 
-// ---- 搜索历史（纯本地，最多 8 条，去重） ----
-const HISTORY_KEY = 'shiyang_search_history_v1'
-const HISTORY_MAX = 8
+// ---- 搜索历史（utils/searchPrefs 共享，独立搜索页同款） ----
 const history = ref([])
-function loadHistory() {
-  try { history.value = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]') } catch { history.value = [] }
-}
-function saveHistory(kw) {
-  const list = history.value.filter(x => x !== kw)
-  list.unshift(kw)
-  history.value = list.slice(0, HISTORY_MAX)
-  try { localStorage.setItem(HISTORY_KEY, JSON.stringify(history.value)) } catch { /* 存储不可用静默 */ }
-}
-function clearHistory() {
-  history.value = []
-  try { localStorage.removeItem(HISTORY_KEY) } catch { /* ignore */ }
-}
-function applyKw(kw) {
-  q.value = kw
-  onInput()
-  inputRef.value?.focus()
-}
-
-// ---- 快搜词：九种体质 + 高频场景（静态，空输入聚焦时展示） ----
-const QUICK_WORDS = ['气虚', '润肺', '助眠', '枸杞', '菊花', '换季调理', '阴虚', '祛湿']
 
 const showIdle = computed(() => !q.value.trim() && !loading.value)
 
@@ -71,6 +49,13 @@ function onInput() {
 
 function close() { open.value = false }
 
+// 点历史/快搜词直接触发搜索
+function applyKw(kw) {
+  q.value = kw
+  onInput()
+  inputRef.value?.focus()
+}
+
 // 点外部：关下拉；窄屏且输入为空时收回成图标
 function onDocClick(e) {
   if (!boxRef.value?.contains(e.target)) {
@@ -84,18 +69,24 @@ function onKey(e) {
   else if (expanded.value) { q.value = ''; expanded.value = false }
 }
 onMounted(() => {
-  loadHistory()
+  history.value = loadSearchHistory()
   document.addEventListener('click', onDocClick)
   document.addEventListener('keydown', onKey)
 })
 onUnmounted(() => { document.removeEventListener('click', onDocClick); document.removeEventListener('keydown', onKey) })
 
 function go(kind, item) {
-  saveHistory(q.value.trim())
+  history.value = saveSearchHistory(q.value.trim())
   close()
   if (kind === 'recipe') router.push(`/recipes/${item.id}`)
   else if (kind === 'herb') router.push({ path: '/herbs', query: { h: item.name } })
   else router.push(`/compounds/${encodeURIComponent(item.name)}`)
+}
+
+// 「查看全部结果」深链：记录搜索词后跳独立搜索页
+function recordAndClose(kw) {
+  history.value = saveSearchHistory(kw)
+  close()
 }
 const hasResult = (r) => r && (r.recipes.length || r.herbs.length || r.compounds.length)
 const probColor = (p) => p >= 0.9 ? 'var(--green-700)' : p >= 0.7 ? 'var(--amber-text)' : 'var(--ink-400)'
@@ -114,7 +105,7 @@ const probColor = (p) => p >= 0.9 ? 'var(--green-700)' : p >= 0.7 ? 'var(--amber
           <template v-if="history.length">
             <div class="gs-title gs-idle-head">
               最近搜索
-              <button class="gs-clear" @click.stop="clearHistory">清空</button>
+              <button class="gs-clear" @click.stop="history = []; clearSearchHistory()">清空</button>
             </div>
             <div class="gs-chips">
               <button class="gs-chip" v-for="kw in history" :key="kw" @click="applyKw(kw)">
@@ -131,33 +122,38 @@ const probColor = (p) => p >= 0.9 ? 'var(--green-700)' : p >= 0.7 ? 'var(--amber
           <div class="gs-loading" v-if="loading">搜索中…</div>
           <template v-else-if="result">
             <div class="gs-empty" v-if="!hasResult(result)">没有找到「{{ result.query }}」相关内容</div>
-            <template v-else>
-              <div class="gs-group" v-if="result.recipes.length">
-                <div class="gs-title">方子</div>
-                <button class="gs-item" v-for="r in result.recipes" :key="'r' + r.id" @click="go('recipe', r)">
-                  <span class="gs-name">{{ r.name }}</span>
-                  <span class="gs-sub">
-                    {{ r.type }}<template v-if="r.oneliner"> · {{ r.oneliner }}</template>
-                  </span>
-                  <span v-if="r.matched_by" class="gs-hit">{{ r.matched_by }}</span>
-                </button>
-              </div>
-              <div class="gs-group" v-if="result.herbs.length">
-                <div class="gs-title">药材</div>
-                <button class="gs-item" v-for="h in result.herbs" :key="'h' + h.id" @click="go('herb', h)">
-                  <span class="gs-name">{{ h.name }}</span>
-                  <span class="gs-sub">{{ h.nature }}{{ h.flavor ? ' · ' + h.flavor : '' }} · {{ h.compound_count }} 个成分</span>
-                  <span v-if="h.matched_by" class="gs-hit">{{ h.matched_by }}</span>
-                </button>
-              </div>
-              <div class="gs-group" v-if="result.compounds.length">
-                <div class="gs-title">成分</div>
-                <button class="gs-item" v-for="c in result.compounds" :key="'c' + c.id" @click="go('compound', c)">
-                  <span class="gs-name">{{ c.name }}</span>
-                  <span class="gs-sub">入血概率 <b :style="{ color: probColor(c.prob_cctcm) }">{{ (c.prob_cctcm * 100).toFixed(0) }}%</b></span>
-                </button>
-              </div>
-            </template>
+          <template v-else>
+            <div class="gs-group" v-if="result.recipes.length">
+              <div class="gs-title">方子</div>
+              <button class="gs-item" v-for="r in result.recipes" :key="'r' + r.id" @click="go('recipe', r)">
+                <span class="gs-name">{{ r.name }}</span>
+                <span class="gs-sub">
+                  {{ r.type }}<template v-if="r.oneliner"> · {{ r.oneliner }}</template>
+                </span>
+                <span v-if="r.matched_by" class="gs-hit">{{ r.matched_by }}</span>
+              </button>
+            </div>
+            <div class="gs-group" v-if="result.herbs.length">
+              <div class="gs-title">药材</div>
+              <button class="gs-item" v-for="h in result.herbs" :key="'h' + h.id" @click="go('herb', h)">
+                <span class="gs-name">{{ h.name }}</span>
+                <span class="gs-sub">{{ h.nature }}{{ h.flavor ? ' · ' + h.flavor : '' }} · {{ h.compound_count }} 个成分</span>
+                <span v-if="h.matched_by" class="gs-hit">{{ h.matched_by }}</span>
+              </button>
+            </div>
+            <div class="gs-group" v-if="result.compounds.length">
+              <div class="gs-title">成分</div>
+              <button class="gs-item" v-for="c in result.compounds" :key="'c' + c.id" @click="go('compound', c)">
+                <span class="gs-name">{{ c.name }}</span>
+                <span class="gs-sub">入血概率 <b :style="{ color: probColor(c.prob_cctcm) }">{{ (c.prob_cctcm * 100).toFixed(0) }}%</b></span>
+              </button>
+            </div>
+            <!-- 两级搜索：下拉只展示每类前几条，全部结果去独立搜索页 -->
+            <router-link :to="{ path: '/search', query: { q: result.query } }" class="gs-all"
+                         @click="recordAndClose(result.query)">
+              查看「{{ result.query }}」的全部结果 →
+            </router-link>
+          </template>
           </template>
         </template>
       </div>
@@ -213,6 +209,12 @@ const probColor = (p) => p >= 0.9 ? 'var(--green-700)' : p >= 0.7 ? 'var(--amber
   font-size: 10px; color: var(--green-text); background: var(--green-50);
   border: 1px solid var(--green-100); border-radius: 4px; padding: 0 5px;
   line-height: 1.5;
+}
+/* 两级搜索：跳独立搜索页 */
+.gs-all {
+  display: block; text-align: center; font-size: 12px; color: var(--green-text);
+  text-decoration: none; padding: 10px 0 6px; border-top: 1px solid var(--green-100);
+  margin-top: 6px; font-weight: 600;
 }
 .gs-item {
   display: flex; flex-direction: column; gap: 1px; width: 100%;

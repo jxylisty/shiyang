@@ -4,6 +4,7 @@ const routes = [
   { path: '/', name: 'home', component: () => import('../views/Home.vue'), meta: { title: '食养有据', depth: 0 } },
   { path: '/quiz', name: 'quiz', component: () => import('../views/Quiz.vue'), meta: { title: '体质测评', depth: 1 } },
   { path: '/recipes', name: 'recipes', component: () => import('../views/Recipes.vue'), meta: { title: '方子库', depth: 1 } },
+  { path: '/search', name: 'search', component: () => import('../views/Search.vue'), meta: { title: '搜索', depth: 1 } },
   { path: '/recipes/compare', name: 'compareLab', component: () => import('../views/CompareLab.vue'), meta: { title: '对比实验室', depth: 2 } },
   { path: '/pantry', name: 'pantry', component: () => import('../views/Pantry.vue'), meta: { title: '我的茶罐', depth: 1 } },
   { path: '/open-api', name: 'openApi', component: () => import('../views/OpenApi.vue'), meta: { title: '开放数据 API', depth: 1 } },
