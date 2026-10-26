@@ -3,6 +3,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { watch } from 'vue'
 import AppIcon from './components/AppIcon.vue'
 import SearchBox from './components/SearchBox.vue'
+import CloudDivider from './components/CloudDivider.vue'
 import { makeNavHooks } from './utils/motion'
 
 const route = useRoute()
@@ -39,6 +40,11 @@ const { enter: pageEnter, leave: pageLeave } = makeNavHooks({ getDir: () => rout
       <component :is="Component" :key="route.path" />
     </transition>
   </router-view>
+  <!-- 页脚收束：回纹压边 + 云纹，给内容较少的页面（登录/测评）一个体面的结束 -->
+  <footer class="site-foot">
+    <div class="fret-rule tight"></div>
+    <CloudDivider label="药食同源 · 有据可查" />
+  </footer>
   <div class="disclaimer">本平台内容为健康参考信息，不构成医疗建议，不用于诊断或治疗<br/>
     <span class="img-credit">食材图片来自 <a href="https://commons.wikimedia.org" target="_blank" rel="noopener">Wikimedia Commons</a>（CC0 / 公有领域 / CC BY / CC BY-SA），作者与许可明细见 <a href="/img/credits.json" target="_blank" rel="noopener">credits.json</a></span>
   </div>
@@ -49,6 +55,10 @@ const { enter: pageEnter, leave: pageLeave } = makeNavHooks({ getDir: () => rout
 .logo-icon { color: var(--green-600); margin-right: 6px; flex-shrink: 0; }
 .img-credit { display: inline-block; margin-top: 2px; font-size: 11px; opacity: .9; }
 .img-credit a { color: inherit; }
+.site-foot { margin: 34px 16px 0; }
+/* 页脚回纹与云纹之间留出呼吸位，避免两条装饰叠在一起 */
+.site-foot :deep(.fret-rule) { margin: 0 0 18px; }
+.site-foot :deep(.orn-divider) { margin: 0; }
 </style>
 
 <style>
