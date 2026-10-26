@@ -79,16 +79,16 @@ async function draw(r) {
       ctx.fillText(`· ${cp.name.slice(0, 16)}  入血概率 ${cp.prob_cctcm}`, 90, 416 + i * 30)
     })
     const rs = r.analysis.radar_summary || {}
-    ctx.fillStyle = '#8a978f'; ctx.font = '13px sans-serif'
+    ctx.fillStyle = '#64736a'; ctx.font = '13px sans-serif'
     ctx.fillText(`三维活性参考：抗炎 ${Math.round(rs.anti_inflammatory || 0)} / 免疫 ${Math.round(rs.immune_regulation || 0)} / 气道 ${Math.round(rs.airway_repair || 0)}`, 90, 550)
   }
   // 出处与品牌
-  ctx.fillStyle = '#8a978f'; ctx.font = '13px sans-serif'
+  ctx.fillStyle = '#64736a'; ctx.font = '13px sans-serif'
   wrapLines(ctx, `来源：${(r.source || '').slice(0, 40)}`, 90, 600, W - 180, 20, 2)
   ctx.textAlign = 'center'
   ctx.fillStyle = '#2e7d5b'; ctx.font = 'bold 26px sans-serif'
   ctx.fillText('食养有据', W / 2 - 60, 780)
-  ctx.fillStyle = '#8a978f'; ctx.font = '13px sans-serif'
+  ctx.fillStyle = '#64736a'; ctx.font = '13px sans-serif'
   ctx.fillText('每个方子，都有一份成分说明书', W / 2 - 60, 810)
   // 右下角二维码（扫码直达站点）
   await drawQr(ctx, W - 190, 720, 130)

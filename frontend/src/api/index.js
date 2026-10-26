@@ -28,6 +28,9 @@ export const getExposure = (id) => api.get(`/recipes/${id}/exposure`)
 export const getNetwork = (id) => api.get(`/recipes/${id}/network`)
 export const compareRecipes = (a, b) => api.get('/recipes/compare', { params: { a, b } })
 
+// ---- 全局搜索 ----
+export const globalSearch = (q) => api.get('/search', { params: { q } })
+
 // ---- 我的茶罐（反向配伍） ----
 export const getPantryMaterials = () => api.get('/pantry/materials')
 export const pantryMatch = (owned, constitution) => api.post('/pantry/match', { owned, constitution })

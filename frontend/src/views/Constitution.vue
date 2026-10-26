@@ -96,11 +96,8 @@ onMounted(async () => {
 .li-rise { animation: rise .4s var(--ease-out-soft) backwards; animation-delay: calc(var(--i, 0) * 60ms); }
 .card p { font-size: 13.5px; color: var(--ink-600); line-height: 1.7; }
 .ok { color: var(--green-700); }
-.bad { color: var(--red-500); }
-.recipe-row { display: block; padding: 10px 0; border-bottom: 1px solid var(--green-50); text-decoration: none; }
-.recipe-row:last-child { border-bottom: none; }
-.r-name { font-weight: 600; font-size: 15px; color: var(--ink-900); }
-.r-one { font-size: 12px; color: var(--ink-400); margin-top: 2px; }
+.bad { color: var(--red-text); }
+/* recipe-row 族用全局定义（style.css） */
 .ref { font-size: 11px; color: var(--ink-400); margin: 14px 4px; text-align: center; }
 .ref a { color: var(--ink-400); }
 </style>

@@ -4,7 +4,7 @@
  * 读取 localStorage 的人群模式（与方子库页共享 key），激活时向 /safety/check 查询
  * verdict=block 红条 / warn 黄条 / pass 不渲染。独立组件，不侵入 RecipeDetail 主流程。
  */
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted, onUnmounted } from 'vue'
 import { ShieldAlert } from '@lucide/vue'
 import { safetyCheck } from '../api'
 
@@ -14,9 +14,11 @@ const profile = ref(localStorage.getItem('shiyang_safety_profile') || '')
 const result = ref(null)
 
 // 跨页签同步人群模式（其他页面切换时此处联动）
-window.addEventListener('storage', (e) => {
+function onStorage(e) {
   if (e.key === 'shiyang_safety_profile') profile.value = e.newValue || ''
-})
+}
+onMounted(() => window.addEventListener('storage', onStorage))
+onUnmounted(() => window.removeEventListener('storage', onStorage))
 
 async function run() {
   result.value = null
@@ -48,8 +50,8 @@ watch(() => [props.recipeId, profile.value], run, { immediate: true })
 
 <style scoped>
 .sf { display: flex; gap: 8px; padding: 10px 12px; border-radius: 10px; font-size: 12px; line-height: 1.6; margin-bottom: 12px; }
-.sf.block { background: var(--red-50); color: var(--red-500); }
-.sf.warn { background: var(--amber-50); color: var(--amber-600); }
+.sf.block { background: var(--red-50); color: var(--red-text); }
+.sf.warn { background: var(--amber-50); color: var(--amber-text); }
 .sf b { font-size: 12px; }
 .sf p { opacity: .9; }
 </style>

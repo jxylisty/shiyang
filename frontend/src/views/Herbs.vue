@@ -1,8 +1,10 @@
 <script setup>
 // 药材图鉴：34 味药食同源药材，图 + 性味 + 功效摘要，点开看归经/化合物数
 import { ref, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { listHerbs, matImg } from '../api'
 
+const route = useRoute()
 const items = ref([])
 const loading = ref(true)
 const loadError = ref(false)
@@ -11,16 +13,26 @@ const active = ref(null)      // popup 详情
 const imgFailed = ref({})
 
 let timer = null
+let reqId = 0
 async function load() {
+  const id = ++reqId
   loading.value = true
   loadError.value = false
   try {
     const d = (await listHerbs(kw.value.trim())).data.data
+    if (id !== reqId) return   // 已有更新的请求发出，丢弃本次结果
     items.value = d.items
+    // 全局搜索跳转：?h=药材名 → 数据到位后直接打开详情弹窗
+    const h = route.query.h
+    if (h) {
+      const hit = items.value.find(x => x.name === h)
+      if (hit) active.value = hit
+    }
   } catch {
+    if (id !== reqId) return
     loadError.value = true
     items.value = []
-  } finally { loading.value = false }
+  } finally { if (id === reqId) loading.value = false }
 }
 function onSearch() {
   if (timer) clearTimeout(timer)
@@ -108,11 +120,10 @@ const hideImg = (name) => { imgFailed.value[name] = true }
 .h-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .h-fallback { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 700; color: var(--green-700); }
 .h-name { font-size: 14px; }
-.h-nature { font-size: 11px; color: var(--amber-600); }
+.h-nature { font-size: 11px; color: var(--amber-text); }
 .h-count { font-size: 10px; color: var(--ink-400); }
 
-/* 骨架屏（shimmer 用全局 keyframes） */
-.sk-anim { background: linear-gradient(90deg, var(--green-50) 25%, #e6f1ea 50%, var(--green-50) 75%); background-size: 200% 100%; animation: shimmer 1.3s infinite; }
+/* 骨架屏（shimmer 与 .sk-anim 均用全局定义，style.css） */
 .sk-line { height: 12px; border-radius: 6px; width: 80%; }
 .sk-line.w70 { width: 70%; }
 .sk-line.w50 { width: 50%; }
@@ -127,7 +138,7 @@ const hideImg = (name) => { imgFailed.value[name] = true }
 .hd-head { display: flex; gap: 14px; align-items: center; margin-bottom: 14px; }
 .hd-img { width: 72px; flex-shrink: 0; }
 .hd-head h3 { font-size: 19px; }
-.hd-sub { font-size: 13px; color: var(--amber-600); margin-top: 2px; }
+.hd-sub { font-size: 13px; color: var(--amber-text); margin-top: 2px; }
 .hd-sec { padding: 10px 0; border-top: 1px dashed var(--green-100); }
 .hd-sec b { font-size: 12px; color: var(--green-700); display: block; margin-bottom: 4px; }
 .hd-sec p { font-size: 13.5px; color: var(--ink-600); line-height: 1.7; }

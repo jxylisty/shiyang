@@ -28,6 +28,7 @@ from services import explain_service as explain
 from services import open_api
 from services import report_service as report
 from services import term_service as terms
+from services import search_service as search
 
 DB_PATH = Path(__file__).resolve().parent.parent.parent / "data" / "shiyang.db"
 DISCLAIMER = "本平台内容为健康参考信息，不构成医疗建议，不用于诊断或治疗。"
@@ -234,13 +235,14 @@ def recipe_detail(rid: int):
         raise HTTPException(404, "方子不存在")
     mats = conn.execute(
         "SELECT m.name, m.material_type, m.grams, m.optional, m.note, "
-        "h.nature, h.flavor, h.functions, h.is_food_homology "
-        "FROM rel_recipe_material m LEFT JOIN herb h ON h.id=m.herb_id WHERE m.recipe_id=?", (rid,)).fetchall()
+        "h.nature, h.flavor, h.functions, h.is_food_homology, f.nutrient_json AS nutrient "
+        "FROM rel_recipe_material m LEFT JOIN herb h ON h.id=m.herb_id "
+        "LEFT JOIN food f ON f.id=m.food_id WHERE m.recipe_id=?", (rid,)).fetchall()
     analysis = conn.execute("SELECT * FROM recipe_analysis WHERE recipe_id=?", (rid,)).fetchone()
     out = dict(r)
     for k in ("scenes", "constitutions_suitable", "constitutions_unsuitable"):
         out[k] = json.loads(out.get(k) or "[]")
-    out["materials"] = [dict(m) for m in mats]
+    out["materials"] = [dict(m) | {"nutrient": json.loads(m["nutrient"] or "null")} for m in mats]
     out["analysis"] = None
     if analysis:
         a = dict(analysis)
@@ -281,6 +283,34 @@ def list_compounds(min_prob: float = 0.5, limit: int = 50):
         (min_prob, min(limit, 200))).fetchall()
     conn.close()
     return ok({"total": len(rows), "items": [dict(r) for r in rows]})
+
+
+@app.get("/api/v1/foods")
+def list_foods(q: str | None = None):
+    """普通食材（食物型）列表：性味功效 + 营养素（中国食物成分表常见值）"""
+    conn = get_db()
+    if q:
+        rows = conn.execute(
+            "SELECT id,name,category,nature,flavor,functions,contraindication,nutrient_json "
+            "FROM food WHERE name LIKE ? ORDER BY category,name", (f"%{q}%",)).fetchall()
+    else:
+        rows = conn.execute(
+            "SELECT id,name,category,nature,flavor,functions,contraindication,nutrient_json "
+            "FROM food ORDER BY category,name").fetchall()
+    conn.close()
+    items = [dict(r) | {"nutrient": json.loads(r["nutrient_json"] or "null"),
+                        "has_nutrient": bool(r["nutrient_json"])}
+             for r in rows]
+    for it in items:
+        del it["nutrient_json"]
+    return ok({"total": len(items), "items": items})
+
+
+# ==================== 全局搜索 ====================
+
+@app.get("/api/v1/search")
+def global_search(q: str = ""):
+    return ok(search.global_search(q))
 
 
 # ==================== 系统 ====================

@@ -58,9 +58,9 @@ async function submit() {
         <span v-if="busy" class="spinner"></span>
         {{ busy ? '请稍候…' : (mode === 'login' ? '登录' : '创建账号') }}
       </button>
-      <p class="switch" @click="mode = mode === 'login' ? 'register' : 'login'; error = ''">
+      <button type="button" class="switch" @click="mode = mode === 'login' ? 'register' : 'login'; error = ''">
         {{ mode === 'login' ? '没有账号？去注册' : '已有账号？去登录' }}
-      </p>
+      </button>
     </div>
   </div>
 </template>
@@ -80,12 +80,7 @@ async function submit() {
 /* 注册昵称字段展开/收起 */
 .field-grow-enter-active, .field-grow-leave-active { transition: opacity .25s ease, height .25s var(--ease-out-soft), margin .25s ease; }
 .field-grow-enter-from, .field-grow-leave-to { opacity: 0; height: 0 !important; margin-bottom: 0 !important; }
-.err { color: var(--red-500); font-size: 13px; margin-bottom: 10px; }
-.spinner {
-  display: inline-block; width: 12px; height: 12px; margin-right: 6px; vertical-align: -1px;
-  border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%;
-  animation: spin .7s linear infinite;
-}
-@keyframes spin { to { rotate: 360deg; } }
-.switch { text-align: center; font-size: 13px; color: var(--green-700); margin-top: 14px; cursor: pointer; }
+.err { color: var(--red-text); font-size: 13px; margin-bottom: 10px; }
+/* spinner 用全局定义（style.css） */
+.switch { display: block; text-align: center; font-size: 13px; color: var(--green-700); margin: 14px auto 0; cursor: pointer; background: none; border: none; padding: 0; }
 </style>

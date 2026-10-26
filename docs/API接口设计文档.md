@@ -42,7 +42,7 @@
 
 ---
 
-## 3. 接口总览（24 个）
+## 3. 接口总览（24 + 本轮新增 3 个）
 
 | # | 方法 | 路径 | 认证 | 功能 |
 |---|---|---|---|---|
@@ -70,6 +70,14 @@
 | 22 | DELETE | `/checkins/{recipe_id}` | ✔ | 撤销当日打卡 |
 | 23 | GET | `/checkins` | ✔ | 近 30 天打卡 + 连续天数 |
 | 24 | — | — | — | （交互文档）FastAPI 自带 `/docs` Swagger UI |
+
+> **本轮新增（2026-10-26，补五脏迭代）**，另见 open 子路由（`/open/*` 7 端点）与 safety/evidence/explain/pantry/compare/term/report 等此前迭代端点（Swagger UI 可查全量）：
+>
+> | 方法 | 路径 | 认证 | 功能 |
+> |---|---|---|---|
+> | GET | `/search?q=关键词` | — | 全局搜索：一次聚合方子/药材/成分各前 5 条 |
+> | GET | `/explain/compound?name=成分名` | — | 成分词典：双模型概率 + Lipinski 解读 + 关联药材/靶点 + 出现的方子（本次扩展 recipes/targets 字段） |
+> | GET | `/foods` | — | 普通食材列表（性味功效 + nutrient_json 营养素，中国食物成分表约值） |
 
 ## 4. 接口明细
 

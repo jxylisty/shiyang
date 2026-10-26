@@ -1,6 +1,6 @@
 <script setup>
 // 成分库：按入血概率排序的化合物列表，双模型对比条 + 三维雷达分
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, onMounted } from 'vue'
 import { listCompounds } from '../api'
 
 const items = ref([])
@@ -16,8 +16,9 @@ async function load() {
   try {
     const d = (await listCompounds(minProb.value, 200)).data.data
     items.value = d.items
-    // 下一帧再给条形终值，让 width transition 真正从 0 播起
-    requestAnimationFrame(() => requestAnimationFrame(() => { barsGrown.value = true }))
+    // 下一拍再给条形终值，让 width transition 真正从 0 播起
+    // （setTimeout 替代 rAF：隐藏页签里 rAF 不触发会让条形定格 0）
+    setTimeout(() => setTimeout(() => { barsGrown.value = true }, 16), 16)
   } catch {
     loadError.value = true
     items.value = []
@@ -38,7 +39,8 @@ const RADAR = [
   { key: 'radar_immune_regulation', name: '免疫调节' },
   { key: 'radar_airway_repair', name: '气道修复' },
 ]
-const probColor = (p) => p >= 0.9 ? '#2e7d5b' : p >= 0.7 ? '#c98a2d' : '#8a978f'
+// 概率三档色：走令牌（ink-400 已调至 AA 对比度）
+const probColor = (p) => p >= 0.9 ? 'var(--green-700)' : p >= 0.7 ? 'var(--amber-text)' : 'var(--ink-400)'
 const avg = (c) => {
   const vals = RADAR.map(r => c[r.key]).filter(v => v !== null && v !== undefined)
   return vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : null
@@ -68,7 +70,7 @@ const avg = (c) => {
 
     <template v-else>
       <p class="count">共 {{ items.length }} 个成分 · 按入血概率排序</p>
-      <div v-for="(c, i) in items" :key="c.id" class="card cp-card" :style="{ '--i': i, '--d': `${Math.min(i, 10) * 40}ms` }">
+      <router-link v-for="(c, i) in items" :key="c.id" :to="`/compounds/${encodeURIComponent(c.name)}`" class="card cp-card" :style="{ '--d': `${Math.min(i, 10) * 40}ms` }">
         <div class="cp-head">
           <span class="cp-rank">{{ i + 1 }}</span>
           <b class="cp-name">{{ c.name }}</b>
@@ -83,7 +85,7 @@ const avg = (c) => {
           </div>
           <div class="cp-bar-row">
             <span class="cp-bar-label">HERB</span>
-            <div class="cp-bar"><i :style="{ width: barsGrown ? `${Math.round(c.prob_herb * 100)}%` : '0%', background: '#c98a2d' }"></i></div>
+            <div class="cp-bar"><i :style="{ width: barsGrown ? `${Math.round(c.prob_herb * 100)}%` : '0%', background: 'var(--amber-600)' }"></i></div>
             <span class="cp-bar-val">{{ c.prob_herb }}</span>
           </div>
         </div>
@@ -95,7 +97,7 @@ const avg = (c) => {
           </span>
           <span class="cp-mw" v-if="c.mw">MW {{ Math.round(c.mw) }}</span>
         </div>
-      </div>
+      </router-link>
       <p class="disclaimer-note">入血概率为模型预测参考值；三维评分为文献富集参考分（0-100），非临床结论。</p>
     </template>
   </div>
@@ -104,7 +106,7 @@ const avg = (c) => {
 <style scoped>
 .intro { background: linear-gradient(135deg, var(--green-700), var(--green-900)); color: #fff; border: none; }
 .intro b { font-size: 16px; }
-.intro p { font-size: 12.5px; opacity: .85; margin-top: 6px; line-height: 1.7; }
+.intro p { font-size: 12.5px; opacity: .95; margin-top: 6px; line-height: 1.7; }
 
 .f-row { display: flex; flex-wrap: wrap; gap: 0; margin-bottom: 10px; }
 .level { cursor: pointer; border: 1px solid var(--green-100); background: #fff; transition: background var(--dur-fast) ease, color var(--dur-fast) ease, border-color var(--dur-fast) ease, scale var(--dur-fast) var(--ease-snap); }
@@ -112,7 +114,7 @@ const avg = (c) => {
 .level.active { background: var(--green-700); color: #fff; border-color: var(--green-700); }
 .count { font-size: 12px; color: var(--ink-400); margin-bottom: 8px; }
 
-.cp-card { animation: rise .4s var(--ease-out-soft) backwards; animation-delay: var(--d, 0ms); }
+.cp-card { display: block; text-decoration: none; color: inherit; animation: rise .4s var(--ease-out-soft) backwards; animation-delay: var(--d, 0ms); }
 
 .cp-head { display: flex; align-items: center; gap: 8px; }
 .cp-rank { width: 20px; height: 20px; border-radius: 50%; background: var(--green-50); color: var(--green-700); font-size: 11px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
@@ -138,5 +140,5 @@ const avg = (c) => {
 .sk-line.w50 { width: 50%; }
 .sk-line.w90 { width: 90%; }
 .sk-line.w40 { width: 40%; margin-bottom: 0; }
-.sk-anim { background: linear-gradient(90deg, var(--green-50) 25%, #e6f1ea 50%, var(--green-50) 75%); background-size: 200% 100%; animation: shimmer 1.3s infinite; }
+/* sk-anim 用全局定义（style.css） */
 </style>

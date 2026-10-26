@@ -75,6 +75,28 @@ def compound_explain(name: str) -> dict | None:
         herbs = [r[0] for r in conn.execute(
             "SELECT h.name FROM rel_herb_compound rc JOIN herb h ON h.id=rc.herb_id "
             "WHERE rc.compound_id=?", (row["id"],)).fetchall()]
+        herb_ids = [r[0] for r in conn.execute(
+            "SELECT herb_id FROM rel_herb_compound WHERE compound_id=?", (row["id"],)).fetchall()]
+        # 「出现在哪些方子里」：经关联药材反查方子配料（成分词典页主体区块）
+        recipes = []
+        if herb_ids:
+            ph = ",".join("?" * len(herb_ids))
+            recipes = [dict(r) for r in conn.execute(
+                f"SELECT DISTINCT rm.recipe_id AS id, r.name, r.type, r.oneliner "
+                f"FROM rel_recipe_material rm JOIN recipe r ON r.id=rm.recipe_id "
+                f"WHERE rm.material_type='herb' AND rm.herb_id IN ({ph}) AND r.status != '弃用' "
+                f"ORDER BY rm.recipe_id LIMIT 8", herb_ids).fetchall()]
+        # 关联靶点（人类蛋白优先，与开放 API 口径一致；DISTINCT 去掉一靶多行的活性记录）
+        targets = [dict(t) for t in conn.execute(
+            "SELECT DISTINCT rc.target_gene AS gene, t.target_type, t.species "
+            "FROM rel_compound_target rc JOIN target t ON t.gene=rc.target_gene "
+            "WHERE rc.compound_id=? AND t.species='Homo sapiens' "
+            "ORDER BY rc.target_gene LIMIT 12", (row["id"],)).fetchall()]
+        if not targets:
+            targets = [dict(t) for t in conn.execute(
+                "SELECT DISTINCT rc.target_gene AS gene, t.target_type, t.species "
+                "FROM rel_compound_target rc JOIN target t ON t.gene=rc.target_gene "
+                "WHERE rc.compound_id=? ORDER BY rc.target_gene LIMIT 12", (row["id"],)).fetchall()]
     finally:
         conn.close()
 
@@ -85,6 +107,7 @@ def compound_explain(name: str) -> dict | None:
         "name": row["name"], "smiles": row["smiles"], "mw": row["mw"], "logp": row["logp"],
         "prob_cctcm": row["prob_cctcm"], "prob_herb": row["prob_herb"],
         "target_count": row["target_count"], "herbs": herbs,
+        "recipes": recipes, "targets": targets,
         "band": band, "features": feats,
         "rule_summary": f"Lipinski 口服有利特征 {n_pass}/{len(feats)} 项命中",
         "note": "以上为模型判断依据的科普化展示（特征区间），非严格贡献值；"

@@ -25,18 +25,23 @@ function pickProfile(code) {
   runSafety()
 }
 
+let safetyId = 0
 async function runSafety() {
+  const id = ++safetyId
   if (!profile.value || !items.value.length) { safetyMap.value = {}; return }
   try {
     const { data } = await safetyCheckBatch(items.value.map(r => r.id), profile.value)
+    if (id !== safetyId) return
     safetyMap.value = data.data.results
-  } catch { safetyMap.value = {} }
+  } catch { if (id === safetyId) safetyMap.value = {} }
 }
 
 const SCENES = ['护嗓润喉', '熬夜护眼', '换季调理', '助眠', '消化', '控糖轻养', '控油祛痘', '久坐通气', '情绪舒压', '经期温养']
 
 let searchTimer = null
+let reqId = 0
 async function load() {
+  const id = ++reqId
   loading.value = true
   loadError.value = false
   try {
@@ -45,13 +50,15 @@ async function load() {
     if (scene.value) params.scene = scene.value
     if (kw.value.trim()) params.q = kw.value.trim()
     const d = (await listRecipes(params)).data.data
+    if (id !== reqId) return   // 已有更新的请求发出，丢弃本次结果
     items.value = d.items
     total.value = d.total
     runSafety()
   } catch {
+    if (id !== reqId) return
     loadError.value = true
     items.value = []
-  } finally { loading.value = false }
+  } finally { if (id === reqId) loading.value = false }
 }
 
 function onSearch() {
@@ -161,13 +168,13 @@ function onCoverErr(r) {
 .count { font-size: 12px; color: var(--ink-400); margin-bottom: 8px; }
 .lab-link { float: right; font-size: 12px; color: var(--green-700); text-decoration: none; display: inline-flex; align-items: center; gap: 3px; }
 .safety-row { align-items: center; margin-bottom: 10px; padding: 8px 10px; background: var(--amber-50); border-radius: 10px; }
-.safety-label { font-size: 12px; color: var(--amber-600); display: inline-flex; align-items: center; gap: 3px; flex-shrink: 0; }
+.safety-label { font-size: 12px; color: var(--amber-text); display: inline-flex; align-items: center; gap: 3px; flex-shrink: 0; }
 .safety-tag { background: #fff; }
 .safety-tag.active { background: var(--amber-600); color: #fff; border-color: var(--amber-600); }
 .recipe-card.safety-block { opacity: .55; }
 .rc-safety { font-size: 11px; margin: 0 0 6px; padding: 4px 8px; border-radius: 8px; display: flex; align-items: center; gap: 4px; line-height: 1.4; }
-.rc-safety.block { background: var(--red-50); color: var(--red-500); }
-.rc-safety.warn { background: var(--amber-50); color: var(--amber-600); }
+.rc-safety.block { background: var(--red-50); color: var(--red-text); }
+.rc-safety.warn { background: var(--amber-50); color: var(--amber-text); }
 .recipe-card { display: block; text-decoration: none; color: inherit; }
 
 /* 左图右文卡片 */
@@ -194,14 +201,13 @@ function onCoverErr(r) {
 /* 入场动画：淡入上移，按 --d 错峰（keyframes rise 用全局定义） */
 .recipe-list .recipe-card { animation: rise .4s var(--ease-out-soft) backwards; animation-delay: var(--d, 0ms); }
 
-/* 骨架屏（shimmer 用全局 .skl 同款曲线） */
+/* 骨架屏（shimmer 与 .sk-anim 均用全局定义，style.css） */
 .sk-card { display: flex; gap: 12px; padding: 12px; }
 .sk-cover { width: 86px; min-height: 86px; border-radius: 10px; flex-shrink: 0; }
 .sk-line { height: 14px; border-radius: 6px; margin-bottom: 10px; }
 .sk-line.w60 { width: 60%; }
 .sk-line.w90 { width: 90%; }
 .sk-line.w40 { width: 40%; margin-bottom: 0; }
-.sk-anim { background: linear-gradient(90deg, var(--green-50) 25%, #e6f1ea 50%, var(--green-50) 75%); background-size: 200% 100%; animation: shimmer 1.3s infinite; }
 
 @media (min-width: 900px) {
   .recipe-list { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }

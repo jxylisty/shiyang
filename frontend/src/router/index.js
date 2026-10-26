@@ -11,6 +11,7 @@ const routes = [
   { path: '/recipes/:id(\\d+)', name: 'recipeDetail', component: () => import('../views/RecipeDetail.vue'), meta: { title: '方子详情', depth: 2 } },
   { path: '/herbs', name: 'herbs', component: () => import('../views/Herbs.vue'), meta: { title: '药材图鉴', depth: 1 } },
   { path: '/compounds', name: 'compounds', component: () => import('../views/Compounds.vue'), meta: { title: '成分库', depth: 1 } },
+  { path: '/compounds/:name', name: 'compoundDetail', component: () => import('../views/CompoundDetail.vue'), meta: { title: '成分词典', depth: 2 } },
   { path: '/constitution/:code', name: 'constitution', component: () => import('../views/Constitution.vue'), meta: { title: '体质详情', depth: 2 } },
   { path: '/login', name: 'login', component: () => import('../views/Login.vue'), meta: { title: '登录', depth: 1 } },
   { path: '/me', name: 'me', component: () => import('../views/Me.vue'), meta: { title: '我的', depth: 1 } },

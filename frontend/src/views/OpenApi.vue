@@ -91,5 +91,5 @@ async function copy(path) {
 .code { font-size: 12px; font-family: ui-monospace, Consolas, monospace; background: var(--green-50);
         border-radius: 8px; padding: 12px; overflow-x: auto; line-height: 1.6; }
 .hint { font-size: 12px; color: var(--ink-600); margin-top: 6px; line-height: 1.7; }
-.hint.warn { color: var(--amber-600); }
+.hint.warn { color: var(--amber-text); }
 </style>

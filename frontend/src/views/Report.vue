@@ -6,11 +6,13 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { CalendarRange } from '@lucide/vue'
 import { getCycleReport, isLoggedIn } from '../api'
+import ReportPoster from '../components/ReportPoster.vue'
 
 const router = useRouter()
 const report = ref(null)
 const error = ref('')
 const days = ref(21)
+const posterShow = ref(false)
 
 const DAYS_OPTS = [7, 21, 90]
 const DAYS_LABEL = { 7: '近 7 天', 21: '近 21 天', 90: '近 90 天' }
@@ -44,6 +46,7 @@ const CNAME = { pinghe: '平和质', qixu: '气虚质', yangxu: '阳虚质', yin
       <div class="d-opts">
         <button v-for="d in DAYS_OPTS" :key="d" class="tag" :class="{ active: days === d }"
                 @click="pickDays(d)">{{ DAYS_LABEL[d] }}</button>
+        <button v-if="report" class="tag poster-btn" @click="posterShow = true">分享报告海报</button>
       </div>
     </div>
 
@@ -125,6 +128,8 @@ const CNAME = { pinghe: '平和质', qixu: '气虚质', yangxu: '阳虚质', yin
 
       <p class="foot">{{ report.note }}</p>
     </template>
+
+    <ReportPoster v-model:show="posterShow" :report="report" />
   </div>
 </template>
 
@@ -134,6 +139,7 @@ const CNAME = { pinghe: '平和质', qixu: '气虚质', yangxu: '阳虚质', yin
 .d-opts { display: flex; gap: 6px; margin-top: 10px; }
 .d-opts .tag { cursor: pointer; }
 .d-opts .tag.active { background: var(--green-700); color: #fff; border-color: var(--green-700); }
+.poster-btn { cursor: pointer; margin-left: auto; border-color: var(--green-700); color: var(--green-700); }
 .ov { display: flex; text-align: center; padding: 14px 6px; }
 .ov-item { flex: 1; min-width: 0; }
 .ov-item b { font-size: 20px; color: var(--green-700); display: block; }

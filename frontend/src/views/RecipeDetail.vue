@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { BadgeCheck, Clock, ExternalLink, Star, StarOff, CheckCircle2, ArrowUp } from '@lucide/vue'
 import { showSuccessToast } from 'vant'
 import { getRecipe, getExposure, addFavorite, removeFavorite, listFavorites, isLoggedIn, pushHistory, doCheckin, undoCheckin } from '../api'
+import { afterPaint } from '../utils/motion'
 import AIReport from '../components/AIReport.vue'
 import NetworkGraph from '../components/NetworkGraph.vue'
 import SharePoster from '../components/SharePoster.vue'
@@ -45,9 +46,8 @@ onMounted(async () => {
   try {
     recipe.value = (await getRecipe(route.params.id)).data.data
     pushHistory({ id: recipe.value.id, name: recipe.value.name, type: recipe.value.type, oneliner: recipe.value.oneliner })
-    // 下一拍再给进度条终值：让 van-progress 的 width transition 从 0 播到目标
-    // （setTimeout 替代 rAF：隐藏页签里 rAF 不触发会让进度条定格 0）
-    setTimeout(() => setTimeout(() => { barsGrown.value = true }, 16), 16)
+    // 下一拍再给进度条终值：让 width transition 从 0 播到目标（afterPaint，与骨架屏同款收口）
+    afterPaint(() => { barsGrown.value = true })
   } catch { error.value = '加载失败' }
   getExposure(route.params.id).then(({ data }) => { exposure.value = data.data }).catch(() => {})
   syncFavState()
@@ -70,7 +70,7 @@ const matImg = (name) => `/img/materials/${encodeURIComponent(name)}.jpg`
 const hideImg = (e) => { e.target.style.display = 'none' }
 const matLoaded = ref({})
 const onMatLoad = (name) => { matLoaded.value[name] = true }
-const probColor = (p) => p >= 0.9 ? '#2e7d5b' : p >= 0.7 ? '#c98a2d' : '#8a978f'
+const probColor = (p) => p >= 0.9 ? 'var(--green-700)' : p >= 0.7 ? 'var(--amber-text)' : 'var(--ink-400)'
 const radarNames = { anti_inflammatory: '抗炎', immune_regulation: '免疫调节', airway_repair: '气道修复' }
 // 三维均值可能带小数，条形图按 0-100 取整
 const radarSummary = computed(() => {
@@ -182,6 +182,7 @@ async function toggleCheckin() {
               <div class="m-main">
                 <span class="m-name">{{ m.name }}</span>
                 <span class="m-kind" :class="m.material_type">{{ m.material_type === 'herb' ? '药食同源' : '食材' }}</span>
+                <span v-if="m.nutrient?.highlight" class="m-nutri" :title="`每100g：能量${m.nutrient.energy_kcal ?? '—'}kcal · 蛋白${m.nutrient.protein_g ?? '—'}g · 脂肪${m.nutrient.fat_g ?? '—'}g · 碳水${m.nutrient.carb_g ?? '—'}g（${m.nutrient.source}）`">{{ m.nutrient.highlight }}</span>
               </div>
               <span class="m-grams">{{ fmtGrams(m) }}<small v-if="m.optional">（可选）</small></span>
             </div>
@@ -237,7 +238,7 @@ async function toggleCheckin() {
                 <p class="r-title">三维机制参考（成分均值，满分 100）</p>
                 <div v-for="(v, k) in radarSummary" :key="k" class="r-row">
                   <span class="r-name">{{ radarNames[k] || k }}</span>
-                  <van-progress class="r-bar" :percentage="barsGrown ? Math.round(v) : 0" color="#359068" track-color="#eef7f2" :show-pivot="false" />
+                  <van-progress class="r-bar" :percentage="barsGrown ? Math.round(v) : 0" color="var(--green-600)" track-color="var(--green-100)" :show-pivot="false" />
                   <span class="r-val">{{ barsGrown ? Math.round(v) : 0 }}</span>
                 </div>
                 <p class="r-scope">三维维度沿用大创课题「中医治疗儿童哮喘」机制研究的靶点富集框架，此处作为成分生物活性的一般性参考，不代表该方对任一具体场景的功效评价。</p>
@@ -328,12 +329,13 @@ async function toggleCheckin() {
 .m-main { flex: 1; }
 .m-name { font-size: 15px; font-weight: 600; }
 .m-kind { font-size: 10px; padding: 1px 7px; border-radius: 8px; background: var(--green-100); color: var(--green-700); margin-left: 8px; }
+.m-nutri { font-size: 10.5px; color: var(--amber-text); margin-left: 6px; cursor: help; }
 .m-grams { font-size: 13px; color: var(--ink-600); }
 .m-note { font-size: 11px; color: var(--ink-400); margin-top: 8px; }
 
 .method { font-size: 14px; }
 .duration { font-size: 12px; color: var(--ink-400); margin-top: 6px; }
-.warn-box { margin-top: 10px; padding: 8px 12px; background: var(--red-50); border-radius: 8px; color: var(--red-500); font-size: 13px; }
+.warn-box { margin-top: 10px; padding: 8px 12px; background: var(--red-50); border-radius: 8px; color: var(--red-text); font-size: 13px; }
 
 .a-intro { font-size: 13px; color: var(--ink-600); margin-bottom: 10px; }
 .comp { padding: 8px 0; border-bottom: 1px dashed var(--green-50); animation: rise .4s var(--ease-out-soft) backwards; animation-delay: calc(var(--i) * 35ms); }

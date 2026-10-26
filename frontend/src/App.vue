@@ -2,14 +2,16 @@
 import { useRoute, useRouter } from 'vue-router'
 import { watch } from 'vue'
 import { Leaf } from '@lucide/vue'
+import SearchBox from './components/SearchBox.vue'
+import { makeNavHooks } from './utils/motion'
 
 const route = useRoute()
 const router = useRouter()
 watch(() => route.meta.title, (t) => { document.title = t ? `${t} · 食养有据` : '食养有据' }, { immediate: true })
 
-// 路由切换方向：depth 变深 = 前进（新页从右滑入），变浅 = 后退（从左滑入）
-// router._navDir 由 router/index.js 的 beforeEach 维护
-const navDir = { get value() { return router._navDir ?? 0 } }
+// 路由过渡 JS 钩子（setTimeout 收尾，隐藏页签不卡死）：
+// router._navDir 由 router/index.js 维护，depth 变深 = 前进（新页从右滑入），变浅 = 后退
+const { enter: pageEnter, leave: pageLeave } = makeNavHooks({ getDir: () => router._navDir ?? 0 })
 </script>
 
 <template>
@@ -22,9 +24,11 @@ const navDir = { get value() { return router._navDir ?? 0 } }
       <router-link to="/compounds">成分</router-link>
       <router-link to="/me">我的</router-link>
     </nav>
+    <SearchBox />
   </header>
   <router-view v-slot="{ Component }">
-    <transition :name="navDir.value === 0 ? 'page-fade' : (navDir.value === 1 ? 'page-fwd' : 'page-back')" mode="out-in">
+    <!-- JS 钩子驱动（见 pageEnter/pageLeave）：setTimeout 收尾，隐藏页签不卡死 -->
+    <transition :css="false" mode="out-in" @enter="pageEnter" @leave="pageLeave">
       <component :is="Component" :key="route.path" />
     </transition>
   </router-view>
@@ -36,20 +40,10 @@ const navDir = { get value() { return router._navDir ?? 0 } }
 <style scoped>
 .logo { text-decoration: none; display: inline-flex; align-items: center; }
 .logo-icon { color: var(--green-600); margin-right: 6px; flex-shrink: 0; }
-.img-credit { display: inline-block; margin-top: 2px; font-size: 11px; opacity: .85; }
+.img-credit { display: inline-block; margin-top: 2px; font-size: 11px; opacity: .9; }
 .img-credit a { color: inherit; }
 </style>
 
 <style>
-/* 路由切换过渡（全局：router-view 在 App 模板内）
-   首次进入 / 同层切换：轻淡入；前进：从右滑入；后退：从左滑入 */
-.page-fade-enter-active, .page-fade-leave-active,
-.page-fwd-enter-active, .page-fwd-leave-active,
-.page-back-enter-active, .page-back-leave-active { transition: opacity .18s ease, transform .22s var(--ease-out-soft); }
-.page-fade-enter-from { opacity: 0; transform: translateY(6px); }
-.page-fade-leave-to { opacity: 0; }
-.page-fwd-enter-from { opacity: 0; transform: translateX(32px); }
-.page-fwd-leave-to { opacity: 0; transform: translateX(-18px); }
-.page-back-enter-from { opacity: 0; transform: translateX(-32px); }
-.page-back-leave-to { opacity: 0; transform: translateX(18px); }
+/* 页面过渡的视觉由 pageEnter/pageLeave JS 钩子内联驱动（见上） */
 </style>

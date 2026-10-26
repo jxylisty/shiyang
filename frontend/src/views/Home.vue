@@ -39,6 +39,10 @@ onMounted(async () => {
   ])
   if (statsR.status === 'fulfilled') {
     stats.value = statsR.value.data.data
+    // 数据到位 → 三个数字各自从 0 滚动
+    recipeSrc.value = stats.value.stats.recipe
+    compoundSrc.value = stats.value.stats.compound
+    targetSrc.value = stats.value.stats.target
   }
   if (showcaseR.status === 'fulfilled') showcaseRecipes.value = showcaseR.value.data.data.items
   if (sleepR.status === 'fulfilled') sleepRecipes.value = sleepR.value.data.data.items
@@ -53,12 +57,13 @@ onMounted(async () => {
   } catch { /* 推荐失败不影响首页 */ }
 })
 
-// hero 数字滚动（useCountUp：stats 到位后 source 有值即滚动）
-const statSource = ref({ recipe: 0, compound: 0, target: 0 })
-const animatedStats = useCountUp(statSource, 800)
-function onStats(s) {
-  statSource.value = { ...s }
-}
+// hero 数字滚动（useCountUp：source 有值即从当前值滚到目标）
+const recipeSrc = ref(null)
+const compoundSrc = ref(null)
+const targetSrc = ref(null)
+const animatedRecipe = useCountUp(recipeSrc, 800)
+const animatedCompound = useCountUp(compoundSrc, 800)
+const animatedTarget = useCountUp(targetSrc, 800)
 
 // hero 光斑跟随：桌面端 pointermove 写 CSS 变量（移动端无 hover 不启用）
 const heroEl = ref(null)
@@ -89,9 +94,9 @@ function onDailyImgErr() {
         <router-link to="/recipes" class="btn ghost">逛方子库</router-link>
       </div>
       <div v-if="stats" class="hero-stats">
-        <div><b>{{ animatedStats.recipe ?? 0 }}</b><span>食养方</span></div>
-        <div><b>{{ animatedStats.compound ?? 0 }}</b><span>活性成分</span></div>
-        <div><b>{{ animatedStats.target ?? 0 }}</b><span>作用靶点</span></div>
+        <div><b>{{ animatedRecipe }}</b><span>食养方</span></div>
+        <div><b>{{ animatedCompound }}</b><span>活性成分</span></div>
+        <div><b>{{ animatedTarget }}</b><span>作用靶点</span></div>
       </div>
     </div>
 
@@ -188,7 +193,7 @@ function onDailyImgErr() {
   .hero:hover .hero-glow { opacity: 1; }
 }
 .hero h1 { position: relative; font-size: 24px; line-height: 1.45; margin-bottom: 8px; }
-.hero .sub { position: relative; font-size: 13px; opacity: .85; margin-bottom: 16px; }
+.hero .sub { position: relative; font-size: 13px; opacity: .95; margin-bottom: 16px; }
 .hero-btns { position: relative; display: flex; gap: 10px; margin-bottom: 16px; }
 .hero .btn { background: #fff; color: var(--green-700); }
 .hero .btn.ghost { background: rgba(255,255,255,.16); color: #fff; }
@@ -196,7 +201,7 @@ function onDailyImgErr() {
 .hero-stats div { flex: 1; text-align: center; background: rgba(255,255,255,.12); border-radius: 10px; padding: 8px 4px; transition: background var(--dur-fast) ease; }
 .hero-stats div:active { background: rgba(255,255,255,.22); }
 .hero-stats b { display: block; font-size: 18px; font-variant-numeric: tabular-nums; }
-.hero-stats span { font-size: 11px; opacity: .8; }
+.hero-stats span { font-size: 11px; opacity: .95; }
 
 /* 今日推荐 */
 .daily { display: flex; gap: 12px; padding: 12px; text-decoration: none; color: inherit; align-items: stretch; animation: rise .45s var(--ease-out-soft) .1s backwards; }
@@ -229,7 +234,7 @@ function onDailyImgErr() {
   padding: 10px; background: linear-gradient(180deg, rgba(29,74,56,0) 40%, rgba(29,74,56,.85)); color: #fff;
 }
 .s-overlay b { font-size: 14px; }
-.s-overlay span { font-size: 11px; opacity: .85; }
+.s-overlay span { font-size: 11px; opacity: .9; }
 
 .zone-intro { font-size: 12px; color: var(--ink-600); margin-bottom: 10px; }
 /* 证据链四步：横向排列，移动端可换行 */
@@ -240,10 +245,7 @@ function onDailyImgErr() {
 }
 .chain i { font-style: normal; color: var(--ink-400); font-size: 12px; }
 .zone-more { display: block; text-align: center; font-size: 13px; color: var(--green-700); padding-top: 10px; text-decoration: none; font-weight: 600; }
-.recipe-row { display: block; padding: 10px 0; border-bottom: 1px solid var(--green-50); text-decoration: none; }
-.recipe-row:last-child { border-bottom: none; }
-.r-name { font-weight: 600; font-size: 15px; color: var(--ink-900); }
-.r-one { font-size: 12px; color: var(--ink-400); margin-top: 2px; }
+/* recipe-row 族用全局定义（style.css） */
 
 /* 数据资产入口 */
 .asset-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }

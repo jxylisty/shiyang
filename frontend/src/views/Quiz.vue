@@ -1,5 +1,6 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { makeNavHooks, tween, afterPaint } from '../utils/motion'
 import { getQuestionnaire, submitQuiz, saveRecord, isLoggedIn, listFamilyMembers } from '../api'
 
 const items = ref({})          // {code: [题...]}
@@ -55,6 +56,11 @@ const answeredCount = () => flat.value.filter(x => answers.value[x.code][x.di] !
 
 let advanceTimer = null
 let pickTimer = null
+onUnmounted(() => {
+  if (advanceTimer) clearTimeout(advanceTimer)
+  if (pickTimer) clearTimeout(pickTimer)
+  if (scoresCancel) scoresCancel()
+})
 
 function buzz(ms) {
   try { navigator.vibrate?.(ms) } catch { /* 不支持则静默 */ }
@@ -83,32 +89,14 @@ function choose(v) {
 function nextQ() { qDir.value = 1; idx.value = Math.min(idx.value + 1, flat.value.length - 1) }
 function prevQ() { qDir.value = -1; idx.value = Math.max(idx.value - 1, 0) }
 
-// 题目卡过渡的 JS 钩子（setTimeout 收尾，隐藏页签不卡死）：
+// 题目卡过渡的 JS 钩子（makeNavHooks 工厂，setTimeout 收尾，隐藏页签不卡死）：
 // qDir=1 前进：新卡从右侧滑入；qDir=-1 后退：从左侧滑入
-function qEnter(el, done) {
-  const dx = qDir.value === 1 ? 28 : -28
-  el.style.opacity = '0'
-  el.style.transform = `translateX(${dx}px)`
-  // rAF 冻结环境下 50ms 内由 setTimeout 兜底起播
-  let started = false
-  const start = () => {
-    if (started) return
-    started = true
-    el.style.transition = 'opacity .18s ease, transform .2s cubic-bezier(0.22, 1, 0.36, 1)'
-    el.style.opacity = '1'
-    el.style.transform = 'translateX(0)'
-  }
-  requestAnimationFrame(start)
-  setTimeout(start, 50)
-  setTimeout(() => { el.style.transition = ''; el.style.opacity = ''; el.style.transform = ''; done() }, 280)
-}
-function qLeave(el, done) {
-  const dx = qDir.value === 1 ? -20 : 20
-  el.style.transition = 'opacity .15s ease, transform .16s cubic-bezier(0.22, 1, 0.36, 1)'
-  el.style.opacity = '0'
-  el.style.transform = `translateX(${dx}px)`
-  setTimeout(done, 180)
-}
+const { enter: qEnter, leave: qLeave } = makeNavHooks({
+  getDir: () => qDir.value,
+  enterDx: 28, enterDy: 0, leaveDx: 20,
+  enterDurT: '.2s', enterTotal: 280,
+  leaveDur: '.15s', leaveTotal: 180,
+})
 
 // ---- 进度本地暂存：误关/崩溃后不丢 67 题的作答 ----
 const STORE_KEY = 'shiyang_quiz_v1'
@@ -142,20 +130,15 @@ function restart() {
   clearProgress()
 }
 
-// 九维分数滚动：单条 setTimeout 时间轴同步推所有维度
-// （不用 rAF：页面隐藏/截屏场景 rAF 会被暂停，数字永远停在 0）
+// 九维分数滚动：tween 单条时间轴同步推所有维度（easeOutCubic，setTimeout 驱动见 motion.js 注释）
+let scoresCancel = null
 function animateScores(results) {
+  if (scoresCancel) scoresCancel()
   const targets = Object.fromEntries(Object.entries(results).map(([k, v]) => [k, v.score]))
-  const dur = 900, t0 = performance.now()
-  const tick = () => {
-    const p = Math.min(1, (performance.now() - t0) / dur)
-    const ease = 1 - Math.pow(1 - p, 3)
-    for (const k of Object.keys(targets)) {
-      shownScores.value[k] = Math.round(targets[k] * ease)
-    }
-    if (p < 1) setTimeout(tick, 16)
-  }
-  tick()
+  const keys = Object.keys(targets)
+  scoresCancel = tween(900, (ease) => {
+    for (const k of keys) shownScores.value[k] = Math.round(targets[k] * ease)
+  })
 }
 
 async function submit() {
@@ -170,12 +153,11 @@ async function submit() {
                  forMember.value || null).catch(() => {})
     }
     window.scrollTo({ top: 0, behavior: 'smooth' })
-    // 揭示动画：setTimeout 下一拍把进度条从 0 播到终值，同时分数滚动
-    // （双 setTimeout 替代双 rAF：隐藏页签里 rAF 不触发会导致进度条定格 0）
-    setTimeout(() => setTimeout(() => {
+    // 揭示动画：afterPaint 下一拍把进度条从 0 播到终值，同时分数滚动
+    afterPaint(() => {
       revealed.value = true
       animateScores(res.judged.results)
-    }, 16), 16)
+    })
   } catch (e) {
     // 提交失败不清进度，用户可重试
     error.value = '提交失败，请检查网络后重试（您的作答已保留）'
@@ -315,7 +297,7 @@ const mainName = computed(() => {
 .opt.on { background: var(--green-700); color: #fff; border-color: var(--green-700); font-weight: 600; }
 .opt.pop { animation: pop 0.45s var(--ease-spring); }
 .q-nav { display: flex; gap: 10px; margin-top: 14px; }
-.submit-error { margin-top: 12px; padding: 10px 12px; background: var(--red-50); color: var(--red-500); border-radius: 10px; font-size: 13px; }
+.submit-error { margin-top: 12px; padding: 10px 12px; background: var(--red-50); color: var(--red-text); border-radius: 10px; font-size: 13px; }
 .q-nav .btn { flex: 1; text-align: center; }
 .q-note { font-size: 11px; color: var(--ink-400); margin-top: 14px; line-height: 1.5; }
 .member-pick { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; }
@@ -323,13 +305,7 @@ const mainName = computed(() => {
 .mp-tag { cursor: pointer; }
 .mp-tag.active { background: var(--green-700); color: #fff; border-color: var(--green-700); }
 
-/* 提交按钮 loading 圈 */
-.spinner {
-  display: inline-block; width: 12px; height: 12px; margin-right: 6px; vertical-align: -1px;
-  border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%;
-  animation: spin .7s linear infinite;
-}
-@keyframes spin { to { rotate: 360deg; } }
+/* 提交按钮 loading 圈用全局 .spinner（style.css） */
 
 /* 问卷加载骨架 */
 .q-skl-title { height: 48px; margin: 12px 0 4px; }
@@ -341,7 +317,7 @@ const mainName = computed(() => {
 .result-hero .label { font-size: 12px; color: var(--ink-400); }
 .result-hero h2 { font-size: 26px; color: var(--green-700); margin: 6px 0; animation: pop .55s var(--ease-spring) .25s backwards; }
 .result-hero .principle { font-size: 13px; color: var(--ink-600); }
-.combined { margin-top: 8px; font-size: 12px; color: var(--amber-600); }
+.combined { margin-top: 8px; font-size: 12px; color: var(--amber-text); }
 
 .score-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; }
 .s-name { width: 42px; font-size: 13px; color: var(--ink-600); }
@@ -351,9 +327,6 @@ const mainName = computed(() => {
 .s-tag { width: 44px; font-size: 11px; color: var(--ink-400); text-align: center; }
 .s-tag.hit { color: var(--green-700); font-weight: 600; }
 
-.recipe-row { display: block; padding: 10px 0; border-bottom: 1px solid var(--green-50); text-decoration: none; border-radius: 8px; }
-.recipe-row:last-child { border-bottom: none; }
-.r-name { font-weight: 600; font-size: 15px; color: var(--ink-900); }
-.r-one { font-size: 12px; color: var(--ink-400); margin-top: 2px; }
+/* recipe-row 族用全局定义（style.css） */
 .diet-ref p { font-size: 13px; color: var(--ink-600); line-height: 1.7; }
 </style>

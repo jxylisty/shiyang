@@ -249,10 +249,10 @@ function poly(vals) {
 .duo-share.dim { color: var(--ink-400); }
 .chip-wrap { display: flex; flex-wrap: wrap; gap: 4px; }
 .tag.gene { font-family: ui-monospace, monospace; font-size: 11px; }
-.dim-tag { opacity: .75; }
+.dim-tag { opacity: .85; }
 .hint { font-size: 12px; color: var(--ink-600); margin-top: 8px; line-height: 1.6; }
 .hint.ok { color: var(--green-700); }
-.hint.warn { color: var(--amber-600); background: var(--amber-50); padding: 8px 10px; border-radius: 8px; }
+.hint.warn { color: var(--amber-text); background: var(--amber-50); padding: 8px 10px; border-radius: 8px; }
 
 .radar-card { display: flex; gap: 14px; align-items: center; }
 .radar { width: 130px; flex-shrink: 0; }
@@ -265,7 +265,7 @@ function poly(vals) {
 .radar-row { display: flex; align-items: center; gap: 6px; font-size: 12px; padding: 4px 0; border-top: 1px dashed var(--green-100); }
 .radar-row span:first-child { color: var(--ink-400); width: 56px; }
 .radar-row b { color: var(--green-700); }
-.radar-row b.amber { color: var(--amber-600); }
+.radar-row b.amber { color: var(--amber-text); }
 .sep { color: var(--ink-400); font-size: 10px; }
 
 .picker { padding: 16px; }
@@ -279,4 +279,9 @@ function poly(vals) {
 .picker-item.active .pi-name, .picker-item.active .pi-sub { color: #fff; }
 .pi-name { font-size: 14px; font-weight: 600; color: var(--ink-900); }
 .pi-sub { font-size: 11px; color: var(--ink-400); margin-top: 2px; }
+
+/* 小屏降级：双列对照叠成单列（320px 下不再挤压） */
+@media (max-width: 420px) {
+  .vs-grid, .duo { grid-template-columns: 1fr; }
+}
 </style>

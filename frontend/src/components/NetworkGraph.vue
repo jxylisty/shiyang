@@ -1,6 +1,6 @@
 <script setup>
 // 成分-靶点网络图（ECharts graph 力导向）
-import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch, watchEffect } from 'vue'
 import * as echarts from 'echarts'
 import { getNetwork } from '../api'
 
@@ -45,7 +45,10 @@ onMounted(() => {
   render()
   // 视口变化自适应（此前 expose 了 resize 但没人调，改用 ResizeObserver 内聚）
   ro = new ResizeObserver(() => chart?.resize())
-  ro.observe(el.value?.$el || el.value)
+  watchEffect(() => {
+    const node = el.value
+    if (node) ro.observe(node)
+  })
 })
 watch(() => props.recipeId, render)
 onBeforeUnmount(() => { chart?.dispose(); ro?.disconnect() })
@@ -69,8 +72,8 @@ defineExpose({ resize: () => chart?.resize() })
 <style scoped>
 .net-chart { width: 100%; height: 320px; opacity: 0; transition: opacity .5s ease; }
 .net-chart.ready { opacity: 1; }
-.net-empty { text-align: center; color: #8a978f; font-size: 13px; padding: 40px 0; }
+.net-empty { text-align: center; color: var(--ink-400); font-size: 13px; padding: 40px 0; }
 .net-loading { height: 320px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; }
 .net-skl-dot { width: 14px; height: 14px; border-radius: 50%; display: inline-block; }
-.net-skl-text { font-size: 12px; color: #8a978f; }
+.net-skl-text { font-size: 12px; color: var(--ink-400); }
 </style>

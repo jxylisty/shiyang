@@ -7,7 +7,7 @@ defineProps({
 
 <template>
   <div class="empty-motion">
-    <div class="cup-wrap">
+    <div class="cup-wrap" aria-hidden="true">
       <span class="leaf l1">🌿</span>
       <span class="leaf l2">🍃</span>
       <div class="cup">

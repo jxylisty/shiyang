@@ -351,14 +351,14 @@ function buzz(ms) {
 .fam-info { flex: 1; min-width: 0; }
 .fam-info b { font-size: 14px; }
 .fam-rel { font-size: 11px; color: var(--ink-400); margin-left: 6px; }
-.fam-del { border: none; background: none; color: var(--red-500); font-size: 12px; cursor: pointer; }
+.fam-del { border: none; background: none; color: var(--red-text); font-size: 12px; cursor: pointer; }
 .fam-add { display: flex; gap: 6px; }
 .fam-input { flex: 1; min-width: 0; border: 1.5px solid var(--green-100); border-radius: 10px; padding: 8px 10px;
              font-size: 13px; background: var(--green-50); outline: none; }
 .fam-input:focus { border-color: var(--green-600); }
 .fam-sel { flex: 0 0 92px; }
 .rec-row b { font-size: 15px; }
-.combined { font-size: 12px; color: var(--amber-600); }
+.combined { font-size: 12px; color: var(--amber-text); }
 .date { margin-left: auto; font-size: 12px; color: var(--ink-400); }
 .cmp-title { font-size: 13px; font-weight: 700; color: var(--green-700); margin-top: 12px; }
 .cmp-row { display: flex; align-items: center; gap: 8px; padding: 3px 0; font-size: 13px; }
@@ -367,13 +367,10 @@ function buzz(ms) {
 .c-arrow { color: var(--ink-400); }
 .c-now { width: 36px; text-align: right; font-weight: 700; }
 .c-delta { width: 48px; text-align: right; }
-.c-delta.up { color: var(--amber-600); }
+.c-delta.up { color: var(--amber-text); }
 .c-delta.down { color: var(--green-700); }
 .cmp-note { font-size: 11px; color: var(--ink-400); margin-top: 6px; }
-.recipe-row { display: block; padding: 10px 0; border-bottom: 1px solid var(--green-50); text-decoration: none; }
-.recipe-row:last-of-type { border-bottom: none; }
-.r-name { font-weight: 600; font-size: 15px; color: var(--ink-900); }
-.r-one { font-size: 12px; color: var(--ink-400); margin-top: 2px; }
+/* recipe-row 族用全局定义（style.css） */
 
 .clear-btn { margin-top: 10px; font-size: 13px; padding: 8px 0; }
 
@@ -415,12 +412,12 @@ function buzz(ms) {
 .switch-btn.on { background: var(--green-600); }
 .switch-btn .knob { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: left .2s var(--ease-spring); }
 .switch-btn.on .knob { left: 23px; }
-.btn.danger { color: var(--red-500); background: var(--red-50); font-size: 13px; padding: 7px 12px; }
+.btn.danger { color: var(--red-text); background: var(--red-50); font-size: 13px; padding: 7px 12px; }
 .set-note { font-size: 11px; color: var(--ink-400); margin-top: 10px; }
 
 /* 骨架屏 */
 .sk-row { height: 16px; border-radius: 8px; margin: 14px 0; }
 .sk-row:first-child { margin-top: 0; }
 .sk-row:last-child { margin-bottom: 0; }
-.sk-anim { background: linear-gradient(90deg, var(--green-50) 25%, #e6f1ea 50%, var(--green-50) 75%); background-size: 200% 100%; animation: shimmer 1.3s infinite; }
+/* sk-anim 用全局定义（style.css） */
 </style>

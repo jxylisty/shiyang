@@ -96,7 +96,7 @@ async function draw() {
 
   ctx.fillStyle = '#1f2b26'; ctx.font = 'bold 22px sans-serif'
   ctx.fillText('测一测你的体质', 90, 480)
-  ctx.font = '14px sans-serif'; ctx.fillStyle = '#8a978f'
+  ctx.font = '14px sans-serif'; ctx.fillStyle = '#64736a'
   wrapLines(ctx, '60 道国家标准题 · 出具成分级食养推荐 · 每个方子都有「成分说明书」', 90, 512, W - 180, 22, 2)
 
   // 九维小格（若有转化分）
@@ -113,10 +113,10 @@ async function draw() {
       ctx.fillStyle = '#2e7d5b'; ctx.textAlign = 'center'
       ctx.font = 'bold 17px sans-serif'
       ctx.fillText(Math.round(v), x + gw / 2, gy + 38)
-      ctx.fillStyle = '#8a978f'; ctx.font = '11px sans-serif'
+      ctx.fillStyle = '#64736a'; ctx.font = '11px sans-serif'
       ctx.fillText(labels[i], x + gw / 2, gy + 62)
     })
-    ctx.textAlign = 'left'; ctx.fillStyle = '#8a978f'; ctx.font = '12px sans-serif'
+    ctx.textAlign = 'left'; ctx.fillStyle = '#64736a'; ctx.font = '12px sans-serif'
     ctx.fillText('转化分（0-100）· 偏颇体质 ≥40 判定为「是」', 90, 705)
   }
 

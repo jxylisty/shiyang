@@ -4,12 +4,16 @@
  * 每个成分展示 分子量/logP 对照 Lipinski 口服有利特征 + 命中/超标人话解读
  */
 import { ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { CircleCheck, CircleX, ChevronDown } from '@lucide/vue'
 import { getExplainRecipe } from '../api'
 
+const router = useRouter()
 const props = defineProps({ recipeId: { type: Number, required: true } })
 const data = ref(null)
 const openIdx = ref(0)
+// 成分行展开态里给「成分词典」入口：整行按钮已用于展开/收起，词典入口放展开区底部
+const goDict = (name) => router.push(`/compounds/${encodeURIComponent(name)}`)
 
 async function load() {
   try { data.value = (await getExplainRecipe(props.recipeId)).data.data } catch { /* 静默 */ }
@@ -44,6 +48,7 @@ watch(() => props.recipeId, load, { immediate: true })
           </span>
           <p class="xp-say">{{ f.say }}</p>
         </div>
+        <button class="xp-dict" @click.stop="goDict(c.name)">查看 {{ c.name }} 的成分词典 →</button>
       </div>
     </div>
     <p class="xp-note">{{ data.note }}</p>
@@ -58,7 +63,7 @@ watch(() => props.recipeId, load, { immediate: true })
 .xp-row { display: flex; align-items: center; gap: 8px; width: 100%; padding: 9px 0; background: none; border: none; cursor: pointer; }
 .xp-name { font-size: 13px; font-weight: 600; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; }
 .xp-pass { font-size: 11px; color: var(--green-700); background: var(--green-50); border-radius: 8px; padding: 1px 7px; flex-shrink: 0; }
-.xp-pass.fail { color: var(--amber-600); background: var(--amber-50); }
+.xp-pass.fail { color: var(--amber-text); background: var(--amber-50); }
 .xp-prob { font-size: 14px; font-weight: 800; flex-shrink: 0; width: 38px; text-align: right; }
 .xp-arrow { color: var(--ink-400); transition: rotate .25s var(--ease-out-soft); flex-shrink: 0; }
 .xp-arrow.flip { rotate: 180deg; }
@@ -68,9 +73,10 @@ watch(() => props.recipeId, load, { immediate: true })
 .xp-feat.fail { background: var(--amber-50); }
 .xp-feat-head { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-900); }
 .xp-feat-head svg { color: var(--green-600); flex-shrink: 0; }
-.xp-feat.fail .xp-feat-head svg { color: var(--amber-600); }
+.xp-feat.fail .xp-feat-head svg { color: var(--amber-text); }
 .xp-val { margin-left: auto; font-size: 12px; color: var(--ink-600); }
 .xp-val i { font-style: normal; font-size: 10px; color: var(--ink-400); }
 .xp-say { font-size: 12px; color: var(--ink-600); line-height: 1.6; margin-top: 4px; }
 .xp-note { font-size: 11px; color: var(--ink-400); margin-top: 8px; line-height: 1.6; }
+.xp-dict { border: none; background: none; color: var(--green-700); font-size: 12px; cursor: pointer; padding: 2px 0 0; font-family: inherit; }
 </style>

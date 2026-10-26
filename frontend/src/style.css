@@ -6,12 +6,14 @@
   --green-100: #e8f4ee;
   --green-50: #f4faf7;
   --amber-600: #c98a2d;
+  --amber-text: #8a5f16;
   --amber-50: #fdf6e9;
   --red-500: #c25e50;
+  --red-text: #a84b3e;
   --red-50: #faf0ee;
   --ink-900: #1f2b26;
   --ink-600: #55645d;
-  --ink-400: #8a978f;
+  --ink-400: #64736a;
   --bg: #f6f9f7;
   --card: #ffffff;
   --radius: 14px;
@@ -55,6 +57,9 @@ html { -webkit-text-size-adjust: 100%; }
 * { -webkit-tap-highlight-color: transparent; }
 a, button, .btn, .card, .tag, .pressable, input, label { touch-action: manipulation; }
 
+/* 键盘焦点可见性（Tab 导航时）：outline 跟随元素自身圆角 */
+:focus-visible { outline: 2px solid var(--green-600); outline-offset: 2px; }
+
 /* 可点元素统一按压反馈：iOS App Store 同款手感 */
 .pressable, .btn, .card[href], a.scene, a.season-card, .opt, .switch-row, .seg-btn {
   transition: scale var(--dur-fast) var(--ease-snap), opacity var(--dur-fast) ease;
@@ -92,6 +97,16 @@ a, button, .btn, .card, .tag, .pressable, input, label { touch-action: manipulat
   animation: shimmer 1.4s ease infinite;
   border-radius: 8px;
 }
+/* 浅一档骨架变体（原 5 个页面逐字复制，收口为一份） */
+.sk-anim { background: linear-gradient(90deg, var(--green-50) 25%, #e6f1ea 50%, var(--green-50) 75%); background-size: 200% 100%; animation: shimmer 1.3s infinite; }
+
+/* 按钮 loading 转圈（原 Login/Quiz 各一份，收口为一份） */
+@keyframes spin { to { rotate: 360deg; } }
+.spinner {
+  display: inline-block; width: 12px; height: 12px; margin-right: 6px; vertical-align: -1px;
+  border: 2px solid rgba(255, 255, 255, .4); border-top-color: #fff; border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
 
 /* 蒸汽上升（治愈健康系氛围元素，配合空状态/hero 使用） */
 @keyframes steam {
@@ -104,6 +119,10 @@ a, button, .btn, .card, .tag, .pressable, input, label { touch-action: manipulat
 @keyframes sway {
   0%, 100% { rotate: -6deg; } 50% { rotate: 6deg; }
 }
+
+/* 暗色圆形扩散切换（Me 页开关触发 View Transition）：
+   旧画面静止垫底，新画面由 JS 驱动 clip-path 圆形揭示 */
+::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
 
 /* 尊重系统减弱动态：全部动画与过渡压到不可感知 */
 @media (prefers-reduced-motion: reduce) {
@@ -135,7 +154,7 @@ body {
 @media (max-width: 420px) {
   .topbar .logo { font-size: 16px; }
   .topbar .logo small { display: none; }
-  .topbar nav a { padding: 4px 8px; }
+  .topbar nav a { padding: 4px 6px; font-size: 13px; white-space: nowrap; }
 }
 .topbar nav { display: flex; gap: 4px; }
 .topbar nav a {
@@ -148,7 +167,7 @@ body {
 .disclaimer {
   margin: 24px 16px 32px; padding: 10px 14px;
   background: var(--amber-50); border-radius: 10px;
-  color: var(--amber-600); font-size: 12px; text-align: center;
+  color: var(--amber-text); font-size: 12px; text-align: center;
 }
 
 /* 卡片与通用 */
@@ -156,7 +175,8 @@ body {
 .card {
   background: var(--card); border-radius: var(--radius);
   box-shadow: var(--shadow); padding: 16px; margin-bottom: 12px;
-}.section-title { font-size: 16px; font-weight: 700; margin: 18px 0 10px; display: flex; align-items: center; gap: 6px; }
+}
+.section-title { font-size: 16px; font-weight: 700; margin: 18px 0 10px; display: flex; align-items: center; gap: 6px; }
 .section-title::before { content: ""; width: 4px; height: 16px; background: var(--green-600); border-radius: 2px; }
 
 .btn {
@@ -177,11 +197,19 @@ body {
   border: 1px solid var(--green-100); margin: 2px 4px 2px 0;
   transition: background var(--dur-fast) ease, color var(--dur-fast) ease, border-color var(--dur-fast) ease, scale var(--dur-fast) var(--ease-snap);
 }
-.tag.warm { background: var(--amber-50); color: var(--amber-600); border-color: #f0e3c8; }
-.tag.warn { background: var(--red-50); color: var(--red-500); border-color: #eed6d1; }
+.tag.warm { background: var(--amber-50); color: var(--amber-text); border-color: #f0e3c8; }
+.tag.warn { background: var(--red-50); color: var(--red-text); border-color: #eed6d1; }
 .tag.active { background: var(--green-700); color: #fff; border-color: var(--green-700); }
 
 .empty { text-align: center; color: var(--ink-400); padding: 40px 0; font-size: 14px; }
+
+/* 共享方子行（原 Home/Me/Quiz/Constitution 各一份拷贝）：
+   统一用 :last-of-type——行组末尾有其他元素时保留底边、行确为末尾时去底边，
+   与四处原有 :last-child / :last-of-type 的实际渲染结果一致 */
+.recipe-row { display: block; padding: 10px 0; border-bottom: 1px solid var(--green-50); text-decoration: none; }
+.recipe-row:last-of-type { border-bottom: none; }
+.r-name { font-weight: 600; font-size: 15px; color: var(--ink-900); }
+.r-one { font-size: 12px; color: var(--ink-400); margin-top: 2px; }
 
 /* 桌面大屏适配：布局放宽到 1080px，方子列表两列，详情页内容两栏 */
 @media (min-width: 900px) {
@@ -197,7 +225,9 @@ body {
   --red-50: #3a2622;
   --ink-900: #e4ece7;
   --ink-600: #a3b3ab;
-  --ink-400: #6f7f77;
+  --ink-400: #7e8e85;
+  --amber-text: #c98a2d;
+  --red-text: #db8072;
   --bg: #0f1713;
   --card: #17211c;
   --shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
@@ -226,4 +256,8 @@ body {
 :root[data-theme="dark"] .skl {
   background: linear-gradient(90deg, var(--green-100) 25%, var(--card) 40%, var(--green-100) 60%);
   background-size: 200% 100%;
+}
+/* 原各页局部 sk-anim 的中间色 #e6f1ea 是硬编码浅色，暗色下会闪白；统一换成令牌色 */
+:root[data-theme="dark"] .sk-anim {
+  background: linear-gradient(90deg, var(--green-50) 25%, var(--green-100) 50%, var(--green-50) 75%);
 }

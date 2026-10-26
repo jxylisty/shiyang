@@ -144,7 +144,7 @@ function coverBar(c) { return Math.round(c * 100) }
 .search-box { padding: 0 0 10px; background: transparent; }
 .chip-wrap { display: flex; flex-wrap: wrap; gap: 6px; }
 .sel-tag { background: var(--green-700); color: #fff; border-color: var(--green-700); cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
-.sel-tag .x { opacity: .7; font-size: 10px; }
+.sel-tag .x { opacity: .85; font-size: 10px; }
 .opt-tag { cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
 .opt-tag img { width: 16px; height: 16px; border-radius: 50%; object-fit: cover; }
 .hint { font-size: 12px; color: var(--ink-400); }
@@ -160,10 +160,10 @@ function coverBar(c) { return Math.round(c * 100) }
 .pi-main { flex: 1; min-width: 0; }
 .pi-main b { font-size: 15px; }
 .pi-top { display: flex; justify-content: space-between; align-items: center; }
-.cov { font-size: 12px; font-weight: 700; color: var(--amber-600); }
+.cov { font-size: 12px; font-weight: 700; color: var(--amber-text); }
 .pi-one { font-size: 12px; color: var(--ink-600); margin: 3px 0 6px; }
 .pi-miss { font-size: 12px; color: var(--ink-600); margin: 3px 0 6px; }
-.pi-miss b { color: var(--amber-600); font-weight: 600; }
+.pi-miss b { color: var(--amber-text); font-weight: 600; }
 .pi-tags { display: flex; flex-wrap: wrap; gap: 4px; }
 .tag.lab { background: var(--green-700); color: #fff; border-color: var(--green-700); }
 </style>

@@ -67,7 +67,7 @@ function saveKey() {
 </template>
 
 <style scoped>
-.ai-tip { font-size: 12px; color: #8a978f; margin-bottom: 8px; line-height: 1.5; }
+.ai-tip { font-size: 12px; color: var(--ink-400); margin-bottom: 8px; line-height: 1.5; }
 .ai-key-row { margin-top: 10px; }
 .ai-key-toggle { border: none; background: none; color: var(--green-700); font-size: 12px; cursor: pointer; padding: 0; }
 .key-wrap { overflow: hidden; }
@@ -78,7 +78,7 @@ function saveKey() {
 }
 .ai-key:focus { border-color: #359068; box-shadow: 0 0 0 3px rgba(53, 144, 104, 0.08); }
 .ai-key-save { margin-top: 8px; font-size: 12px; padding: 7px 14px; }
-.ai-key-note { font-size: 11px; color: #8a978f; margin-top: 6px; }
+.ai-key-note { font-size: 11px; color: var(--ink-400); margin-top: 6px; }
 .ai-key-note a { color: var(--green-700); }
 /* Key 行高度过渡 */
 .key-grow-enter-active, .key-grow-leave-active { transition: opacity .25s ease, height .25s var(--ease-out-soft); }
@@ -98,6 +98,6 @@ function saveKey() {
   animation: dots 1.4s steps(4) infinite; width: 0;
 }
 @keyframes dots { to { width: 1.2em; } }
-.ai-err { font-size: 12.5px; color: #c25e50; margin-top: 8px; }
+.ai-err { font-size: 12.5px; color: var(--red-text); margin-top: 8px; }
 .ai-ops { margin-top: 10px; }
 </style>
