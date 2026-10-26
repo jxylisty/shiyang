@@ -28,6 +28,18 @@ const checkinBusy = ref(false)
 const favJustPop = ref(false)     // 收藏成功 pop 弹跳
 const barsGrown = ref(false)      // 三维机制条从 0 生长
 const showTop = ref(false)        // 返回顶部浮钮
+// 头部封面：首味配料图，加载失败依次换下一味，全失败才回退类型图标（与列表页同口径）
+const headCoverTry = ref(0)
+const headCover = ref('')
+function resetHeadCover() {
+  headCoverTry.value = 0
+  headCover.value = matImg(recipe.value?.materials?.[0]?.name || '')
+}
+function onHeadCoverErr() {
+  const mats = recipe.value?.materials || []
+  headCoverTry.value += 1
+  headCover.value = headCoverTry.value < mats.length ? matImg(mats[headCoverTry.value].name) : ''
+}
 
 async function syncFavState() {
   if (!isLoggedIn()) return
@@ -49,6 +61,7 @@ onMounted(async () => {
   try {
     recipe.value = (await getRecipe(route.params.id)).data.data
     pushHistory({ id: recipe.value.id, name: recipe.value.name, type: recipe.value.type, oneliner: recipe.value.oneliner })
+    resetHeadCover()
     // 下一拍再给进度条终值：让 width transition 从 0 播到目标（afterPaint，与骨架屏同款收口）
     afterPaint(() => { barsGrown.value = true })
   } catch { error.value = '加载失败' }
@@ -155,28 +168,36 @@ async function toggleCheckin() {
           <SafetyBanner :recipe-id="recipe.id" />
           <!-- 头部 -->
           <div class="card head">
-            <div class="h-top">
-              <h2>{{ recipe.name }}</h2>
-              <span class="tag warm">{{ recipe.type }}</span>
-            </div>
-            <p class="h-one">{{ recipe.oneliner }}</p>
-            <div class="h-tags">
-              <span v-for="s in recipe.scenes" :key="s" class="tag">{{ s }}</span>
-              <span v-if="recipe.analysis_ready" class="tag lab"><BadgeCheck :size="12" :stroke-width="2.4" /> 附成分分析</span>
-            </div>
-            <div class="h-ops">
-              <button class="btn ghost h-fav" @click="toggleFav">
-                <span class="fav-star" :class="{ pop: favJustPop }">
-                  <Star v-if="!favState[Number($route.params.id)]" :size="14" :stroke-width="2.2" />
-                  <StarOff v-else :size="14" :stroke-width="2.2" style="fill: var(--amber-600); color: var(--amber-600);" />
-                </span>
-                {{ favState[Number($route.params.id)] ? '取消收藏' : '收藏' }}
-              </button>
-              <button class="btn h-checkin" :class="{ done: checkedToday }" @click="toggleCheckin">
-                <CheckCircle2 :size="14" :stroke-width="2.2" />
-                {{ checkedToday ? '今日已打卡' : '今日打卡' }}
-              </button>
-              <SharePoster :recipe-id="route.params.id" />
+            <div class="h-body">
+              <div class="h-cover">
+                <img v-if="headCover" :src="headCover" :alt="recipe.name" loading="lazy" @error="onHeadCoverErr" />
+                <span v-else class="h-cover-fb"><AppIcon :name="recipe.type === '药膳' ? 'dish' : 'tea'" :size="30" /></span>
+              </div>
+              <div class="h-content">
+                <div class="h-top">
+                  <h2>{{ recipe.name }}</h2>
+                  <span class="tag warm">{{ recipe.type }}</span>
+                </div>
+                <p class="h-one">{{ recipe.oneliner }}</p>
+                <div class="h-tags">
+                  <span v-for="s in recipe.scenes" :key="s" class="tag">{{ s }}</span>
+                  <span v-if="recipe.analysis_ready" class="tag lab"><BadgeCheck :size="12" :stroke-width="2.4" /> 附成分分析</span>
+                </div>
+                <div class="h-ops">
+                  <button class="btn ghost h-fav" @click="toggleFav">
+                    <span class="fav-star" :class="{ pop: favJustPop }">
+                      <Star v-if="!favState[Number($route.params.id)]" :size="14" :stroke-width="2.2" />
+                      <StarOff v-else :size="14" :stroke-width="2.2" style="fill: var(--amber-600); color: var(--amber-600);" />
+                    </span>
+                    {{ favState[Number($route.params.id)] ? '取消收藏' : '收藏' }}
+                  </button>
+                  <button class="btn h-checkin" :class="{ done: checkedToday }" @click="toggleCheckin">
+                    <CheckCircle2 :size="14" :stroke-width="2.2" />
+                    {{ checkedToday ? '今日已打卡' : '今日打卡' }}
+                  </button>
+                  <SharePoster :recipe-id="route.params.id" />
+                </div>
+              </div>
             </div>
           </div>
 
@@ -367,6 +388,20 @@ async function toggleCheckin() {
 .mat-skl { display: flex; align-items: center; gap: 10px; padding: 8px 0; }
 .mat-skl-img { width: 44px; height: 44px; border-radius: 10px; flex-shrink: 0; }
 
+.h-body { display: flex; gap: 14px; align-items: flex-start; }
+.h-cover {
+  width: 88px; height: 88px; border-radius: 12px; overflow: hidden; flex-shrink: 0;
+  background: var(--green-100); display: flex; align-items: center; justify-content: center;
+  color: var(--green-700);
+}
+.h-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.h-cover-fb { display: flex; align-items: center; justify-content: center; }
+.h-content { flex: 1; min-width: 0; }
+/* 窄屏：封面缩到 64px，保证标题与按钮不被挤压 */
+@media (max-width: 420px) {
+  .h-body { gap: 10px; }
+  .h-cover { width: 64px; height: 64px; border-radius: 10px; }
+}
 .h-top { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
 .h-top h2 { font-size: 20px; }
 .h-one { font-size: 13px; color: var(--ink-600); margin: 6px 0; }

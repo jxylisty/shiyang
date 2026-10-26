@@ -1,7 +1,7 @@
 <script setup>
 // 顶栏全局搜索：一次关键词聚合方子/药材/成分三类结果（对标知源中医的统一检索入口）
 // 药材行 → /herbs?h=名（Herbs.vue 读 query 打开详情弹窗）；成分行 → /compounds/:name 词典页
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import AppIcon from './AppIcon.vue'
 import { globalSearch } from '../api'
@@ -9,11 +9,20 @@ import { globalSearch } from '../api'
 const router = useRouter()
 const q = ref('')
 const open = ref(false)
+const expanded = ref(false)   // 窄屏：搜索框折叠成图标，点开才展开输入
+const inputRef = ref(null)
 const loading = ref(false)
 const result = ref(null)
 const boxRef = ref(null)
 let timer = null
 let reqId = 0
+
+// 窄屏点图标 → 展开并把焦点给输入框
+function onBoxClick() {
+  if (expanded.value) return
+  expanded.value = true
+  nextTick(() => inputRef.value?.focus())
+}
 
 function onInput() {
   clearTimeout(timer)
@@ -33,10 +42,18 @@ function onInput() {
 
 function close() { open.value = false }
 
+// 点外部：关下拉；窄屏且输入为空时收回成图标
 function onDocClick(e) {
-  if (boxRef.value && !boxRef.value.contains(e.target)) close()
+  if (!boxRef.value?.contains(e.target)) {
+    close()
+    if (!q.value.trim()) expanded.value = false
+  }
 }
-function onKey(e) { if (e.key === 'Escape') close() }
+function onKey(e) {
+  if (e.key !== 'Escape') return
+  if (open.value) close()
+  else if (expanded.value) { q.value = ''; expanded.value = false }
+}
 onMounted(() => { document.addEventListener('click', onDocClick); document.addEventListener('keydown', onKey) })
 onUnmounted(() => { document.removeEventListener('click', onDocClick); document.removeEventListener('keydown', onKey) })
 
@@ -51,10 +68,10 @@ const probColor = (p) => p >= 0.9 ? 'var(--green-700)' : p >= 0.7 ? 'var(--amber
 </script>
 
 <template>
-  <div class="gsearch" ref="boxRef">
-    <div class="gs-input">
+  <div class="gsearch" :class="{ expanded }" ref="boxRef">
+    <div class="gs-input" @click="onBoxClick">
       <AppIcon name="search" :size="15" :stroke-width="2.2" />
-      <input v-model="q" type="search" placeholder="搜方子 / 药材 / 成分" @input="onInput" @focus="q.trim() && (open = true)" />
+      <input ref="inputRef" v-model="q" type="search" placeholder="搜方子 / 药材 / 成分" @input="onInput" @focus="q.trim() && (open = true)" />
     </div>
     <transition name="gs-fade">
       <div class="gs-panel" v-if="open">
@@ -123,8 +140,20 @@ const probColor = (p) => p >= 0.9 ? 'var(--green-700)' : p >= 0.7 ? 'var(--amber
 .gs-sub { font-size: 11.5px; color: var(--ink-400); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .gs-fade-enter-active, .gs-fade-leave-active { transition: opacity .15s ease, transform .15s ease; }
 .gs-fade-enter-from, .gs-fade-leave-to { opacity: 0; transform: translateY(-4px); }
-@media (max-width: 420px) {
-  .gs-input input { width: 104px; }
-  .gs-panel { width: 260px; }
+@media (max-width: 560px) {
+  /* 窄屏：顶栏放不下 logo + 5 项导航 + 输入框，搜索收成一个图标；点开时浮层覆盖导航
+     不这么做会撑出横向滚动条（375px 下溢出约 72px）。topbar 是 sticky 定位的
+     包含块，absolute 相对它定位 */
+  .gs-input { padding: 6px; border-radius: 50%; }
+  .gs-input input { display: none; }
+  .gsearch.expanded {
+    position: absolute; right: 12px; top: 50%; translate: 0 -50%; z-index: 30;
+  }
+  .gsearch.expanded .gs-input {
+    border-radius: 18px; padding: 5px 12px;
+    background: var(--card); box-shadow: 0 2px 12px rgba(31, 74, 56, .12);
+  }
+  .gsearch.expanded .gs-input input { display: block; width: 150px; min-width: 0; }
+  .gs-panel { width: min(280px, calc(100vw - 32px)); right: 0; }
 }
 </style>
