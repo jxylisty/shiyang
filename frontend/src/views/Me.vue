@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { showConfirmDialog, showSuccessToast } from 'vant'
 import { currentUser, logout, listRecords, listFavorites, isLoggedIn, getHistory, clearHistory, listCheckins, listFamilyMembers, addFamilyMember, removeFamilyMember } from '../api'
 import ConstitutionCard from '../components/ConstitutionCard.vue'
+import RecipeRow from '../components/RecipeRow.vue'
 
 // ---- 体质名片（T2-10） ----
 const showCard = ref(false)
@@ -287,10 +288,8 @@ function buzz(ms) {
         <p class="empty" style="padding:12px 0">暂无浏览记录</p>
       </div>
       <div class="card" v-else>
-        <router-link v-for="h in history.slice(0, 5)" :key="h.id" :to="`/recipes/${h.id}`" class="recipe-row">
-          <div class="r-name">{{ h.name }} <span class="tag warm">{{ h.type }}</span></div>
-          <div class="r-one">{{ h.oneliner }}</div>
-        </router-link>
+        <!-- 与首页/方子库同一套行组件（缩略图取首味配料，无图回退类型图标） -->
+        <RecipeRow v-for="h in history.slice(0, 5)" :key="h.id" :recipe="h" />
         <button class="btn ghost block clear-btn" @click="doClearHistory">清空浏览历史</button>
       </div>
 
