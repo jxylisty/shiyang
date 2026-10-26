@@ -3,7 +3,7 @@ import { ref, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { BadgeCheck, FlaskConical, ShieldAlert } from '@lucide/vue'
 import AppIcon from '../components/AppIcon.vue'
-import { listRecipes, matImg, getSafetyProfiles, safetyCheckBatch } from '../api'
+import { listRecipes, matImg, getSafetyProfiles, safetyCheckBatch, listFavorites, isLoggedIn } from '../api'
 import TermCard from '../components/TermCard.vue'
 
 const route = useRoute()
@@ -21,6 +21,12 @@ const constitution = ref(route.query.constitution || '')
 const profiles = ref([])
 const profile = ref(localStorage.getItem('shiyang_safety_profile') || '')
 const safetyMap = ref({})   // {rid: {verdict, blocks, warns, profile_name}}
+
+// ---- 收藏状态露出：登录后拉一次收藏 id 集，逛库时能认出收藏过的 ----
+const favIds = ref(new Set())
+if (isLoggedIn()) {
+  listFavorites().then(({ data }) => { favIds.value = new Set((data.data || []).map(x => x.id)) }).catch(() => {})
+}
 
 function pickProfile(code) {
   profile.value = profile.value === code ? '' : code
@@ -152,6 +158,8 @@ function onCoverErr(r) {
           <img v-if="coverSrc(r)" :src="coverSrc(r)" alt="" loading="lazy" @error="onCoverErr(r)" />
           <span v-else class="rc-cover-fallback"><AppIcon :name="r.type === '药膳' ? 'dish' : 'tea'" :size="32" /></span>
           <span class="rc-type">{{ r.type }}</span>
+          <!-- 已收藏角标：逛库时认出收藏过的（详情页收藏后列表同步可见） -->
+          <span v-if="favIds.has(r.id)" class="rc-fav" title="已收藏"><AppIcon name="sparkles" :size="11" /></span>
         </div>
         <div class="rc-main">
           <div class="rc-top">
@@ -243,6 +251,13 @@ function onCoverErr(r) {
   position: absolute; left: 0; bottom: 0; font-size: 10px; color: #fff;
   background: rgba(22, 56, 42, 0.82); padding: 1px 7px; border-radius: 0 8px 0 0;
   backdrop-filter: blur(4px);
+}
+/* 已收藏角标：封面右上角朱砂小星 */
+.rc-fav {
+  position: absolute; right: 0; top: 0;
+  display: flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; color: var(--cinnabar);
+  background: rgba(253, 250, 241, 0.92); border-radius: 0 0 0 8px;
 }
 
 .rc-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
