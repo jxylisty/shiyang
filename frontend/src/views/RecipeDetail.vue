@@ -60,7 +60,12 @@ async function syncFavState() {
 onMounted(async () => {
   try {
     recipe.value = (await getRecipe(route.params.id)).data.data
-    pushHistory({ id: recipe.value.id, name: recipe.value.name, type: recipe.value.type, oneliner: recipe.value.oneliner })
+    pushHistory({
+      id: recipe.value.id, name: recipe.value.name, type: recipe.value.type,
+      oneliner: recipe.value.oneliner, duration: recipe.value.duration,
+      // 存配料名供「我的·最近浏览」取封面图（图片路径由配料名决定，只存 id/名称取不到图）
+      materials: (recipe.value.materials || []).map(m => m.name),
+    })
     resetHeadCover()
     // 下一拍再给进度条终值：让 width transition 从 0 播到目标（afterPaint，与骨架屏同款收口）
     afterPaint(() => { barsGrown.value = true })

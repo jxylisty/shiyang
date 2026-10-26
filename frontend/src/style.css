@@ -168,10 +168,8 @@ body {
 
 /* 顶部栏 */
 .topbar {
-  position: sticky; top: 0; z-index: 20;
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  position: relative;
+  background: var(--card);
   border-bottom: 1px solid var(--card-border);
   padding: 12px 18px;
   display: flex; align-items: center; justify-content: space-between; gap: 10px;
@@ -302,7 +300,7 @@ body {
     radial-gradient(ellipse 60% 40% at 80% 100%, rgba(201, 138, 45, 0.05), transparent 60%);
   color: var(--ink-900);
 }
-:root[data-theme="dark"] .topbar { background: rgba(21, 32, 27, 0.88); border-bottom-color: var(--card-border); }
+:root[data-theme="dark"] .topbar { background: var(--card); border-bottom-color: var(--card-border); }
 :root[data-theme="dark"] .f-row .tag,
 :root[data-theme="dark"] .search-box input,
 :root[data-theme="dark"] .field input { background: var(--card); color: var(--ink-900); border-color: var(--green-100); }
