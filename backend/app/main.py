@@ -20,6 +20,7 @@ from services import constitution_service as cs
 from services import user_service as us
 from services import ai_service as ai
 from services import exposure_service as es
+from services import pathway_service as ps
 from services import compare_service as cmp_svc
 from services import pantry_service as pantry
 from services import safety_service as safety
@@ -699,6 +700,22 @@ def exposure(rid: int):
     if result is None:
         raise HTTPException(404, "方子不存在或无可估计配料")
     return ok(result)
+
+
+# ==================== 通路富集（GO BP + KEGG，Enrichr） ====================
+
+@app.get("/api/v1/recipes/{rid}/pathways")
+def pathways(rid: int, refresh: bool = False):
+    """方子 Top 成分靶点集合的通路富集（GO 生物学过程为主，KEGG 为辅）。
+    优先返回预生成缓存；无缓存时实时调用 Enrichr 并落库。"""
+    conn = get_db()
+    try:
+        exists = conn.execute("SELECT 1 FROM recipe WHERE id=?", (rid,)).fetchone()
+    finally:
+        conn.close()
+    if not exists:
+        raise HTTPException(404, "方子不存在")
+    return ok(ps.for_recipe(rid, refresh=refresh))
 
 
 # ==================== 成分-靶点网络图数据（P2.6） ====================

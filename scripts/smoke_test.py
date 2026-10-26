@@ -225,6 +225,23 @@ if first_id:
     s, j = req("GET", "/recipes/99999/network")
     check("network 不存在→404", s == 404, f"code={s}")
 
+    # 通路富集（GO BP + KEGG，预生成缓存）
+    s, j = req("GET", f"/recipes/{first_id}/pathways")
+    pw = pick(j, "data") or {}
+    check("pathways", s == 200 and pw.get("status") in ("ok", "insufficient", "offline"),
+          f"code={s} status={pw.get('status')}")
+    if pw.get("status") == "ok":
+        check("pathways 有 GO 中文词条", any(p.get("term_zh") for p in (pw.get("pathways") or [])),
+              f"pathways={len(pw.get('pathways') or [])}")
+        bad = [p for p in (pw.get("pathways_kegg") or [])
+               if any(b in (p.get("term") or "").lower()
+                      for b in ("cancer", "carcinogenesis", "hepatitis", "infection", "disease"))]
+        check("pathways KEGG 无疾病类词条", not bad, f"违规: {[b.get('term') for b in bad][:2]}")
+    check("pathways 注明生物信息学推断", "生物信息学推断" in (pw.get("note") or ""),
+          f"note={str(pw.get('note'))[:60]}")
+    s, j = req("GET", "/recipes/99999/pathways")
+    check("pathways 不存在→404", s == 404, f"code={s}")
+
 # ---------- 节气 ----------
 s, j = req("GET", "/term/current")
 check("term/current", s == 200 and pick(j, "data", "current", "name") is not None, f"code={s}")
