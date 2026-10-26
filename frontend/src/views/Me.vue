@@ -187,7 +187,7 @@ function buzz(ms) {
       <!-- 体质档案历史 -->
       <div class="section-title">体质档案（{{ records.length }} 次）
         <button v-if="records.length" @click="showCard = true"
-                style="margin-left: auto; font-size: 12px; font-weight: 400; color: var(--green-700); background: none; border: none; cursor: pointer;">体质名片 →</button>
+                style="margin-left: auto; font-size: 12px; font-weight: 400; color: var(--green-text); background: none; border: none; cursor: pointer;">体质名片 →</button>
       </div>
       <div class="card" v-if="!records.length">
         <p class="empty" style="padding:12px 0">还没有测评记录</p>
@@ -220,7 +220,7 @@ function buzz(ms) {
 
       <!-- 家庭体质档案（T2-8） -->
       <div class="section-title">家庭成员
-        <router-link to="/quiz" style="margin-left: auto; font-size: 12px; font-weight: 400; color: var(--green-700); text-decoration: none;">替家人测评 →</router-link>
+        <router-link to="/quiz" style="margin-left: auto; font-size: 12px; font-weight: 400; color: var(--green-text); text-decoration: none;">替家人测评 →</router-link>
       </div>
       <div class="card">
         <div v-if="members.length" class="fam-list">
@@ -246,7 +246,7 @@ function buzz(ms) {
 
       <!-- 饮用打卡 -->
       <div class="section-title">饮用打卡
-        <router-link to="/report" style="margin-left: auto; font-size: 12px; font-weight: 400; color: var(--green-700); text-decoration: none;">周期报告 →</router-link>
+        <router-link to="/report" style="margin-left: auto; font-size: 12px; font-weight: 400; color: var(--green-text); text-decoration: none;">周期报告 →</router-link>
       </div>
       <div class="card" v-if="checkins">
         <div class="ck-head">
@@ -335,7 +335,7 @@ function buzz(ms) {
 
 <style scoped>
 .user-card { display: flex; align-items: center; gap: 14px; }
-.avatar { width: 52px; height: 52px; border-radius: 50%; background: var(--green-100); color: var(--green-700); font-size: 22px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.avatar { width: 52px; height: 52px; border-radius: 50%; background: var(--green-100); color: var(--green-text); font-size: 22px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
 .u-info { flex: 1; }
 .u-info b { font-family: var(--font-serif); font-size: 18px; font-weight: 700; color: var(--ink-900); display: block; }
 .u-info span { font-size: 12px; color: var(--ink-400); }
@@ -359,7 +359,7 @@ function buzz(ms) {
 .rec-row b { font-size: 15px; }
 .combined { font-size: 12px; color: var(--amber-text); }
 .date { margin-left: auto; font-size: 12px; color: var(--ink-400); }
-.cmp-title { font-size: 13px; font-weight: 700; color: var(--green-700); margin-top: 12px; }
+.cmp-title { font-size: 13px; font-weight: 700; color: var(--green-text); margin-top: 12px; }
 .cmp-row { display: flex; align-items: center; gap: 8px; padding: 3px 0; font-size: 13px; }
 .c-name { width: 46px; color: var(--ink-600); }
 .c-prev { width: 36px; text-align: right; color: var(--ink-400); }
@@ -367,7 +367,7 @@ function buzz(ms) {
 .c-now { width: 36px; text-align: right; font-weight: 700; }
 .c-delta { width: 48px; text-align: right; }
 .c-delta.up { color: var(--amber-text); }
-.c-delta.down { color: var(--green-700); }
+.c-delta.down { color: var(--green-text); }
 .cmp-note { font-size: 11px; color: var(--ink-400); margin-top: 6px; }
 /* recipe-row 族用全局定义（style.css） */
 
@@ -376,7 +376,7 @@ function buzz(ms) {
 /* 打卡 */
 .ck-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; }
 .ck-streak { font-size: 13px; color: var(--ink-600); }
-.ck-streak b { font-size: 20px; color: var(--green-700); font-variant-numeric: tabular-nums; }
+.ck-streak b { font-size: 20px; color: var(--green-text); font-variant-numeric: tabular-nums; }
 .ck-total { font-size: 12px; color: var(--ink-400); }
 .ck-week { display: flex; justify-content: space-between; gap: 4px; margin-bottom: 10px; }
 .ck-cell { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; }
@@ -385,7 +385,7 @@ function buzz(ms) {
 .ck-cell.hit .ck-dot { background: var(--green-600); border-color: var(--green-600); animation: pop .45s var(--ease-spring); }
 .ck-cell.hit .ck-dot::after { content: ""; position: absolute; left: 7px; top: 3px; width: 5px; height: 9px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); }
 .ck-cell.future { opacity: .35; }
-.ck-title { font-size: 12px; color: var(--green-700); font-weight: 700; margin: 8px 0 2px; }
+.ck-title { font-size: 12px; color: var(--green-text); font-weight: 700; margin: 8px 0 2px; }
 .ck-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed var(--green-50); font-size: 13px; }
 .ck-row:last-of-type { border-bottom: none; }
 .ck-name { color: var(--ink-900); text-decoration: none; font-weight: 600; }

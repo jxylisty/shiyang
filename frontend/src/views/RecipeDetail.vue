@@ -403,7 +403,7 @@ async function toggleCheckin() {
 .h-cover {
   width: 88px; height: 88px; border-radius: 12px; overflow: hidden; flex-shrink: 0;
   background: var(--green-100); display: flex; align-items: center; justify-content: center;
-  color: var(--green-700);
+  color: var(--green-text);
 }
 .h-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .h-cover-fb { display: flex; align-items: center; justify-content: center; }
@@ -422,7 +422,7 @@ async function toggleCheckin() {
 .fav-star { display: inline-flex; }
 .fav-star.pop { animation: pop 0.45s var(--ease-spring); }
 .h-ops .h-checkin { display: inline-flex; align-items: center; gap: 5px; background: var(--green-700); color: #fff; transition: background var(--dur-fast) ease, color var(--dur-fast) ease; }
-.h-ops .h-checkin.done { background: var(--green-100); color: var(--green-700); }
+.h-ops .h-checkin.done { background: var(--green-100); color: var(--green-text); }
 
 /* 配料行入场错峰 + 图片懒加载淡入 */
 .mat { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed var(--green-50); gap: 10px; animation: rise .4s var(--ease-out-soft) backwards; animation-delay: calc(var(--i) * 40ms); }
@@ -432,7 +432,7 @@ async function toggleCheckin() {
 .m-img-fallback { display: flex; align-items: center; justify-content: center; color: var(--tile-ink); opacity: 1; scale: 1; }
 .m-main { flex: 1; }
 .m-name { font-size: 15px; font-weight: 600; }
-.m-kind { font-size: 10px; padding: 1px 7px; border-radius: 8px; background: var(--green-100); color: var(--green-700); margin-left: 8px; }
+.m-kind { font-size: 10px; padding: 1px 7px; border-radius: 8px; background: var(--green-100); color: var(--green-text); margin-left: 8px; }
 .m-nutri { font-size: 10.5px; color: var(--amber-text); margin-left: 6px; cursor: help; }
 .m-grams { font-size: 13px; color: var(--ink-600); }
 .m-note { font-size: 11px; color: var(--ink-400); margin-top: 8px; }
@@ -444,14 +444,14 @@ async function toggleCheckin() {
 .a-intro { font-size: 13px; color: var(--ink-600); margin-bottom: 10px; }
 .comp { padding: 8px 0; border-bottom: 1px dashed var(--green-50); animation: rise .4s var(--ease-out-soft) backwards; animation-delay: calc(var(--i) * 35ms); }
 .c-line1 { display: flex; align-items: center; gap: 8px; }
-.c-rank { width: 18px; height: 18px; border-radius: 50%; background: var(--green-50); color: var(--green-700); font-size: 11px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.c-rank { width: 18px; height: 18px; border-radius: 50%; background: var(--green-50); color: var(--green-text); font-size: 11px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .c-name { flex: 1; font-size: 14px; font-weight: 600; }
 .c-prob { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .c-line2 { font-size: 11px; color: var(--ink-400); margin: 3px 0 0 26px; }
-.c-radar { margin-left: 8px; color: var(--green-700); }
+.c-radar { margin-left: 8px; color: var(--green-text); }
 
 .radar-box { margin-top: 14px; background: var(--green-50); border-radius: 10px; padding: 12px; }
-.r-title { font-size: 12px; font-weight: 700; color: var(--green-700); margin-bottom: 8px; }
+.r-title { font-size: 12px; font-weight: 700; color: var(--green-text); margin-bottom: 8px; }
 .r-scope { font-size: 10.5px; color: var(--ink-400); margin-top: 8px; line-height: 1.5; }
 .r-row { display: flex; align-items: center; gap: 8px; padding: 3px 0; }
 .r-name { width: 56px; font-size: 12px; color: var(--ink-600); }
@@ -468,17 +468,17 @@ async function toggleCheckin() {
 .e-comp { font-weight: 600; }
 .e-src { color: var(--ink-400); font-size: 11.5px; }
 .e-val { font-variant-numeric: tabular-nums; color: var(--ink-600); }
-.e-abs { flex-basis: 100%; font-size: 11.5px; color: var(--green-700); font-variant-numeric: tabular-nums; }
+.e-abs { flex-basis: 100%; font-size: 11.5px; color: var(--green-text); font-variant-numeric: tabular-nums; }
 .exp-row:last-child { border-bottom: none; }
 
 .source p { font-size: 13px; color: var(--ink-600); }
-.source a { font-size: 13px; color: var(--green-700); text-decoration: none; display: inline-block; margin-top: 4px; }
+.source a { font-size: 13px; color: var(--green-text); text-decoration: none; display: inline-block; margin-top: 4px; }
 
 /* 返回顶部 */
 .back-top {
   position: fixed; right: max(16px, calc(50% - 375px + 16px)); bottom: 28px; z-index: 30;
   width: 42px; height: 42px; border: none; border-radius: 50%;
-  background: var(--card); color: var(--green-700); box-shadow: 0 4px 14px rgba(31, 74, 56, 0.18);
+  background: var(--card); color: var(--green-text); box-shadow: 0 4px 14px rgba(31, 74, 56, 0.18);
   display: flex; align-items: center; justify-content: center; cursor: pointer;
   transition: scale var(--dur-fast) var(--ease-snap);
 }

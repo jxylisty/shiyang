@@ -131,7 +131,7 @@ const probColor = (p) => p >= 0.9 ? 'var(--green-700)' : p >= 0.7 ? 'var(--amber
 .cp-head { display: flex; align-items: center; gap: 8px; }
 .cp-rank {
   width: 20px; height: 20px; border-radius: 50%; background: var(--green-50);
-  color: var(--green-700); font-size: 11px; font-weight: 700;
+  color: var(--green-text); font-size: 11px; font-weight: 700;
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
 .cp-name { flex: 1; font-size: 15px; color: var(--ink-900); font-weight: 600; }
@@ -146,7 +146,7 @@ const probColor = (p) => p >= 0.9 ? 'var(--green-700)' : p >= 0.7 ? 'var(--amber
 
 .cp-radar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 11px; color: var(--ink-600); }
 .cp-radar-item { background: var(--green-50); border: 1px solid var(--green-100); border-radius: 6px; padding: 2px 7px; }
-.cp-radar-item b { color: var(--green-700); font-variant-numeric: tabular-nums; }
+.cp-radar-item b { color: var(--green-text); font-variant-numeric: tabular-nums; }
 .cp-radar-item.dim { opacity: .5; }
 .cp-mw { margin-left: auto; color: var(--ink-400); font-variant-numeric: tabular-nums; font-size: 11px; }
 

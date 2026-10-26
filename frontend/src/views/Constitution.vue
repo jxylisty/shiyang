@@ -88,14 +88,14 @@ onMounted(async () => {
 <style scoped>
 .hero { text-align: center; padding: 24px 16px; }
 .hero .label { font-size: 12px; color: var(--ink-400); }
-.hero h2 { font-size: 26px; color: var(--green-700); margin: 6px 0; }
+.hero h2 { font-size: 26px; color: var(--green-text); margin: 6px 0; }
 .pop-text { animation: pop .5s var(--ease-spring) .2s backwards; }
 .sign-list { list-style: none; }
 .sign-list li { font-size: 13.5px; color: var(--ink-600); padding: 4px 0 4px 16px; position: relative; }
 .sign-list li::before { content: ""; position: absolute; left: 2px; top: 12px; width: 6px; height: 6px; border-radius: 50%; background: var(--green-600); }
 .li-rise { animation: rise .4s var(--ease-out-soft) backwards; animation-delay: calc(var(--i, 0) * 60ms); }
 .card p { font-size: 13.5px; color: var(--ink-600); line-height: 1.7; }
-.ok { color: var(--green-700); }
+.ok { color: var(--green-text); }
 .bad { color: var(--red-text); }
 /* recipe-row 族用全局定义（style.css） */
 .ref { font-size: 11px; color: var(--ink-400); margin: 14px 4px; text-align: center; }

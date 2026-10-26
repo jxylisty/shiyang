@@ -67,7 +67,7 @@ async function submit() {
 
 <style scoped>
 .login-card { max-width: 420px; margin: 40px auto; animation: rise .5s var(--ease-out-soft) backwards; }
-.login-card h2 { text-align: center; color: var(--green-700); }
+.login-card h2 { text-align: center; color: var(--green-text); }
 .sub { font-size: 12px; color: var(--ink-400); text-align: center; margin: 4px 0 18px; }
 .field { margin-bottom: 14px; overflow: hidden; }
 .field label { display: block; font-size: 13px; color: var(--ink-600); margin-bottom: 4px; }
@@ -82,5 +82,5 @@ async function submit() {
 .field-grow-enter-from, .field-grow-leave-to { opacity: 0; height: 0 !important; margin-bottom: 0 !important; }
 .err { color: var(--red-text); font-size: 13px; margin-bottom: 10px; }
 /* spinner 用全局定义（style.css） */
-.switch { display: block; text-align: center; font-size: 13px; color: var(--green-700); margin: 14px auto 0; cursor: pointer; background: none; border: none; padding: 0; }
+.switch { display: block; text-align: center; font-size: 13px; color: var(--green-text); margin: 14px auto 0; cursor: pointer; background: none; border: none; padding: 0; }
 </style>

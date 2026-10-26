@@ -47,7 +47,7 @@ const dur = computed(() => {
 .rr-meta { font-size: 11px; color: var(--ink-400); flex-shrink: 0; font-variant-numeric: tabular-nums; }
 .rr-go { color: var(--ink-400); flex-shrink: 0; transition: translate var(--dur-fast) var(--ease-snap), color var(--dur-fast) ease; }
 @media (hover: hover) {
-  .recipe-row:hover .r-name { color: var(--green-700); }
-  .recipe-row:hover .rr-go { translate: 2px 0; color: var(--green-700); }
+  .recipe-row:hover .r-name { color: var(--green-text); }
+  .recipe-row:hover .rr-go { translate: 2px 0; color: var(--green-text); }
 }
 </style>

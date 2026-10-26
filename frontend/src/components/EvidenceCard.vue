@@ -76,7 +76,7 @@ watch(() => props.recipeId, load, { immediate: true })
 .ev-list { list-style: none; padding-left: 32px; }
 .ev-list li { font-size: 12px; color: var(--ink-600); line-height: 1.7; margin-bottom: 2px; }
 .ev-what { color: var(--ink-400); margin-right: 6px; }
-.ev-text.link { color: var(--green-700); text-decoration: none; }
+.ev-text.link { color: var(--green-text); text-decoration: none; }
 .ev-ext { vertical-align: -1px; }
 .ev-empty { color: var(--ink-400); }
 .ev-footnote { font-size: 11px; color: var(--ink-400); margin-top: 10px; border-top: 1px dashed var(--green-100); padding-top: 8px; }

@@ -220,7 +220,7 @@ function poly(vals) {
 
 <style scoped>
 .head-card { text-align: center; padding: 20px 16px; }
-.lab-title { font-family: var(--font-serif); font-size: 19px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--green-700); }
+.lab-title { font-family: var(--font-serif); font-size: 19px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--green-text); }
 .lab-sub { font-size: 12px; color: var(--ink-400); margin: 6px 0 14px; }
 .pick-row { display: flex; align-items: center; gap: 8px; }
 .pick {
@@ -240,18 +240,18 @@ function poly(vals) {
 .vs-one { font-size: 12px; color: var(--ink-600); margin-top: 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
 .j-line { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; font-size: 14px; }
-.j-num { font-size: 20px; color: var(--green-700); }
+.j-num { font-size: 20px; color: var(--green-text); }
 .duo { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
 .duo:last-child { margin-bottom: 0; }
 .duo-col h4 { font-size: 12px; color: var(--ink-400); font-weight: 600; margin-bottom: 6px; }
 .duo-n { font-size: 13px; margin-bottom: 2px; }
-.duo-share { font-size: 12px; color: var(--green-700); margin-top: 6px; line-height: 1.5; }
+.duo-share { font-size: 12px; color: var(--green-text); margin-top: 6px; line-height: 1.5; }
 .duo-share.dim { color: var(--ink-400); }
 .chip-wrap { display: flex; flex-wrap: wrap; gap: 4px; }
 .tag.gene { font-family: ui-monospace, monospace; font-size: 11px; }
 .dim-tag { opacity: .85; }
 .hint { font-size: 12px; color: var(--ink-600); margin-top: 8px; line-height: 1.6; }
-.hint.ok { color: var(--green-700); }
+.hint.ok { color: var(--green-text); }
 .hint.warn { color: var(--amber-text); background: var(--amber-50); padding: 8px 10px; border-radius: 8px; }
 
 .radar-card { display: flex; gap: 14px; align-items: center; }
@@ -264,7 +264,7 @@ function poly(vals) {
 .radar-rows { margin-top: 8px; }
 .radar-row { display: flex; align-items: center; gap: 6px; font-size: 12px; padding: 4px 0; border-top: 1px dashed var(--green-100); }
 .radar-row span:first-child { color: var(--ink-400); width: 56px; }
-.radar-row b { color: var(--green-700); }
+.radar-row b { color: var(--green-text); }
 .radar-row b.amber { color: var(--amber-text); }
 .sep { color: var(--ink-400); font-size: 10px; }
 

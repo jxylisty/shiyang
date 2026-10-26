@@ -214,7 +214,7 @@ const mainName = computed(() => {
             <div class="r-one">{{ r.oneliner }}</div>
           </router-link>
         </template>
-        <p v-else class="empty" style="padding:12px 0">暂无完全匹配的方子，可到<a href="/recipes" style="color:var(--green-700)">方子库</a>按场景浏览</p>
+        <p v-else class="empty" style="padding:12px 0">暂无完全匹配的方子，可到<a href="/recipes" style="color: var(--green-text)">方子库</a>按场景浏览</p>
       </div>
 
       <div class="card diet-ref rise" style="--i: 5" v-if="result.main_constitution && result.main_constitution.foods_suitable">
@@ -315,7 +315,7 @@ const mainName = computed(() => {
 /* 结果页揭示 */
 .result-hero { text-align: center; padding: 26px 16px; animation: rise .5s var(--ease-out-soft) backwards; }
 .result-hero .label { font-size: 12px; color: var(--ink-400); }
-.result-hero h2 { font-family: var(--font-serif); font-size: 26px; font-weight: 700; color: var(--green-700); margin: 6px 0; animation: pop .55s var(--ease-spring) .25s backwards; }
+.result-hero h2 { font-family: var(--font-serif); font-size: 26px; font-weight: 700; color: var(--green-text); margin: 6px 0; animation: pop .55s var(--ease-spring) .25s backwards; }
 .result-hero .principle { font-size: 13px; color: var(--ink-600); }
 .combined { margin-top: 8px; font-size: 12px; color: var(--amber-text); }
 
@@ -325,7 +325,7 @@ const mainName = computed(() => {
 .s-bar :deep(.van-progress__portion) { transition: width var(--dur-slow) var(--ease-out-soft); }
 .s-val { width: 34px; text-align: right; font-size: 12px; color: var(--ink-600); font-variant-numeric: tabular-nums; }
 .s-tag { width: 44px; font-size: 11px; color: var(--ink-400); text-align: center; }
-.s-tag.hit { color: var(--green-700); font-weight: 600; }
+.s-tag.hit { color: var(--green-text); font-weight: 600; }
 
 /* recipe-row 族用全局定义（style.css） */
 .diet-ref p { font-size: 13px; color: var(--ink-600); line-height: 1.7; }

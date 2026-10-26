@@ -148,7 +148,7 @@ function goRecipe(id) { router.push(`/recipes/${id}`) }
 .cd-feat.fail { background: var(--amber-50); }
 .cd-feat-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; }
 .cd-feat-check { font-weight: 700; }
-.cd-feat.pass .cd-feat-check { color: var(--green-700); }
+.cd-feat.pass .cd-feat-check { color: var(--green-text); }
 .cd-feat.fail .cd-feat-check { color: var(--amber-text); }
 .cd-feat-val { margin-left: auto; font-size: 11px; color: var(--ink-400); font-variant-numeric: tabular-nums; }
 .cd-feat-say { font-size: 12.5px; color: var(--ink-900); margin-top: 6px; line-height: 1.6; }
@@ -156,13 +156,13 @@ function goRecipe(id) { router.push(`/recipes/${id}`) }
 .cd-note { font-size: 11px; color: var(--ink-400); margin-top: 10px; line-height: 1.6; }
 
 .cd-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-.cd-chip { border: 1px solid var(--green-100); background: var(--green-50); color: var(--green-700);
+.cd-chip { border: 1px solid var(--green-100); background: var(--green-50); color: var(--green-text);
   border-radius: 16px; padding: 5px 14px; font-size: 13px; cursor: pointer; font-family: inherit; }
 .cd-chip:active { scale: .94; }
 
 .cd-targets { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
 .cd-target { background: var(--green-50); border-radius: 10px; padding: 8px 10px; display: flex; flex-direction: column; gap: 2px; }
-.cd-target b { font-size: 13px; color: var(--green-700); font-family: monospace; }
+.cd-target b { font-size: 13px; color: var(--green-text); font-family: monospace; }
 .cd-target span { font-size: 10.5px; color: var(--ink-600); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 @media (max-width: 420px) { .cd-targets { grid-template-columns: 1fr; } }
 

@@ -69,7 +69,7 @@ watch(() => props.recipeId, load, { immediate: true })
 .xp-item { border-top: 1px solid var(--green-50); }
 .xp-row { display: flex; align-items: center; gap: 8px; width: 100%; padding: 9px 0; background: none; border: none; cursor: pointer; }
 .xp-name { font-size: 13px; font-weight: 600; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; }
-.xp-pass { font-size: 11px; color: var(--green-700); background: var(--green-50); border-radius: 8px; padding: 1px 7px; flex-shrink: 0; }
+.xp-pass { font-size: 11px; color: var(--green-text); background: var(--green-50); border-radius: 8px; padding: 1px 7px; flex-shrink: 0; }
 .xp-pass.fail { color: var(--amber-text); background: var(--amber-50); }
 .xp-prob { font-size: 14px; font-weight: 800; flex-shrink: 0; width: 38px; text-align: right; }
 .xp-arrow { color: var(--ink-400); transition: rotate .25s var(--ease-out-soft); flex-shrink: 0; }
@@ -86,9 +86,9 @@ watch(() => props.recipeId, load, { immediate: true })
 .xp-say { font-size: 12px; color: var(--ink-600); line-height: 1.6; margin-top: 4px; }
 .xp-note { font-size: 11px; color: var(--ink-400); margin-top: 8px; line-height: 1.6; }
 .xp-scope { margin-top: 10px; border-top: 1px dashed var(--green-100); padding-top: 8px; }
-.xp-scope summary { font-size: 11.5px; color: var(--green-700); cursor: pointer; font-weight: 600; list-style: none; }
+.xp-scope summary { font-size: 11.5px; color: var(--green-text); cursor: pointer; font-weight: 600; list-style: none; }
 .xp-scope summary::-webkit-details-marker { display: none; }
 .xp-scope summary::before { content: 'ⓘ '; }
 .xp-scope p { font-size: 11px; color: var(--ink-600); line-height: 1.65; margin-top: 6px; }
-.xp-dict { border: none; background: none; color: var(--green-700); font-size: 12px; cursor: pointer; padding: 2px 0 0; font-family: inherit; }
+.xp-dict { border: none; background: none; color: var(--green-text); font-size: 12px; cursor: pointer; padding: 2px 0 0; font-family: inherit; }
 </style>

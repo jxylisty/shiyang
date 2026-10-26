@@ -5,6 +5,7 @@ import RecipeRow from '../components/RecipeRow.vue'
 import { getStats, listRecipes, matImg } from '../api'
 import { useCountUp } from '../utils/motion'
 import TextReveal from '../components/TextReveal.vue'
+import CloudDivider from '../components/CloudDivider.vue'
 
 const stats = ref(null)
 const showcaseRecipes = ref([])   // 证据链专区示例方
@@ -90,6 +91,7 @@ function onDailyImgErr() {
     <!-- hero -->
     <div class="hero card" ref="heroEl" @pointermove="heroGlow">
       <div class="hero-glow" aria-hidden="true"></div>
+      <div class="hero-seal" aria-hidden="true"><span class="seal md">食养</span></div>
       <div class="hero-body">
         <div class="hero-main">
           <div class="hero-badge"><AppIcon name="leaf" :size="13" /> 大创课题「中药入血成分预测」成果转化</div>
@@ -135,6 +137,8 @@ function onDailyImgErr() {
     <!-- 今日推荐 -->
     <div class="section-title">今日推荐</div>
     <router-link v-if="daily" :to="`/recipes/${daily.id}`" class="card daily pressable">
+      <!-- 水印暗字：笺纸上的淡墨大字，宽屏留白处的主要视觉填充 -->
+      <span class="d-watermark" aria-hidden="true">食养</span>
       <div class="d-cover">
         <img v-if="cover" :src="cover" alt="" loading="lazy" @error="onDailyImgErr" />
         <span v-else class="d-fallback"><AppIcon :name="daily.type === '药膳' ? 'dish' : 'tea'" :size="36" /></span>
@@ -177,9 +181,11 @@ function onDailyImgErr() {
       </router-link>
     </div>
 
+    <CloudDivider label="有据可溯" />
+
     <!-- 成分证据链（核心差异化） -->
     <div class="section-title">每个方子，一条完整证据链</div>
-    <div class="card zone">
+    <div class="card zone orn-lattice">
       <p class="zone-intro">活性成分 → 预测入血概率 → 作用靶点 → 数据出处，四层可溯。成分库来自本团队大创课题自建数据库，入血概率由 PU-Learning 模型预测</p>
       <div class="chain-box">
         <div class="chain-node">
@@ -215,7 +221,7 @@ function onDailyImgErr() {
     <!-- 数据资产入口 -->
     <div class="section-title">成分数据图鉴</div>
     <div class="asset-grid">
-      <router-link to="/herbs" class="card asset-card pressable">
+      <router-link to="/herbs" class="card asset-card pressable orn-lattice">
         <div class="asset-icon"><AppIcon name="herb" :size="24" /></div>
         <div class="asset-info">
           <b>{{ stats?.stats.herb ?? '—' }}</b>
@@ -223,7 +229,7 @@ function onDailyImgErr() {
           <small>性味归经 · 功效 · 出处</small>
         </div>
       </router-link>
-      <router-link to="/compounds" class="card asset-card pressable">
+      <router-link to="/compounds" class="card asset-card pressable orn-lattice">
         <div class="asset-icon"><AppIcon name="molecule" :size="24" /></div>
         <div class="asset-info">
           <b>{{ stats?.stats.compound ?? '—' }}</b>
@@ -232,25 +238,37 @@ function onDailyImgErr() {
         </div>
       </router-link>
     </div>
+
+    <CloudDivider />
   </div>
 </template>
 
 <style scoped>
 .hero {
   position: relative; overflow: hidden;
-  background: linear-gradient(135deg, #1c4d39 0%, #15382a 100%);
-  color: #fff; border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 8px 24px -4px rgba(22, 56, 42, 0.25);
+  /* 墨绿渐层：右下沉、左上亮，模拟水墨在纸上洇开的层次 */
+  background:
+    radial-gradient(ellipse 90% 70% at 15% 8%, rgba(120, 168, 138, 0.28), transparent 62%),
+    linear-gradient(145deg, #24493a 0%, #1a372c 52%, #14291f 100%);
+  color: #f3efe2; border: 1px solid rgba(243, 239, 226, 0.14);
+  box-shadow: 0 8px 26px -6px rgba(20, 41, 31, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+/* 纸纤维压在墨底上，让大块深色也有材质而非纯色块 */
+.hero::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background-image: var(--paper-fiber);
+  opacity: .22; mix-blend-mode: soft-light;
 }
 .hero-glow {
   position: absolute; inset: -40%; pointer-events: none;
-  background: radial-gradient(400px circle at var(--mx, 70%) var(--my, 20%), rgba(255,255,255,.18), transparent 60%);
+  background: radial-gradient(400px circle at var(--mx, 70%) var(--my, 20%), rgba(255,255,255,.16), transparent 60%);
   opacity: 0; transition: opacity .5s ease;
 }
 @media (hover: hover) {
   .hero:hover .hero-glow { opacity: 1; }
 }
 
+.hero-seal { position: absolute; top: 14px; right: 14px; z-index: 2; opacity: .92; }
 .hero-body { position: relative; z-index: 1; }
 .hero-badge {
   display: inline-flex; align-items: center; gap: 6px;
@@ -267,7 +285,7 @@ function onDailyImgErr() {
 .hero .sub { font-size: 13px; opacity: .88; margin-bottom: 18px; line-height: 1.55; }
 .hero-btns { display: flex; gap: 10px; margin-bottom: 18px; }
 .hero .btn {
-  background: #fff; color: var(--green-700);
+  background: #fff; color: var(--green-text);
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
 }
 .hero .btn:hover { background: #f5faf7; }
@@ -278,31 +296,49 @@ function onDailyImgErr() {
 .hero .btn.ghost:hover { background: rgba(255,255,255,.22); }
 
 .hero-stats {
-  display: flex; gap: 8px;
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px;
 }
 .h-stat-pod {
-  flex: 1; display: flex; align-items: center; gap: 10px;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 6px;
   background: rgba(255,255,255,.1); backdrop-filter: blur(8px);
   border: 1px solid rgba(255,255,255,.14);
-  border-radius: 12px; padding: 10px 12px;
+  border-radius: 4px; padding: 9px 10px;
+  min-width: 0;
   transition: background var(--dur-fast) ease, transform var(--dur-fast) ease;
 }
 .h-stat-pod:active { background: rgba(255,255,255,.2); }
 .h-stat-icon {
-  width: 34px; height: 34px; border-radius: 9px;
+  width: 26px; height: 26px; border-radius: 50%;
   background: rgba(255, 255, 255, 0.12);
   display: flex; align-items: center; justify-content: center;
   color: #c9e8d4; flex-shrink: 0;
 }
-.h-stat-info { min-width: 0; }
-.h-stat-info b { display: block; font-size: 18px; font-variant-numeric: tabular-nums; line-height: 1.1; }
-.h-stat-info span { font-size: 11.5px; opacity: .92; display: block; margin-top: 2px; }
-.h-stat-info small { font-size: 10px; opacity: .7; display: block; white-space: nowrap; }
+.h-stat-info { min-width: 0; width: 100%; }
+.h-stat-info b { display: block; font-size: 19px; font-variant-numeric: tabular-nums; line-height: 1.1; font-family: var(--font-serif); letter-spacing: 0.02em; }
+.h-stat-info span { font-size: 11px; opacity: .92; display: block; margin-top: 2px; white-space: nowrap; }
+.h-stat-info small { font-size: 9.5px; opacity: .66; display: block; margin-top: 1px; line-height: 1.35; }
 
 /* 今日推荐 */
 .daily {
   display: flex; gap: 14px; padding: 14px; text-decoration: none; color: inherit;
   align-items: stretch; animation: rise .45s var(--ease-out-soft) .1s backwards;
+  overflow: hidden;
+}
+/* 笺纸水印：淡墨衬字，宽屏留白处的主要视觉填充；移动端隐藏避免与文字抢位 */
+.d-watermark {
+  position: absolute; right: 28px; top: 50%; translate: 0 -50%;
+  font-family: var(--font-serif); font-weight: 700;
+  font-size: 54px; line-height: 1.02; letter-spacing: 0;
+  color: var(--ink-900); opacity: 0.055;
+  writing-mode: vertical-lr; text-orientation: upright;
+  pointer-events: none; user-select: none;
+  display: none;
+  padding: 12px 8px;
+}
+/* 水印外加一圈细框，成为「印记」而非孤立的两字 */
+.d-watermark::after {
+  content: ""; position: absolute; inset: 0;
+  border: 1px solid currentColor; border-radius: 2px; opacity: .5;
 }
 .d-cover {
   position: relative; width: 100px; min-height: 100px; border-radius: 12px;
@@ -333,23 +369,31 @@ function onDailyImgErr() {
 /* 场景入口 */
 .scene-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 .scene {
-  display: flex; flex-direction: column; align-items: center; padding: 14px 6px;
+  display: flex; flex-direction: column; align-items: center; padding: 15px 6px 13px;
   text-decoration: none; color: inherit; animation: rise .45s var(--ease-out-soft) backwards;
   animation-delay: calc(var(--i) * 45ms);
 }
 .scene-icon {
-  display: flex; align-items: center; justify-content: center; width: 44px; height: 44px;
-  border-radius: 13px; background: var(--tint-bg, var(--green-50)); color: var(--tint-fg, var(--tile-ink));
-  box-shadow: 0 2px 6px rgba(0,0,0,.03); margin-bottom: 8px; transition: scale var(--dur-fast) var(--ease-snap);
+  display: flex; align-items: center; justify-content: center; width: 42px; height: 42px;
+  border-radius: 50%; background: var(--tint-bg, var(--green-50)); color: var(--tint-fg, var(--tile-ink));
+  box-shadow: 0 1px 4px rgba(74, 56, 32, 0.06), inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+  margin-bottom: 9px; transition: scale var(--dur-fast) var(--ease-snap);
+  position: relative;
 }
-.scene:active .scene-icon { scale: 1.15; }
+/* 圆图标外的细描边圈：古典器物常见的「双圈」感 */
+.scene-icon::after {
+  content: ""; position: absolute; inset: -4px; border-radius: 50%;
+  border: 1px solid currentColor; opacity: .16;
+}
+.scene:active .scene-icon { scale: 1.12; }
 :root[data-theme="dark"] .scene-icon { background: var(--green-100); color: var(--tile-ink); }
-.scene .name { font-size: 14px; font-weight: 600; color: var(--ink-900); }
-.scene .desc { font-size: 11px; color: var(--ink-400); margin-top: 1px; }
+.scene .name { font-family: var(--font-serif); font-size: 14px; font-weight: 700; color: var(--ink-900); letter-spacing: 0.03em; }
+.scene .desc { font-size: 10.5px; color: var(--ink-400); margin-top: 2px; }
 .scene-foot {
   display: inline-flex; align-items: center; gap: 2px; margin-top: 8px;
-  font-size: 11px; color: var(--green-700); font-variant-numeric: tabular-nums;
-  background: var(--green-50); padding: 1px 6px; border-radius: 8px;
+  font-size: 10.5px; color: var(--green-text); font-variant-numeric: tabular-nums;
+  background: var(--green-50); padding: 1px 7px; border-radius: 2px;
+  border: 1px solid rgba(120, 95, 60, 0.1);
 }
 
 /* 时令横滑 */
@@ -385,19 +429,20 @@ function onDailyImgErr() {
 .zone-intro { font-size: 12.5px; color: var(--ink-600); margin-bottom: 12px; line-height: 1.5; }
 .chain-box {
   display: flex; align-items: center; justify-content: space-between;
-  background: var(--green-50); border: 1px solid var(--green-100);
-  border-radius: 12px; padding: 10px 14px; margin-bottom: 12px;
+  background: var(--green-50); border: 1px solid var(--card-border);
+  border-radius: 4px; padding: 10px 10px; margin-bottom: 12px;
+  gap: 3px;
 }
-.chain-node { display: flex; align-items: center; gap: 6px; }
+.chain-node { display: flex; align-items: center; gap: 4px; min-width: 0; }
 .c-step {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 18px; height: 18px; border-radius: 50%;
-  background: var(--green-700); color: #fff; font-size: 10px; font-weight: 700;
+  width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0;
+  background: var(--green-700); color: #fdfaf1; font-size: 9.5px; font-weight: 700;
 }
-.c-txt { font-size: 12px; font-weight: 600; color: var(--green-700); }
-.c-arrow { color: var(--ink-400); font-size: 12px; opacity: 0.6; }
+.c-txt { font-size: 11.5px; font-weight: 600; color: var(--green-text); white-space: nowrap; }
+.c-arrow { color: var(--ink-400); font-size: 11px; opacity: 0.55; flex-shrink: 0; }
 .zone-more {
-  display: block; text-align: center; font-size: 13.5px; color: var(--green-700);
+  display: block; text-align: center; font-size: 13.5px; color: var(--green-text);
   padding: 12px 0 2px; text-decoration: none; font-weight: 600;
 }
 
@@ -410,10 +455,10 @@ function onDailyImgErr() {
 .asset-icon {
   width: 44px; height: 44px; border-radius: 12px;
   background: var(--green-50); border: 1px solid var(--green-100);
-  color: var(--green-700); display: flex; align-items: center; justify-content: center;
+  color: var(--green-text); display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
-.asset-info b { font-size: 24px; color: var(--green-700); display: block; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.asset-info b { font-size: 24px; color: var(--green-text); display: block; font-variant-numeric: tabular-nums; line-height: 1.1; }
 .asset-info span { font-size: 13.5px; color: var(--ink-900); font-weight: 600; display: block; margin-top: 2px; }
 .asset-info small { display: block; font-size: 11px; color: var(--ink-400); margin-top: 2px; }
 
@@ -421,8 +466,9 @@ function onDailyImgErr() {
 @media (min-width: 900px) {
   .hero-body { display: grid; grid-template-columns: 1.25fr 1fr; gap: 24px; align-items: center; }
   .hero-btns { margin-bottom: 0; }
-  .hero-stats { flex-direction: column; gap: 8px; }
-  .h-stat-pod { padding: 10px 14px; }
+  /* 宽屏下 hero 数字仍是三列并排（与移动端一致），只是放宽内边距 */
+  .hero-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .h-stat-pod { padding: 10px 12px; }
   .hero h1 { font-size: 30px; }
   .hero .sub { font-size: 14px; }
   .hero { transform: perspective(900px) rotateX(0) rotateY(0); transition: transform .3s var(--ease-out-soft); }
@@ -431,5 +477,20 @@ function onDailyImgErr() {
   .scene-grid { grid-template-columns: repeat(6, 1fr); gap: 12px; }
   .season-scroll { margin: 0; padding-left: 0; padding-right: 0; }
   .season-card { flex: 0 0 150px; height: 175px; }
+
+  /* 宽屏证据链：节点等分撑开，箭头居中，读起来是一条完整的链 */
+  .chain-box { gap: 10px; padding: 12px 16px; }
+  .chain-node { flex: 1 1 0; justify-content: flex-start; }
+  .c-txt { font-size: 13px; }
+  /* 宽屏列表行：名称/一句话不再被拉成一条细线，右侧时长贴住箭头 */
+  .zone .recipe-row { padding: 11px 2px; }
+
+  /* 宽屏「今日推荐」：封面放大 + 右侧水印竖排衬字，填掉右半留白 */
+  .daily { padding: 18px; gap: 20px; }
+  .d-cover { width: 150px; min-height: 132px; }
+  .d-watermark { display: block; }
+  .d-name { font-size: 21px; }
+  .d-one { font-size: 13.5px; max-width: 60ch; }
+  .d-main { padding-right: 96px; }
 }
 </style>

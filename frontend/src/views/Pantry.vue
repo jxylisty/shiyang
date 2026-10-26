@@ -139,7 +139,7 @@ function coverBar(c) { return Math.round(c * 100) }
 
 <style scoped>
 .head-card { text-align: center; padding: 20px 16px; }
-.p-title { font-size: 18px; display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--green-700); }
+.p-title { font-size: 18px; display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--green-text); }
 .p-sub { font-size: 12px; color: var(--ink-400); margin-top: 6px; }
 .search-box { padding: 0 0 10px; background: transparent; }
 .chip-wrap { display: flex; flex-wrap: wrap; gap: 6px; }

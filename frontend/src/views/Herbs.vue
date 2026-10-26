@@ -160,11 +160,11 @@ const hideImg = (name) => { imgFailed.value[name] = true }
 .hd-head h3 { font-family: var(--font-serif); font-size: 20px; font-weight: 700; color: var(--ink-900); }
 .hd-sub { font-size: 13px; color: var(--amber-text); margin-top: 3px; }
 .hd-sec { padding: 10px 0; border-top: 1px dashed var(--green-100); }
-.hd-sec b { font-size: 12px; color: var(--green-700); display: block; margin-bottom: 4px; }
+.hd-sec b { font-size: 12px; color: var(--green-text); display: block; margin-bottom: 4px; }
 .hd-sec p { font-size: 13.5px; color: var(--ink-600); line-height: 1.7; }
 .hd-comp { display: flex; align-items: baseline; gap: 7px; }
-.hd-num { font-size: 22px; font-weight: 700; color: var(--green-700); font-variant-numeric: tabular-nums; }
-.hd-goto { display: inline-flex; align-items: center; gap: 3px; margin-top: 6px; font-size: 12.5px; color: var(--green-700); text-decoration: none; font-weight: 500; }
+.hd-num { font-size: 22px; font-weight: 700; color: var(--green-text); font-variant-numeric: tabular-nums; }
+.hd-goto { display: inline-flex; align-items: center; gap: 3px; margin-top: 6px; font-size: 12.5px; color: var(--green-text); text-decoration: none; font-weight: 500; }
 .hd-goto:hover { text-decoration: underline; }
 .hd-note { font-size: 11px; color: var(--ink-400); margin-top: 6px; }
 .hd-close { margin-top: 16px; }

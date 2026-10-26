@@ -188,7 +188,7 @@ function onCoverErr(r) {
   transition: all var(--dur-fast) ease;
 }
 .seg-btn.active {
-  background: #fff; color: var(--green-700); font-weight: 600;
+  background: #fff; color: var(--green-text); font-weight: 600;
   box-shadow: 0 1px 4px rgba(0,0,0,0.06);
 }
 :root[data-theme="dark"] .seg-btn.active { background: var(--card); color: var(--green-600); }
@@ -216,7 +216,7 @@ function onCoverErr(r) {
 }
 .list-head b { color: var(--ink-900); font-variant-numeric: tabular-nums; }
 .lab-link {
-  font-size: 12.5px; color: var(--green-700); text-decoration: none;
+  font-size: 12.5px; color: var(--green-text); text-decoration: none;
   display: inline-flex; align-items: center; gap: 4px; font-weight: 500;
   background: var(--green-50); padding: 3px 10px; border-radius: 12px;
   border: 1px solid var(--green-100);
@@ -241,7 +241,7 @@ function onCoverErr(r) {
 
 .rc-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .rc-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
-.rc-name { font-family: var(--font-serif); font-size: 17px; font-weight: 700; color: var(--ink-900); }
+.rc-name { font-family: var(--font-serif); font-size: 17px; font-weight: 700; color: var(--ink-900); letter-spacing: 0.02em; }
 .rc-dur { font-size: 11px; color: var(--ink-400); flex-shrink: 0; }
 .rc-one {
   font-size: 13px; color: var(--ink-600); margin: 3px 0 6px; line-height: 1.5;
@@ -260,7 +260,7 @@ function onCoverErr(r) {
 .rc-bottom { margin-top: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
 .tag.lab {
   display: inline-flex; align-items: center; gap: 3px; background: var(--green-50);
-  color: var(--green-700); border-color: var(--green-100); font-weight: 500;
+  color: var(--green-text); border-color: var(--green-100); font-weight: 500;
 }
 
 /* 骨架屏 */

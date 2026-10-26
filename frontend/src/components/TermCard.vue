@@ -52,8 +52,8 @@ const fmtDate = (d) => {
 <style scoped>
 .term-card { padding: 14px 16px; background: linear-gradient(135deg, var(--card) 60%, var(--green-50) 100%); }
 .t-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
-.t-cur { display: flex; align-items: center; gap: 6px; color: var(--green-700); }
-.t-cur b { font-family: var(--font-serif); font-size: 17px; color: var(--green-700); font-weight: 700; }
+.t-cur { display: flex; align-items: center; gap: 6px; color: var(--green-text); }
+.t-cur b { font-family: var(--font-serif); font-size: 17px; color: var(--green-text); font-weight: 700; }
 .t-date { font-size: 11px; color: var(--ink-400); }
 .t-next { font-size: 11px; color: var(--ink-600); display: inline-flex; align-items: center; gap: 3px; }
 .t-tip { font-size: 12px; color: var(--ink-600); margin: 8px 0 10px; }
@@ -62,9 +62,9 @@ const fmtDate = (d) => {
        padding: 8px; border-radius: 10px; background: var(--green-50); }
 .t-r-img { width: 38px; height: 38px; border-radius: 8px; flex-shrink: 0; overflow: hidden;
            display: flex; align-items: center; justify-content: center;
-           background: var(--green-100); color: var(--green-700); }
+           background: var(--green-100); color: var(--green-text); }
 .t-r-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .t-r b { font-size: 13px; display: block; }
 .t-r span { font-size: 11px; color: var(--ink-600); display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
-.t-more { display: inline-block; margin-top: 10px; font-size: 12px; color: var(--green-700); text-decoration: none; }
+.t-more { display: inline-block; margin-top: 10px; font-size: 12px; color: var(--green-text); text-decoration: none; }
 </style>

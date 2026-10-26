@@ -135,14 +135,14 @@ const CNAME = { pinghe: '平和质', qixu: '气虚质', yangxu: '阳虚质', yin
 
 <style scoped>
 .head { padding: 18px 16px; }
-.head h2 { font-size: 18px; display: flex; align-items: center; gap: 6px; color: var(--green-700); }
+.head h2 { font-size: 18px; display: flex; align-items: center; gap: 6px; color: var(--green-text); }
 .d-opts { display: flex; gap: 6px; margin-top: 10px; }
 .d-opts .tag { cursor: pointer; }
 .d-opts .tag.active { background: var(--green-700); color: #fff; border-color: var(--green-700); }
-.poster-btn { cursor: pointer; margin-left: auto; border-color: var(--green-700); color: var(--green-700); }
+.poster-btn { cursor: pointer; margin-left: auto; border-color: var(--green-700); color: var(--green-text); }
 .ov { display: flex; text-align: center; padding: 14px 6px; }
 .ov-item { flex: 1; min-width: 0; }
-.ov-item b { font-size: 20px; color: var(--green-700); display: block; }
+.ov-item b { font-size: 20px; color: var(--green-text); display: block; }
 .ov-item span { font-size: 10px; color: var(--ink-400); }
 
 .wall { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }

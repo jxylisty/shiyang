@@ -69,7 +69,7 @@ function saveKey() {
 <style scoped>
 .ai-tip { font-size: 12px; color: var(--ink-400); margin-bottom: 8px; line-height: 1.5; }
 .ai-key-row { margin-top: 10px; }
-.ai-key-toggle { border: none; background: none; color: var(--green-700); font-size: 12px; cursor: pointer; padding: 0; }
+.ai-key-toggle { border: none; background: none; color: var(--green-text); font-size: 12px; cursor: pointer; padding: 0; }
 .key-wrap { overflow: hidden; }
 .ai-key {
   width: 100%; padding: 10px 12px; border: 1px solid var(--green-100); border-radius: 10px;
@@ -79,7 +79,7 @@ function saveKey() {
 .ai-key:focus { border-color: var(--green-600); box-shadow: 0 0 0 3px rgba(53, 144, 104, 0.08); }
 .ai-key-save { margin-top: 8px; font-size: 12px; padding: 7px 14px; }
 .ai-key-note { font-size: 11px; color: var(--ink-400); margin-top: 6px; }
-.ai-key-note a { color: var(--green-700); }
+.ai-key-note a { color: var(--green-text); }
 /* Key 行高度过渡 */
 .key-grow-enter-active, .key-grow-leave-active { transition: opacity .25s ease, height .25s var(--ease-out-soft); }
 .key-grow-enter-from, .key-grow-leave-to { opacity: 0; height: 0; }

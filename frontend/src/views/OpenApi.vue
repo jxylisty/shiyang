@@ -79,14 +79,14 @@ async function copy(path) {
 
 <style scoped>
 .head { padding: 18px 16px; }
-.head h2 { font-size: 18px; display: flex; align-items: center; gap: 6px; color: var(--green-700); }
+.head h2 { font-size: 18px; display: flex; align-items: center; gap: 6px; color: var(--green-text); }
 .head p { font-size: 13px; color: var(--ink-600); margin-top: 6px; line-height: 1.6; }
 .ep-card { padding: 12px 14px; margin-bottom: 10px; }
 .ep-row { display: flex; align-items: center; gap: 8px; }
-.ep-path { font-size: 12px; font-family: ui-monospace, Consolas, monospace; color: var(--green-700);
+.ep-path { font-size: 12px; font-family: ui-monospace, Consolas, monospace; color: var(--green-text);
            background: var(--green-50); padding: 4px 8px; border-radius: 8px; word-break: break-all; flex: 1; }
 .copy-btn { border: 1px solid var(--green-100); background: var(--card); border-radius: 8px; padding: 5px;
-            color: var(--green-700); cursor: pointer; flex-shrink: 0; display: inline-flex; }
+            color: var(--green-text); cursor: pointer; flex-shrink: 0; display: inline-flex; }
 .ep-desc { font-size: 12px; color: var(--ink-600); margin-top: 6px; }
 .code { font-size: 12px; font-family: ui-monospace, Consolas, monospace; background: var(--green-50);
         border-radius: 8px; padding: 12px; overflow-x: auto; line-height: 1.6; }
