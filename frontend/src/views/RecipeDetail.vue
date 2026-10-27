@@ -373,20 +373,34 @@ async function toggleCheckin() {
 <style scoped>
 .detail-grid { display: block; }
 @media (min-width: 900px) {
-  .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 20px; align-items: start; }
-  /* col-side 自然流动 */
+  /* 默认 stretch：两列拉伸到同一行高，配合下方 flex:1 让最后一张卡吃掉高度差 */
+  .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 20px; }
 }
+
+/* ===== 主网格两列的收尾对齐 =====
+ * 列内 flex 纵向布局 + 最后一块 flex:1 吃掉两列高度差 → 底部对齐；
+ * grid 默认 stretch 把两列拉到同一行高。窄屏单列 flex 无副作用。 */
+.col-main, .col-side { display: flex; flex-direction: column; }
+.col-main > *, .col-side > * { width: 100%; }
+.col-main > :last-child, .col-side > :last-child { flex: 1; }
 
 /* 可视化专区：证据链 / 网络图 / 通路富集 三卡并排，避免全堆在右列造成左右失衡 */
 .viz-zone { margin-top: 4px; }
-.viz-zone .viz-item { min-width: 0; }
+.viz-zone .viz-item { min-width: 0; display: flex; flex-direction: column; }
+.viz-zone .viz-item .section-title { flex-shrink: 0; }
+.viz-zone .viz-item .viz-card { flex: 1; }
 @media (min-width: 720px) {
-  .viz-zone { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 20px; align-items: start; }
+  .viz-zone { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 20px; align-items: stretch; }
 }
 @media (min-width: 1280px) {
   .viz-zone { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 .viz-card { min-height: 300px; }
+/* 三卡图表容器取同一高度，卡底随内容最高的那张对齐 */
+@media (min-width: 720px) {
+  .viz-card :deep(.chain-chart), .viz-card :deep(.chain-loading),
+  .viz-card :deep(.net-chart), .viz-card :deep(.net-loading) { height: 420px; }
+}
 
 /* 通路富集 */
 .pw-intro { font-size: 12px; color: var(--ink-600); margin-bottom: 10px; line-height: 1.6; }
