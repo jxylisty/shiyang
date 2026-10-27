@@ -29,21 +29,32 @@ shiyang-app/certs/           ← Android 签名证书 keystore（勿提交到公
 
 ### 1. 启动后端（手机要能访问）
 
-后端默认只监听 `127.0.0.1`，手机访问不到。联调时必须监听局域网：
+后端默认只监听 `127.0.0.1`，手机访问不到。用联调脚本一条命令搞定（会打印手机该用的地址 + 尝试放行防火墙）：
+
+```bash
+cd shiyang
+python -X utf8 scripts/start_backend_lan.py
+```
+
+它做的事情：
+
+- 监听 `0.0.0.0:8100`（局域网可达）
+- 枚举本机 IPv4 并按「常用程度」排序，Tailscale / Hyper-V 虚拟网卡会被标注「别用」
+- 添加防火墙入站规则 `Shiyang Backend 8100`（需管理员权限，失败会提示）
+
+手动等价写法：
 
 ```bash
 cd backend
 SHIYANG_HOST=0.0.0.0 python -X utf8 -m uvicorn app.main:app --host 0.0.0.0 --port 8100
-# Windows Git Bash 下也可： set SHIYANG_HOST=0.0.0.0 && python -X utf8 -m uvicorn ...
 ```
 
-查本机局域网 IP（IP 不能是 127.0.0.1，也不要选 172.x 这类虚拟网卡）：
+**选哪个 IP 很重要**：要选手机所在 WiFi 对应的那一个（通常是 `WLAN` 网卡）。
+`172.x` 开头的多半是 Hyper-V 虚拟网卡，`192.168.137.1` 是本机开的热点网关
+（只有手机连本机热点时才通），`100.x` 是 Tailscale，手机一般连不上。
 
-```bash
-ipconfig | grep IPv4
-```
-
-手机和电脑要在**同一个 WiFi** 下，且 Windows 防火墙允许 8100 端口入站。
+**WLAN 若是「公用网络」，Windows 会拦截入站**，改成「专用」：
+设置 → 网络和 Internet → WLAN → 当前网络 → 网络配置文件类型 → 专用。
 
 ### 2. 构建前端并装配到壳工程
 
@@ -122,4 +133,7 @@ HBuilderX 图形界面：打开 `shiyang-app5` 项目 → 发行 → 原生App-�
 | web 版构建 `npx vite build` | 通过，产物行为不变（绝对路径/中文图名/相对 API） |
 | app 版构建 `--mode app` | 通过，无中文文件名、无绝对路径残留 |
 | 后端可导入 + 端点规模 | 49 路径 / 53 端点 |
-| 云打包提交 | 成功提交（排队中），APPID H519137D3 被云端接受 |
+| 云打包（第 1 次） | 成功，但产物内是项目自带空模板 index.html（真机会白屏）→ 定位到资源根问题 |
+| 云打包（第 2 次） | 成功，产物体积 13.1 MB；已核对包内 `www/index.html` 含 `id="app"`、资源为相对路径、无中文文件名 |
+| APK 结构与签名 | zip 校验通过（858 条目）、含 AndroidManifest、`META-INF/CERT.RSA` 签名存在 |
+| 联调脚本 | `start_backend_lan.py` 语法与 `--help` 通过；**未在真机上跑通端到端**（本机无连接设备） |
