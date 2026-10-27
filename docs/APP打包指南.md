@@ -134,6 +134,8 @@ HBuilderX 图形界面：打开 `shiyang-app5` 项目 → 发行 → 原生App-�
 | app 版构建 `--mode app` | 通过，无中文文件名、无绝对路径残留 |
 | 后端可导入 + 端点规模 | 49 路径 / 53 端点 |
 | 云打包（第 1 次） | 成功，但产物内是项目自带空模板 index.html（真机会白屏）→ 定位到资源根问题 |
-| 云打包（第 2 次） | 成功，产物体积 13.1 MB；已核对包内 `www/index.html` 含 `id="app"`、资源为相对路径、无中文文件名 |
-| APK 结构与签名 | zip 校验通过（858 条目）、含 AndroidManifest、`META-INF/CERT.RSA` 签名存在 |
-| 联调脚本 | `start_backend_lan.py` 语法与 `--help` 通过；**未在真机上跑通端到端**（本机无连接设备） |
+| 云打包（第 2 次） | 成功，13.1 MB；已核对包内 `www/index.html` 含 `id="app"`、资源为相对路径、无中文文件名 |
+| 云打包（第 3 次，最终） | 成功，13.1 MB / 859 条目；内嵌 API 确认为 `http://172.19.51.242:8100/api/v1`，药材图 82 张齐全 |
+| APK 结构与签名 | zip 校验通过、含 AndroidManifest、`META-INF/CERT.RSA` 签名存在 |
+| 后端 0.0.0.0 监听 | health / stats / recipes 均 200，APP 侧接口链路可通 |
+| 真机端到端 | **未验证**（本机未连接 Android 设备），装到手机后需人工确认首屏、图片与接口 |
