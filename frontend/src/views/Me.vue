@@ -345,8 +345,8 @@ function buzz(ms) {
 .rec-badge.member { background: var(--amber-600); }
 .fam-list { margin-bottom: 10px; }
 .fam-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--green-50); }
-.fam-avatar { width: 36px; height: 36px; border-radius: 50%; color: #fff; font-size: 15px; font-weight: 700;
-              display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.fam-avatar { width: 36px; height: 36px; border-radius: 50%; color: var(--green-text); font-size: 15px; font-weight: 700;
+              display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: var(--green-100); }
 .fam-info { flex: 1; min-width: 0; }
 .fam-info b { font-size: 14px; }
 .fam-rel { font-size: 11px; color: var(--ink-400); margin-left: 6px; }
