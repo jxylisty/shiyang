@@ -2,7 +2,7 @@
 // 分享海报：Canvas 绘制 → 下载 PNG（纯前端，无服务端依赖）
 // 打开弹层时才拉取配方并懒绘制，避免进详情页就白跑一次请求
 // P2：右下角加站点二维码（qrcode 包本地生成 dataURL，扫码直达当前站点）
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted, onUnmounted } from 'vue'
 import QRCode from 'qrcode'
 import { getRecipe } from '../api'
 
@@ -13,6 +13,13 @@ const url = ref('')
 const recipeName = ref('')
 const busy = ref(false)
 const failed = ref(false)
+
+// 宽屏居中弹窗，窄屏底部抽屉（van-popup--bottom 的 left:0 在宽屏下 margin:0 auto 不生效）
+const mqWide = window.matchMedia('(min-width: 720px)')
+const isWide = ref(mqWide.matches)
+const onMq = (e) => { isWide.value = e.matches }
+onMounted(() => mqWide.addEventListener('change', onMq))
+onUnmounted(() => mqWide.removeEventListener('change', onMq))
 
 watch(show, async (open) => {
   if (!open || url.value) return
@@ -127,7 +134,7 @@ function download() {
 </script>
 
 <template>
-  <van-popup v-model:show="show" position="bottom" round style="max-width:750px;margin:0 auto">
+  <van-popup v-model:show="show" :position="isWide ? 'center' : 'bottom'" round :class="{ 'wide-popup': isWide }">
     <div class="poster-wrap">
       <p class="p-title">分享海报</p>
       <canvas ref="canvasEl" style="display:none"></canvas>
@@ -164,4 +171,6 @@ function download() {
 @keyframes p-spin { to { rotate: 360deg; } }
 .p-btns { display: flex; gap: 10px; margin-top: 12px; }
 .p-btns .btn { flex: 1; }
+/* 宽屏居中弹窗宽度上限，避免被拉成满屏 */
+.wide-popup { width: min(750px, 90vw); }
 </style>

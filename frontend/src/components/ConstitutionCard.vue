@@ -4,7 +4,7 @@
  * 内容：主体质+兼夹、体质一句画像、宜吃/少碰、本周打卡数、品牌与二维码
  * 数据：Me 页已有的最新档案 record + 周打卡数（调用方传入，缺省容错）
  */
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted, onUnmounted } from 'vue'
 import QRCode from 'qrcode'
 
 const props = defineProps({
@@ -18,6 +18,13 @@ const url = ref('')
 const busy = ref(false)
 const failed = ref(false)
 const canvasEl = ref(null)
+
+// 宽屏居中弹窗，窄屏底部抽屉（同 SharePoster 口径）
+const mqWide = window.matchMedia('(min-width: 720px)')
+const isWide = ref(mqWide.matches)
+const onMq = (e) => { isWide.value = e.matches }
+onMounted(() => mqWide.addEventListener('change', onMq))
+onUnmounted(() => mqWide.removeEventListener('change', onMq))
 
 const PORTRAITS = {
   pinghe: '体质均衡，气血调和的「别人家的体质」',
@@ -159,7 +166,7 @@ function close() { emit('update:show', false) }
 </script>
 
 <template>
-  <van-popup :show="show" @update:show="close" position="bottom" round style="max-width:750px;margin:0 auto">
+  <van-popup :show="show" @update:show="close" :position="isWide ? 'center' : 'bottom'" round :class="{ 'wide-popup': isWide }">
     <div class="poster-wrap">
       <p class="p-title">体质名片</p>
       <canvas ref="canvasEl" style="display:none"></canvas>
@@ -192,4 +199,5 @@ function close() { emit('update:show', false) }
 @keyframes np-spin { to { rotate: 360deg; } }
 .p-btns { display: flex; gap: 10px; margin-top: 12px; }
 .p-btns .btn { flex: 1; }
+.wide-popup { width: min(750px, 90vw); }
 </style>

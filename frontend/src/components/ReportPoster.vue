@@ -1,7 +1,7 @@
 <script setup>
 // 周期报告分享海报：Canvas 绘制 → 下载 PNG（数据由 Report.vue 整理成 props 传入）
 // 复用 SharePoster 的绘制风格（品牌绿渐变 + 白卡 + 二维码），打通报告的传播链路
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted, onUnmounted } from 'vue'
 import QRCode from 'qrcode'
 
 const props = defineProps({
@@ -13,6 +13,13 @@ const canvasEl = ref(null)
 const url = ref('')
 const busy = ref(false)
 const failed = ref(false)
+
+// 宽屏居中弹窗，窄屏底部抽屉（同 SharePoster 口径）
+const mqWide = window.matchMedia('(min-width: 720px)')
+const isWide = ref(mqWide.matches)
+const onMq = (e) => { isWide.value = e.matches }
+onMounted(() => mqWide.addEventListener('change', onMq))
+onUnmounted(() => mqWide.removeEventListener('change', onMq))
 
 watch(() => props.show, async (open) => {
   if (!open || url.value || !props.report) return
@@ -156,7 +163,7 @@ const emit = defineEmits(['update:show'])
 </script>
 
 <template>
-  <van-popup :show="show" @update:show="onPopupClose" position="bottom" round style="max-width:750px;margin:0 auto">
+  <van-popup :show="show" @update:show="onPopupClose" :position="isWide ? 'center' : 'bottom'" round :class="{ 'wide-popup': isWide }">
     <div class="poster-wrap">
       <p class="p-title">分享我的食养报告</p>
       <canvas ref="canvasEl" style="display:none"></canvas>
@@ -192,4 +199,5 @@ const emit = defineEmits(['update:show'])
 @keyframes p-spin { to { rotate: 360deg; } }
 .p-btns { display: flex; gap: 10px; margin-top: 12px; }
 .p-btns .btn { flex: 1; }
+.wide-popup { width: min(750px, 90vw); }
 </style>

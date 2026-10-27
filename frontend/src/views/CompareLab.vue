@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { FlaskConical, ArrowLeftRight, AlertTriangle } from '@lucide/vue'
 import { listRecipes, compareRecipes } from '../api'
@@ -19,6 +19,13 @@ const pickerShow = computed({
   get: () => showPicker.value != null,
   set: (v) => { if (!v) showPicker.value = null },
 })
+
+// 宽屏居中弹窗，窄屏底部抽屉（同口径）
+const mqWide = window.matchMedia('(min-width: 720px)')
+const isWide = ref(mqWide.matches)
+const onMq = (e) => { isWide.value = e.matches }
+onMounted(() => mqWide.addEventListener('change', onMq))
+onUnmounted(() => mqWide.removeEventListener('change', onMq))
 
 function pick(id) {
   if (showPicker.value === 'a') aId.value = id
@@ -202,7 +209,7 @@ function poly(vals) {
     </template>
 
     <!-- 选择器抽屉 -->
-    <van-popup :show="pickerShow" @update:show="pickerShow = $event" position="bottom" round :style="{ maxHeight: '70%' }">
+    <van-popup :show="pickerShow" @update:show="pickerShow = $event" :position="isWide ? 'center' : 'bottom'" round :class="{ 'wide-popup': isWide }" :style="{ maxHeight: '70%' }">
       <div class="picker">
         <h3>选择方子 {{ showPicker === 'a' ? 'A' : 'B' }}</h3>
         <div class="picker-list">
@@ -284,4 +291,5 @@ function poly(vals) {
 @media (max-width: 420px) {
   .vs-grid, .duo { grid-template-columns: 1fr; }
 }
+.wide-popup { width: min(480px, 90vw); }
 </style>
