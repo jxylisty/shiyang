@@ -26,7 +26,6 @@ FRONTEND = ROOT / "frontend"
 PUBLIC_MAT = FRONTEND / "public" / "img" / "materials"
 DIST_APP = FRONTEND / "dist-app"
 SHELL = ROOT.parent / "shiyang-app5"
-SHELL_WWW = SHELL / "www"
 API_CACHE = ROOT / "frontend" / ".app_api_base"
 
 
@@ -53,17 +52,39 @@ def run_frontend_build(api_base, mat_map):
 
 
 def assemble(mat_map):
-    if SHELL_WWW.exists():
-        shutil.rmtree(SHELL_WWW)
-    shutil.copytree(DIST_APP, SHELL_WWW)
+    """把产物铺进 5+App 项目根目录。
 
-    src_dir = SHELL_WWW / "img" / "materials"
-    if src_dir.exists():
-        shutil.rmtree(src_dir)
-    src_dir.mkdir(parents=True, exist_ok=True)
+    5+App 的资源根就是项目目录本身（manifest 的 launch_path 为 "index.html"），
+    不是 www/。曾把产物放 www/ 里，结果 app 启动的是根目录那个空模板 index.html，
+    装上去白屏——云打包也不报错，只在真机上才看得出来。
+    """
+    # 清掉上次装配的内容（只清我们自己产出的，不碰 manifest.json / unpackage / 证书）
+    for name in ("assets", "fonts", "img"):
+        p = SHELL / name
+        if p.exists():
+            shutil.rmtree(p)
+    # 5+App 项目创建时自带的空壳目录，产物会覆盖它们
+    for name in ("css", "js"):
+        p = SHELL / name
+        if p.exists() and not any(p.iterdir()):
+            shutil.rmtree(p)
+
+    for item in DIST_APP.iterdir():
+        dst = SHELL / item.name
+        if item.is_dir():
+            if dst.exists():
+                shutil.rmtree(dst)
+            shutil.copytree(item, dst)
+        else:
+            shutil.copy2(item, dst)
+
+    mat_dir = SHELL / "img" / "materials"
+    if mat_dir.exists():
+        shutil.rmtree(mat_dir)
+    mat_dir.mkdir(parents=True, exist_ok=True)
     for zh, ascii_name in mat_map.items():
-        shutil.copy2(PUBLIC_MAT / f"{zh}.jpg", src_dir / f"{ascii_name}.jpg")
-    print(f"[2/3] 已装配 www/，药材图 {len(mat_map)} 张改为 ASCII 名")
+        shutil.copy2(PUBLIC_MAT / f"{zh}.jpg", mat_dir / f"{ascii_name}.jpg")
+    print(f"[2/3] 已装配到项目根目录，药材图 {len(mat_map)} 张改为 ASCII 名")
 
 
 def write_api_cache(api_base):
@@ -88,7 +109,7 @@ def main():
     run_frontend_build(api_base, mat_map)
     assemble(mat_map)
     write_api_cache(api_base)
-    print(f"[3/3] 完成：{SHELL_WWW}\n"
+    print(f"[3/3] 完成：{SHELL}\n"
           "      下一步在 HBuilderX 里对该项目执行 发行 → 原生App-云打包")
 
 

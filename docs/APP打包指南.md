@@ -20,7 +20,7 @@ shiyang/                     ← 原项目（不参与打包，只提供构建�
   scripts/build_app.py       ← 构建 + 装配脚本（本次新增）
 shiyang-app5/                ← HBuilderX 5+App 壳工程（在项目目录外，避免污染仓库）
   manifest.json              ← 应用名/包名/图标/签名证书/启动页
-  www/                       ← build_app.py 自动灌入
+  index.html assets/ img/    ← build_app.py 覆盖灌入（这里是资源根，不是 www/）
   unpackage/release/apk/     ← 云打包产物（APK）落在这里
 shiyang-app/certs/           ← Android 签名证书 keystore（勿提交到公开仓库）
 ```
@@ -56,10 +56,16 @@ python -X utf8 scripts/build_app.py --api "http://<你的局域网IP>:8100/api/v
 
 1. `vite build --mode app` —— base 改相对路径 `./`、路由改 hash 模式（file:// 下 history 会 404）
 2. 把 82 张中文文件名的药材图改名为 `m01.jpg`…`m82.jpg`（**云打包禁止中文文件名**），并把「中文名→ASCII 名」映射注入前端
-3. 产物复制进 `shiyang-app5/www/`
+3. 产物**覆盖到 `shiyang-app5/` 项目根目录**（5+App 的资源根就是项目根，不是 `www/`）
 
 脚本会记住上次的 API 地址，下次直接运行不带参数即可。
 **换网络环境（IP 变了）时必须重跑一次**，否则 APP 会连不上后端。
+
+装配完可以自查一句（应输出含 `<div id="app">`，不是空模板）：
+
+```bash
+grep -c 'id="app"' shiyang-app5/index.html
+```
 
 ### 3. 云打包
 
@@ -87,14 +93,17 @@ HBuilderX 图形界面：打开 `shiyang-app5` 项目 → 发行 → 原生App-�
 
 1. **wap2app 类型打不了包**。它的 APPID 是 `__W2A__<IP>` 这种按域名/地址本地生成的标识，
    云端不认，报「非当前账号所有」。改用 5+App（app-plus）类型，APPID 是 `H519137D3` 这种正规格式。
-2. **5+App 云打包禁止中文文件名**。`public/img/materials/` 下 82 张 `乌梅.jpg` 直接导致打包失败，
+2. **5+App 的资源根是项目根目录，不是 `www/`**。曾把产物铺进 `www/`，打包一路成功，
+   但 app 启动的是项目根那个 469 字节的空模板 `index.html` —— 装上去白屏，云端不报任何错。
+   `scripts/build_app.py` 因此直接覆盖项目根，装配后务必确认根 `index.html` 里有 `<div id="app">`。
+3. **5+App 云打包禁止中文文件名**。`public/img/materials/` 下 82 张 `乌梅.jpg` 直接导致打包失败，
    报 `App打包时，项目中文件名不能含有中文或全角字符`。解决方式见 `build_app.py`。
-3. **app 内是 file:// 环境**，所有 `/api/v1`、`/img/xxx` 这类绝对路径全部失效，
+4. **app 内是 file:// 环境**，所有 `/api/v1`、`/img/xxx` 这类绝对路径全部失效，
    必须用 `import.meta.env.BASE_URL`（web 为 `/`、app 为 `./`）拼路径，且路由必须用 hash 模式。
-4. **HBuilderX CLI 的 `user info` 会骗人**。它读本地缓存，显示已登录但 `pack` 报 `user not login`，
+5. **HBuilderX CLI 的 `user info` 会骗人**。它读本地缓存，显示已登录但 `pack` 报 `user not login`，
    需要用户在图形界面重新登录一次；另外装插件（amazon-corretto / launcher / app-safe-pack）后
    HBuilderX 可能自动退出，要重新 `cli open`。
-5. **签名证书不能丢**。APK 更新必须用同一个 keystore，否则手机上报签名冲突、无法覆盖安装。
+6. **签名证书不能丢**。APK 更新必须用同一个 keystore，否则手机上报签名冲突、无法覆盖安装。
    `shiyang-app/certs/shiyang.keystore` + 口令 `shiyang2026`，请离线备份，**不要提交到公开仓库**。
 
 ## 四、当前状态与限制
