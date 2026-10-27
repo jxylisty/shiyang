@@ -7,8 +7,12 @@ venv/
 # Node
 node_modules/
 dist/
+dist-app/
 *.local
 npm-debug.log*
+
+# APP 打包构建缓存（scripts/build_app.py 写入上次用的后端地址）
+frontend/.app_api_base
 
 # 数据库为构建产物（scripts/build_db.py 可重建），不进仓库
 *.db

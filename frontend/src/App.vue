@@ -23,6 +23,9 @@ watch(() => route.meta.title, (t) => { document.title = t ? `${t} · 食养有�
 // 路由过渡 JS 钩子（setTimeout 收尾，隐藏页签不卡死）：
 // router._navDir 由 router/index.js 维护，depth 变深 = 前进（新页从右滑入），变浅 = 后退
 const { enter: pageEnter, leave: pageLeave } = makeNavHooks({ getDir: () => router._navDir ?? 0 })
+
+// ./ 在 web 下等于 /，在 app(file://) 下指向包内目录
+const baseUrl = import.meta.env.BASE_URL
 </script>
 
 <template>
@@ -47,7 +50,7 @@ const { enter: pageEnter, leave: pageLeave } = makeNavHooks({ getDir: () => rout
     <CloudDivider label="药食同源 · 有据可查" />
   </footer>
   <div class="disclaimer">本平台内容为健康参考信息，不构成医疗建议，不用于诊断或治疗<br/>
-    <span class="img-credit">食材图片来自 <a href="https://commons.wikimedia.org" target="_blank" rel="noopener">Wikimedia Commons</a>（CC0 / 公有领域 / CC BY / CC BY-SA），作者与许可明细见 <a href="/img/credits.json" target="_blank" rel="noopener">credits.json</a></span>
+    <span class="img-credit">食材图片来自 <a href="https://commons.wikimedia.org" target="_blank" rel="noopener">Wikimedia Commons</a>（CC0 / 公有领域 / CC BY / CC BY-SA），作者与许可明细见 <a :href="`${baseUrl}img/credits.json`" target="_blank" rel="noopener">credits.json</a></span>
   </div>
 </template>
 

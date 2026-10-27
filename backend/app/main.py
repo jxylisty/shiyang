@@ -864,5 +864,8 @@ def constitution_info(code: str):
 
 
 if __name__ == "__main__":
+    import os
     import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8100)
+    # 默认只监听本机；APP（手机）联调需局域网可达，用 SHIYANG_HOST=0.0.0.0 覆盖。
+    # 注意：0.0.0.0 会把服务暴露给同一网络内的其他设备，仅在可信网络下使用。
+    uvicorn.run(app, host=os.environ.get("SHIYANG_HOST", "127.0.0.1"), port=8100)

@@ -216,7 +216,7 @@ const mainName = computed(() => {
             <div class="r-one">{{ r.oneliner }}</div>
           </router-link>
         </template>
-        <p v-else class="empty" style="padding:12px 0">暂无完全匹配的方子，可到<a href="/recipes" style="color: var(--green-text)">方子库</a>按场景浏览</p>
+        <p v-else class="empty" style="padding:12px 0">暂无完全匹配的方子，可到<router-link to="/recipes" style="color: var(--green-text)">方子库</router-link>按场景浏览</p>
       </div>
 
       <div class="card diet-ref rise" style="--i: 5" v-if="result.main_constitution && result.main_constitution.foods_suitable">

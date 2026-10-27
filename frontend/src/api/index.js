@@ -1,12 +1,19 @@
 import axios from 'axios'
 
+// API 基址：
+// - web/开发模式：相对路径 /api/v1（走同源代理或同域部署）
+// - APP 内置包：file:// 下无同源概念，必须指向部署好的后端绝对地址。
+//   打包时通过 VITE_API_BASE 注入，例如 vite build --mode app --base=...
+//   VITE_API_BASE=http://192.168.137.1:8100/api/v1
+const API_BASE = import.meta.env.VITE_API_BASE || '/api/v1'
+
 const api = axios.create({
-  baseURL: '/api/v1',
+  baseURL: API_BASE,
   timeout: 15000,
 })
 
 const authApi = axios.create({
-  baseURL: '/api/v1',
+  baseURL: API_BASE,
   timeout: 15000,
 })
 authApi.interceptors.request.use((cfg) => {
@@ -37,7 +44,7 @@ export const globalSearch = (q, limit) => api.get('/search', { params: limit ? {
 export function streamAssistantChat(question, onCitations, onDelta, onDone, onError,
                                     { history = [], constitutionCode = null } = {}) {
   const ctrl = new AbortController()
-  fetch('/api/v1/assistant/chat', {
+  fetch(`${API_BASE}/assistant/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     signal: ctrl.signal,
@@ -121,7 +128,7 @@ export function getLocalConstitution() {
 // ---- AI（SSE 用 fetch；key 可为空 → 后端回放预生成解读） ----
 // key 走 X-AI-Key 请求头（不进 URL，避免被代理/访问日志记录）
 export function streamAIReport(recipeId, key, onDelta, onDone, onError, provider = 'deepseek') {
-  const url = `/api/v1/recipes/${recipeId}/ai-report?provider=${provider}`
+  const url = `${API_BASE}/recipes/${recipeId}/ai-report?provider=${provider}`
   const ctrl = new AbortController()
   fetch(url, { signal: ctrl.signal, headers: key ? { 'X-AI-Key': key } : {} }).then(async (resp) => {
     if (!resp.ok || !resp.body) {
@@ -192,8 +199,20 @@ const MAT_IMG_ALIAS = {
   枣: '大枣', 铁皮石斛: '石斛', 猪瘦肉: '猪肉', 排骨: '猪骨', 猪脊骨: '猪骨',
   当归: '党参', 天冬: '麦冬', 地黄: '玉竹', 猪肚: '猪骨',
 }
-export const matImg = (name) =>
-  `/img/materials/${encodeURIComponent(MAT_IMG_ALIAS[name] || name)}.jpg`
+// BASE_URL 在 web 为 '/'、app 为 './'，据此拼相对路径（5+App 内是 file://，绝对路径会失效）。
+// app 构建时 VITE_MAT_MAP 注入「中文名 → mNN」映射：云打包不接受中文文件名，
+// 由 scripts/build_app.py 改名并按此表还原。web 构建无此变量，仍直接用中文名。
+const MAT_ASCII = (() => {
+  const raw = import.meta.env.VITE_MAT_MAP
+  if (!raw) return {}
+  try { return JSON.parse(raw) } catch { return {} }
+})()
+
+export const matImg = (name) => {
+  const base = MAT_IMG_ALIAS[name] || name
+  const file = MAT_ASCII[base] || base
+  return `${import.meta.env.BASE_URL}img/materials/${encodeURIComponent(file)}.jpg`
+}
 
 // ---- 浏览历史（纯本地，未登录可用） ----
 const HISTORY_KEY = 'shiyang_history_v1'

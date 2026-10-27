@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHashHistory, createWebHistory } from 'vue-router'
 
 const routes = [
   { path: '/', name: 'home', component: () => import('../views/Home.vue'), meta: { title: '食养有据', depth: 0 } },
@@ -20,8 +20,12 @@ const routes = [
   { path: '/:pathMatch(.*)*', name: 'notFound', component: () => import('../views/NotFound.vue'), meta: { title: '页面不存在', depth: 9 } },
 ]
 
+// APP 内置包走 file:// 或本地资源，history 模式刷新/直达会 404，故用 hash 模式；
+// web 部署保持 history 模式（URL 干净，已有服务端回退）。
+const isApp = import.meta.env.MODE === 'app'
+
 const router = createRouter({
-  history: createWebHistory(),
+  history: isApp ? createWebHashHistory() : createWebHistory(),
   routes,
   scrollBehavior: () => ({ top: 0 }),
 })
