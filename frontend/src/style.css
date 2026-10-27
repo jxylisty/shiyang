@@ -411,56 +411,89 @@ body {
 }
 
 /* ===== 暗色模式（Me 页设置切换，data-theme="dark" + van-theme-dark） =====
-   语汇：夜墨底 + 纸背深褐卡 + 提亮的石绿与朱砂，保持同一套古典气质 */
-:root[data-theme="dark"] {
-  --green-50: #1b2a24;
-  --green-100: #24382f;
-  --tile-ink: #8fc9ab;
+   语汇：夜读宋版——藏青褐底 + 暖米字 + 旧羊皮纸卡，不是纯黑 OLED。
+   整体对比度压到中等（约 10:1 仍过 WCAG AAA，但色相往暖褐偏，不刺眼）。
+   亮→暗的映射逻辑：宣纸底→藏青褐、纸白卡→旧羊皮、松烟墨→暖米、
+   竹青→松绿、朱砂→暗朱、赭石→蜜褐。
+
+   注意：选择器写 :root:is(.van-theme-dark, [data-theme="dark"]) 是为了和
+   Vant 的 :root.van-theme-dark（0,2,0）打平特异性；我们的 CSS 在 Vant
+   之后加载，同特异性下后加载者胜出，这样暖褐暗色值才能压掉 Vant 默认的
+   纯黑冷调（否则字会是冷白 #f5f5f5、底是纯黑 #000，违和感重）。 */
+:root:is(.van-theme-dark, [data-theme="dark"]) {
+  /* 竹青：提亮 2 阶到松绿，深色底上仍然是"墨竹"感不发荧光 */
+  --green-900: #0f221b;
+  --green-700: #2e5a47;
+  --green-600: #3f7a62;
+  --green-100: #273a31;
+  --green-50: #1e2c25;
+  --tile-ink: #7fb89a;
   --green-text: #8fc9ab;
-  --amber-50: #2e2618;
-  --red-50: #33221e;
-  --cinnabar: #c4564a;
-  --cinnabar-soft: #d4756a;
-  --ink-900: #e6ddcc;
-  --ink-600: #b3a894;
-  --ink-400: #8b8171;
-  --amber-text: #d6a55f;
-  --red-text: #e08a7b;
-  --bg: #14110d;
-  --card: #1e1a15;
-  --card-border: rgba(230, 221, 204, 0.1);
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);
-  --shadow: 0 4px 16px rgba(0, 0, 0, 0.42);
-  --shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.55);
+  /* 蜜褐：替代原 amber，暗里不飘 */
+  --amber-600: #a07840;
+  --amber-text: #c89a5a;
+  --amber-50: #2a2216;
+  /* 暗朱：朱砂压暗但保留血色，不发荧光粉 */
+  --cinnabar: #a84c3f;
+  --cinnabar-soft: #c26858;
+  --red-500: #a0483c;
+  --red-text: #d28879;
+  --red-50: #2e201d;
+  /* 字色：暖米色系（不是冷白），三级分明但不扎眼 */
+  --ink-900: #d9cfbe;   /* 主文字：暖米白 */
+  --ink-600: #a89d8a;   /* 次文字：灰褐 */
+  --ink-400: #7a7160;   /* 辅助：暗褐灰 */
+  /* 底与卡：藏青褐底（不是纯黑）+ 旧羊皮纸卡 */
+  --bg: #1e1b16;
+  --card: #2a261f;
+  --card-border: rgba(217, 207, 190, 0.12);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.25);
+  --shadow: 0 2px 8px -1px rgba(0, 0, 0, 0.45), 0 6px 20px -6px rgba(0, 0, 0, 0.55);
+  --shadow-hover: 0 4px 12px -2px rgba(0, 0, 0, 0.5), 0 12px 32px -8px rgba(0, 0, 0, 0.65);
+  /* Vant 暗色变量同步（Vant 自己的 van-theme-dark 是纯黑冷调，我们换成暖褐系） */
+  --van-background: var(--bg);
+  --van-background-2: var(--card);
+  --van-background-3: #342f26;
+  --van-text-color: var(--ink-900);
+  --van-text-color-2: var(--ink-600);
+  --van-text-color-3: var(--ink-400);
+  --van-border-color: var(--card-border);
+  --van-active-color: var(--green-50);
+  --van-popup-background: var(--card);
+  --van-popup-round-radius: var(--radius);
 }
-:root[data-theme="dark"] body {
+:root:is(.van-theme-dark, [data-theme="dark"]) body {
   background-color: var(--bg);
-  /* 暗色下纤维纹改用柔光混合，避免噪声发灰显脏 */
+  /* 暗色下纤维纹用柔光混合，暖褐晕染替代冷绿——夜读油灯的暖光感 */
   background-image:
     var(--paper-fiber),
     var(--fret-faint),
-    radial-gradient(ellipse 60% 42% at 20% 6%, rgba(143, 201, 171, 0.07), transparent 66%),
-    radial-gradient(ellipse 58% 44% at 82% 94%, rgba(196, 86, 74, 0.07), transparent 66%);
-  background-size: auto, 132px 132px, auto, auto;
-  background-repeat: repeat, repeat, no-repeat, no-repeat;
-  background-blend-mode: soft-light, normal, normal, normal;
+    radial-gradient(ellipse 60% 40% at 18% 6%, rgba(200, 154, 90, 0.08), transparent 66%),
+    radial-gradient(ellipse 55% 40% at 85% 92%, rgba(168, 76, 63, 0.07), transparent 66%),
+    radial-gradient(ellipse 90% 70% at 50% 50%, rgba(42, 38, 31, 0.4), transparent 72%);
+  background-size: auto, 132px 132px, auto, auto, auto;
+  background-repeat: repeat, repeat, no-repeat, no-repeat, no-repeat;
+  background-blend-mode: soft-light, normal, normal, normal, normal;
   color: var(--ink-900);
 }
-:root[data-theme="dark"] .card {
+:root:is(.van-theme-dark, [data-theme="dark"]) .card {
+  background-color: var(--card);
   background-image:
     var(--paper-fiber),
-    radial-gradient(ellipse 120% 90% at 12% 0%, rgba(255, 255, 255, 0.05), transparent 62%);
+    radial-gradient(ellipse 120% 80% at 15% 0%, rgba(255, 235, 200, 0.04), transparent 65%);
   background-blend-mode: soft-light, normal;
 }
-:root[data-theme="dark"] .card::after { border-color: rgba(230, 221, 204, 0.08); }
-:root[data-theme="dark"] .topbar { background-color: var(--card); border-bottom-color: var(--card-border); }
-:root[data-theme="dark"] .topbar .logo { color: var(--ink-900); }
-:root[data-theme="dark"] .f-row .tag,
-:root[data-theme="dark"] .search-box input,
-:root[data-theme="dark"] .field input { background: var(--card); color: var(--ink-900); border-color: var(--card-border); }
-:root[data-theme="dark"] .hero .btn { color: var(--green-900); }
-:root[data-theme="dark"] .switch-btn { background: #3d362c; }
-:root[data-theme="dark"] .seal { color: #fbf3e4; }
+:root:is(.van-theme-dark, [data-theme="dark"]) .card::after { border-color: rgba(217, 207, 190, 0.1); }
+:root:is(.van-theme-dark, [data-theme="dark"]) .topbar { background-color: var(--card); border-bottom-color: var(--card-border); }
+:root:is(.van-theme-dark, [data-theme="dark"]) .topbar .logo { color: var(--ink-900); }
+:root:is(.van-theme-dark, [data-theme="dark"]) .f-row .tag,
+:root:is(.van-theme-dark, [data-theme="dark"]) .search-box input,
+:root:is(.van-theme-dark, [data-theme="dark"]) .field input { background: var(--card); color: var(--ink-900); border-color: var(--card-border); }
+:root:is(.van-theme-dark, [data-theme="dark"]) .hero .btn { color: var(--green-900); }
+:root:is(.van-theme-dark, [data-theme="dark"]) .switch-btn { background: #3d362c; }
+:root:is(.van-theme-dark, [data-theme="dark"]) .seal { color: #fbf3e4; }
+/* 暗色下所有链接去掉浏览器默认蓝，统一走主题色；router-link 也受 a 选择器约束 */
+:root:is(.van-theme-dark, [data-theme="dark"]) a { color: var(--green-text); }
 
 /* ===== 字号调节（Me 页设置：标准/大/特大，仅作用于正文内容） ===== */
 :root[data-fontsize="large"] .page { font-size: 17.5px; }
@@ -475,11 +508,11 @@ body {
 :root[data-fontsize="xlarge"] .page .q-text { line-height: 1.8; }
 
 /* ===== 暗色模式下的动效基建取色 ===== */
-:root[data-theme="dark"] .skl {
+:root:is(.van-theme-dark, [data-theme="dark"]) .skl {
   background: linear-gradient(90deg, var(--green-100) 25%, var(--card) 40%, var(--green-100) 60%);
   background-size: 200% 100%;
 }
 /* 原各页局部 sk-anim 的中间色 #e6f1ea 是硬编码浅色，暗色下会闪白；统一换成令牌色 */
-:root[data-theme="dark"] .sk-anim {
+:root:is(.van-theme-dark, [data-theme="dark"]) .sk-anim {
   background: linear-gradient(90deg, var(--green-50) 25%, var(--green-100) 50%, var(--green-50) 75%);
 }
