@@ -12,6 +12,7 @@
 - 引用数字前先跑 `python -X utf8 scripts/check_overlap.py` 或直查库（AGENTS.md §6），**旧数字即刻作废**。
 
 > **AI 协作者必读：[AGENTS.md](AGENTS.md)**（数据真实铁律、git 纪律、多 AI 并行守则、已知坑）。
+> **人类协作者上手：[CONTRIBUTING.md](CONTRIBUTING.md)**（环境搭建、数据库获取、提 PR 流程、提交前自检）。
 
 ## 目录结构
 
