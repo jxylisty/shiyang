@@ -230,6 +230,21 @@ def explain_compound(name: str):
     return ok(result)
 
 
+@app.get("/api/v1/explain/map")
+def explain_map():
+    """成分化学空间地图（UMAP 预计算坐标）。
+    坐标由 scripts/compute_map_coords.py 离线生成（random_state=42 可复现），
+    本接口只读表，不做在线降维。"""
+    conn = get_db()
+    rows = conn.execute(
+        "SELECT name, x, y, prob_cctcm, prob_indep, ad_level, cv_level "
+        "FROM compound_map ORDER BY name").fetchall()
+    conn.close()
+    return ok({"items": [dict(r) for r in rows], "count": len(rows),
+               "note": "坐标为 UMAP 降维（Morgan 指纹 1024 位 → 2 维），相对位置有意义、"
+                       "坐标轴数值无物理含义；着色维度见图例。"})
+
+
 @app.get("/api/v1/explain/recipe/{rid}")
 def explain_recipe(rid: int):
     result = explain.recipe_compounds(rid)
@@ -288,6 +303,8 @@ def list_herbs(q: str | None = None):
 def list_compounds(min_prob: float = 0.5, limit: int = 50):
     min_prob = max(0.0, min(min_prob, 1.0))
     conn = get_db()
+    total = conn.execute(
+        "SELECT COUNT(*) FROM compound WHERE prob_cctcm>=?", (min_prob,)).fetchone()[0]
     rows = conn.execute(
         "SELECT c.id,c.name,c.prob_cctcm,c.prob_herb,c.mw,c.logp,"
         "COALESCE(c.radar_anti_inflammatory_gsea,c.radar_anti_inflammatory) radar_anti_inflammatory,"
@@ -296,7 +313,8 @@ def list_compounds(min_prob: float = 0.5, limit: int = 50):
         "FROM compound c WHERE c.prob_cctcm>=? ORDER BY c.prob_cctcm DESC LIMIT ?",
         (min_prob, min(limit, 200))).fetchall()
     conn.close()
-    return ok({"total": len(rows), "items": [dict(r) for r in rows]})
+    # total=满足过滤条件的库内总数；returned=本次实际返回条数（差值即被 limit 截断量）
+    return ok({"total": total, "returned": len(rows), "items": [dict(r) for r in rows]})
 
 
 @app.get("/api/v1/foods")

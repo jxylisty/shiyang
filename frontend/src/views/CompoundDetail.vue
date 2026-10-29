@@ -252,7 +252,7 @@ function goRecipe(id) { router.push(`/recipes/${id}`) }
 .cd-act-head b { font-size: 13px; color: var(--ink-900); font-weight: 500; }
 .cd-act-lv { font-size: 10px; padding: 1px 7px; border-radius: 8px; color: #fff; flex-shrink: 0; }
 .cd-act-lv.lv1 { background: var(--green-700); }
-.cd-act-lv.lv2 { background: var(--amber-600, #c98a2d); }
+.cd-act-lv.lv2 { background: #9a6b1f; }
 .cd-act-val { display: block; font-size: 11.5px; color: var(--ink-500); margin-top: 3px; font-variant-numeric: tabular-nums; }
 
 .sk-line { height: 13px; border-radius: 6px; margin-bottom: 10px; }

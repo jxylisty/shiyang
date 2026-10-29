@@ -115,3 +115,14 @@
 
 **验收结论**：可信度三区块（应用域/独立交叉验证/ChEMBL 实验活性）+ 暴露量三档情景可对外演示。
 **P2/P3 遗留**：徽章对比度不足 4.5:1、/compounds 的 total 字段语义误导（见 docs/验收测试_可信度功能_2026-10-30.md，留待下阶段）。
+
+## P3 修复 + 答辩素材 + 衍生新功能：化学空间地图（2026-10-30 第二轮）
+
+| 提交 | 功能 | 关键文件 | 验证 |
+|---|---|---|---|
+| 本提交 | **P3 修复**：①徽章白字底色加深至 WCAG AA（灰绿 #8a978f→#6b7a72 4.51:1、琥珀 #c98a2d→#9a6b1f 4.67:1，前后端共 10 处）②`/compounds` 的 total 改为真实 COUNT(*)，新增 returned 字段标实际返回量（实测 min_prob=0.5 时 total=96/returned=50） | `main.py` `explain_service.py` `evidence_service.py` `CompoundDetail.vue` | pytest + TestClient 断言 ✅ |
+| 本提交 | **开源资源清单收尾**：补 ChEMBL（已接入，2026-10-30 净新增）与 AutoMolDesigner 数据集（实测取舍：PPB/Tox/Accum 全不采用，理由落盘）两条目 | `docs/开源资源清单.md` | 链接与数字对照评估报告 ✅ |
+| 本提交 | **答辩话术文档**：可信度四件套 30 秒总话术 + 逐条追问应答 + 3 分钟演示动线，全部带实测数字 | `docs/答辩话术_可信度四件套.md`（新） | 数字与各报告一致 ✅ |
+| 本提交 | **衍生新功能：成分化学空间地图**——165 成分 Morgan 指纹 UMAP 降维（random_state=42 可复现），SVG 散点三视角切换（入血概率着色/应用域着色/主模型 vs 独立模型一致性着色），点按圆点出成分卡跳详情页。**分歧点聚团 = "分歧来自皂苷等结构类别而非随机噪声"的可视化证据** | `scripts/compute_map_coords.py`（新）`compound_map` 表（新）`GET /explain/map`（新端点）`ChemMap.vue`（新页）`/chem-map` 路由 + 成分库页入口链接 | 端点 200/count=165；端点 50 路径/54 端点；单测 67 passed；vite build 通过；浏览器验收见 docs/验收_化学空间地图_2026-10-30.md ✅ |
+
+**备注**：`umap-learn` 为开发期依赖（坐标离线预计算，运行时只读表），不进 backend/requirements.txt。

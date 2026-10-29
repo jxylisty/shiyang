@@ -33,12 +33,12 @@ def _band(prob: float) -> dict:
         return {"tier": "很高", "color": "#2e7d5b",
                 "say": "模型判断它大概率能被吸收入血"}
     if prob >= 0.7:
-        return {"tier": "较高", "color": "#c98a2d",
+        return {"tier": "较高", "color": "#9a6b1f",
                 "say": "模型判断它有较大概率被吸收入血"}
     if prob >= 0.5:
-        return {"tier": "中等", "color": "#8a978f",
+        return {"tier": "中等", "color": "#6b7a72",
                 "say": "模型判断它入血可能性一般"}
-    return {"tier": "偏低", "color": "#8a978f",
+    return {"tier": "偏低", "color": "#6b7a72",
             "say": "模型判断它较难被吸收入血（多留在消化道）"}
 
 
@@ -170,7 +170,7 @@ def recipe_compounds(rid: int) -> dict | None:
 _AD_LEVELS = {
     "in": {"name": "应用域内", "color": "#2e7d5b",
            "say": "该成分与模型训练集高度相似，预测结果可靠性较好"},
-    "edge": {"name": "应用域边缘", "color": "#c98a2d",
+    "edge": {"name": "应用域边缘", "color": "#9a6b1f",
              "say": "该成分与训练集相似度偏低，预测结果建议仅作参考"},
     "out": {"name": "应用域外", "color": "#b04a3a",
             "say": "该成分在训练集中缺乏相似样本，模型预测可靠性有限，请谨慎解读"},
@@ -225,10 +225,10 @@ def _cross_validation(row) -> dict | None:
         level, color = "both_high", "#2e7d5b"
         say = "主模型与独立模型都判它大概率入血——两套算法结论一致，可靠性较好"
     elif not hi_main and not hi_indep:
-        level, color = "both_low", "#8a978f"
+        level, color = "both_low", "#6b7a72"
         say = "主模型与独立模型都认为它入血可能性低——结论一致"
     elif hi_main:
-        level, color = "main_only", "#c98a2d"
+        level, color = "main_only", "#9a6b1f"
         # 分歧原因按成分特征动态说理，避免套模板误伤非皂苷成分
         if row["mw"] is not None and row["mw"] > 400:
             say = (f"主模型认为大概率入血，独立模型较保守——分歧多见于分子量较大的苷类"
@@ -240,7 +240,7 @@ def _cross_validation(row) -> dict | None:
                    "两类模型对『未标注样本』的处理协议不同（PU 学习 vs 标准二分类），"
                    "建议结合下方实验活性与文献判断")
     else:
-        level, color = "indep_only", "#c98a2d"
+        level, color = "indep_only", "#9a6b1f"
         say = "独立模型认为可能入血，主模型较保守——建议结合实验数据判断"
     return {
         "level": level, "color": color, "say": say,

@@ -22,9 +22,9 @@ DB_PATH = Path(__file__).resolve().parents[3] / "data" / "shiyang.db"
 LEVELS = {
     "A": {"name": "权威出处", "color": "#2e7d5b",
           "desc": "卫健委药食同源目录、药典功效或权威媒体中医师出处"},
-    "B": {"name": "实验数据库", "color": "#c98a2d",
+    "B": {"name": "实验数据库", "color": "#9a6b1f",
           "desc": "TCMSP/CTD/KEGG/BindingDB/PubChem/DrugBank/ChEMBL 收录的成分-靶点关系，附文献编号"},
-    "C": {"name": "模型预测", "color": "#8a978f",
+    "C": {"name": "模型预测", "color": "#6b7a72",
           "desc": "课题 PU-Learning 入血预测模型输出，非文献直接结论"},
 }
 

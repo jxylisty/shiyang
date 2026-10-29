@@ -98,6 +98,7 @@ export const getEvidence = (recipeId) => api.get(`/evidence/recipe/${recipeId}`)
 // ---- 入血概率可解释 ----
 export const getExplainCompound = (name) => api.get('/explain/compound', { params: { name } })
 export const getExplainRecipe = (recipeId) => api.get(`/explain/recipe/${recipeId}`)
+export const getChemMap = () => api.get('/explain/map')
 
 // ---- 开放数据 API ----
 export const getOpenIndex = () => api.get('/open')

@@ -48,6 +48,7 @@ const probColor = (p) => p >= 0.9 ? 'var(--green-700)' : p >= 0.7 ? 'var(--amber
       <b class="intro-title">活性成分数据图鉴</b>
       <p>数据来自南京中医药大学赵玉男老师团队自建的 <b>ccTCM 2.0</b> 数据库，入血概率由 PU-Learning 模型预测（ROC-AUC 0.903）。</p>
       <p class="intro-note">提示：入血概率表示成分<b>在血中被检出的倾向</b>，不是口服吸收率。大分子皂苷吸收率低但血中可检出，模型仍可能给高分。</p>
+      <router-link to="/chem-map" class="map-link">看它们在化学空间里的分布 → 化学空间地图</router-link>
     </div>
 
     <div class="f-row">
@@ -156,4 +157,7 @@ const probColor = (p) => p >= 0.9 ? 'var(--green-700)' : p >= 0.7 ? 'var(--amber
 .sk-line.w50 { width: 50%; }
 .sk-line.w90 { width: 90%; }
 .sk-line.w40 { width: 40%; margin-bottom: 0; }
+
+<style scoped>
+.map-link { display: inline-block; margin-top: 8px; font-size: 12px; color: var(--green-text); font-weight: 500; }
 </style>
