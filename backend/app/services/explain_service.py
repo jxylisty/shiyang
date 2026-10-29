@@ -229,7 +229,16 @@ def _cross_validation(row) -> dict | None:
         say = "主模型与独立模型都认为它入血可能性低——结论一致"
     elif hi_main:
         level, color = "main_only", "#c98a2d"
-        say = "主模型认为大概率入血，但独立算法模型持保留意见——多见于皂苷等大分子"
+        # 分歧原因按成分特征动态说理，避免套模板误伤非皂苷成分
+        if row["mw"] is not None and row["mw"] > 400:
+            say = (f"主模型认为大概率入血，独立模型较保守——分歧多见于分子量较大的苷类"
+                   f"（本成分 {row['mw']:.0f} Da）：主模型的 PU 学习协议对『未标注』大分子更宽容，"
+                   f"而独立模型按标准二分类将其保守视为负例。这类成分文献中常有代谢物入血的报道，"
+                   f"建议结合下方实验活性与文献判断")
+        else:
+            say = ("主模型认为大概率入血，但独立算法模型持保留意见——"
+                   "两类模型对『未标注样本』的处理协议不同（PU 学习 vs 标准二分类），"
+                   "建议结合下方实验活性与文献判断")
     else:
         level, color = "indep_only", "#c98a2d"
         say = "独立模型认为可能入血，主模型较保守——建议结合实验数据判断"
@@ -237,6 +246,7 @@ def _cross_validation(row) -> dict | None:
         "level": level, "color": color, "say": say,
         "prob_indep": round(p_indep, 4),
         "threshold": thr,
+        "main_threshold": 0.7,
         "note": "独立验证 = 用逻辑回归/XGBoost/神经网络三个与主模型不同族的算法，"
                 "在同一数据上独立训练（标准二分类协议），再对比两者判断。"
                 "一致性 73%（Spearman 0.58）；分歧集中在皂苷类，"

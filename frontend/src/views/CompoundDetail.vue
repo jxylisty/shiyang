@@ -126,6 +126,7 @@ function goRecipe(id) { router.push(`/recipes/${id}`) }
           <div class="cd-bar"><i :style="{ width: `${Math.round((data.cross_validation.prob_indep || 0) * 100)}%`, background: data.cross_validation.color }"></i></div>
           <span class="cd-bar-val">{{ data.cross_validation.prob_indep }}</span>
         </div>
+        <p class="cd-thr-note">判定口径：主模型概率 ≥ {{ data.cross_validation.main_threshold }} 为「高」，独立模型概率 ≥ {{ data.cross_validation.threshold }} 为「高」（两模型概率尺度不同，独立模型阈值由其自身数据标定）。</p>
         <p class="cd-note">{{ data.cross_validation.note }}</p>
       </div>
 
@@ -145,6 +146,9 @@ function goRecipe(id) { router.push(`/recipes/${id}`) }
           </div>
           <span class="cd-act-val">{{ a.activity_type }} = {{ a.activity_value }}{{ a.activity_unit || '' }} · pChEMBL {{ a.pchembl }}</span>
         </div>
+        <p class="cd-thr-note" v-if="data.chembl.target_count > data.chembl.activities.length">
+          仅展示活性最强的 {{ data.chembl.activities.length }} 条，其余 {{ data.chembl.target_count - data.chembl.activities.length }} 条见 ChEMBL 数据库。
+        </p>
         <p class="cd-note">以上为该成分在体外实验中对特定蛋白测得的活性（Ki/IC50 等），属实验证据（L1/L2）；
           体外活性不等同于人体内功效，更不代表食疗效果。</p>
       </div>
@@ -220,8 +224,8 @@ function goRecipe(id) { router.push(`/recipes/${id}`) }
 .cd-chip:active { scale: .94; }
 
 .cd-targets { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
-.cd-target { background: var(--green-50); border-radius: 10px; padding: 8px 10px; display: flex; flex-direction: column; gap: 2px; }
-.cd-target b { font-size: 13px; color: var(--green-text); font-family: monospace; }
+.cd-target { background: var(--green-50); border-radius: 10px; padding: 8px 10px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.cd-target b { font-size: 13px; color: var(--green-text); font-family: monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cd-target span { font-size: 10.5px; color: var(--ink-600); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 @media (max-width: 420px) { .cd-targets { grid-template-columns: 1fr; } }
 
@@ -241,6 +245,7 @@ function goRecipe(id) { router.push(`/recipes/${id}`) }
 
 /* ChEMBL 实验活性 */
 .cd-chembl-head { font-size: 12px; color: var(--ink-500); margin-top: 6px; line-height: 1.6; }
+.cd-thr-note { font-size: 11px; color: var(--ink-400); margin-top: 8px; line-height: 1.5; }
 .cd-act { padding: 9px 0; border-bottom: 1px solid var(--green-100); }
 .cd-act:last-of-type { border-bottom: none; }
 .cd-act-head { display: flex; align-items: center; gap: 6px; justify-content: space-between; }

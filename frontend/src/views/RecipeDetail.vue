@@ -239,6 +239,7 @@ async function toggleCheckin() {
                 <span class="e-val">≈ {{ e.est_mg_min }}–{{ e.est_mg_max }} mg<small v-if="e.est_mg_base != null" class="e-mid">（基准 {{ e.est_mg_base }}）</small></span>
                 <span v-if="e.absorbed_mg_max != null" class="e-abs">吸收 {{ e.absorbed_mg_min }}–{{ e.absorbed_mg_max }} mg · 入血概率 {{ e.prob_cctcm }}</span>
               </div>
+              <p class="a-disclaimer" v-if="exposure.items.length > 8">仅展示摄入量最高的 8 项，本方共 {{ exposure.items.length }} 项有估计值。</p>
               <p class="a-disclaimer">{{ exposure.note }}</p>
             </div>
           </template>
