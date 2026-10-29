@@ -78,3 +78,18 @@
 | 本提交 | `streamAIReport` 的用户 Key 从 URL query 改 `X-AI-Key` 头（还债：不进 URL/日志） | `api/index.js` | build ✅ |
 
 **本线回归基线（2026-10-27 实测）**：端点 49 路径 / **53 端点**（`app.openapi()`）；单测 **67 passed**；vite build 通过。AI 链路只走本机 ZeroGate 网关（key=zerogate），不接触用户密钥文件。
+
+## 可信度加固线（2026-10-29：应用域 + ChEMBL 实验活性 + 暴露量三档情景）
+
+> 来源：南京中医药大学「人工智能赋能药物研发」研修班资料包（Compound Profile Agent 项目 + AutoMolDesigner 数据集 + 定量药理学课件）。只取可落地的三件，不做分子生成/对接/MD。
+
+| 提交 | 功能 | 关键文件 | 验证 |
+|---|---|---|---|
+| 本提交 | **入血模型应用域标注**：对 165 成分算「与训练集最大 Morgan Tanimoto 相似度」，留一法定阈值（5%分位 0.333 / 25%分位 0.582）→ 域内 160 / 边缘 2 / 域外 3；成分页展示可信度徽章 | `scripts/compute_applicability.py`（新）`explain_service._applicability` `CompoundDetail.vue` | 实测 165/165 写入；域外成分（白皮杉醇 sim=0.246 等）与其低入血概率自洽 ✅ |
+| 本提交 | **ChEMBL 实验活性补数据**：InChIKey 精确匹配 → 拉活性记录 → 自算 pChEMBL（官方值大量缺失，实测人参皂苷 Re 全为 None）→ 靶点类型白名单（target.json 查 SINGLE PROTEIN 等，剔除细胞系污染）→ 按靶点聚合 | `scripts/fetch_chembl_activity.py`（新）`compound_chembl_activity`（新表） | 全量实测：**126/165 命中（76%），465 条活性（L1 强证据 127 条），0 错误，耗时 1603s** ✅ |
+| 本提交 | **暴露量三档情景**：转移率由单常数 0.5 改为 低0.3/基准0.5/高0.7 三档 × 含量区间，输出 `est_mg_min/base/max`；旧字段保留向后兼容 | `exposure_service.py` `RecipeDetail.vue` | TestClient `/recipes/1/exposure` 返回 transfer_scenarios ✅ |
+| 本提交 | **证据链纳入 ChEMBL**：方子级 B 级证据新增「本方 N 个成分有 M 条体外实测活性」汇总；A/B/C 与 L1/L2 两套体系在注释中明确区分（前者说出处类型，后者说活性强度） | `evidence_service.py` | 银菊利咽茶实测：3 成分 12 条记录（1 条 L1）✅ |
+
+**本线回归基线（2026-10-29 实测）**：端点 49 路径 / 53 端点（未新增路由）；单测 **67 passed**；vite build 通过。
+
+**边界声明**：ChEMBL 活性为**体外实验测定**（Ki/IC50 等），不等于人体内有效，更不等于食疗功效；页面已标注「非疗效结论」。应用域标注是**量化披露**，不是性能提升——模型本身未重训。

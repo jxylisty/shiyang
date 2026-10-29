@@ -68,7 +68,9 @@ def compound_explain(name: str) -> dict | None:
     conn = _db()
     try:
         row = conn.execute(
-            "SELECT id,name,smiles,mw,logp,prob_cctcm,prob_herb,target_count FROM compound WHERE name=?",
+            "SELECT id,name,smiles,mw,logp,prob_cctcm,prob_herb,target_count,"
+            "max_sim_to_train,ad_level,ad_nearest,chembl_id,"
+            "chembl_target_count,chembl_strong_count FROM compound WHERE name=?",
             (name,)).fetchone()
         if not row:
             return None
@@ -97,6 +99,11 @@ def compound_explain(name: str) -> dict | None:
                 "SELECT DISTINCT rc.target_gene AS gene, t.target_type, t.species "
                 "FROM rel_compound_target rc JOIN target t ON t.gene=rc.target_gene "
                 "WHERE rc.compound_id=? ORDER BY rc.target_gene LIMIT 12", (row["id"],)).fetchall()]
+        # ChEMBL 实验活性（体外测定，非疗效结论）
+        chembl_acts = [dict(a) for a in conn.execute(
+            "SELECT target_name, activity_type, activity_value, activity_unit, "
+            "pchembl, evidence_level, n_records FROM compound_chembl_activity "
+            "WHERE compound_id=? ORDER BY pchembl DESC LIMIT 10", (row["id"],)).fetchall()]
     finally:
         conn.close()
 
@@ -109,6 +116,13 @@ def compound_explain(name: str) -> dict | None:
         "target_count": row["target_count"], "herbs": herbs,
         "recipes": recipes, "targets": targets,
         "band": band, "features": feats,
+        "applicability": _applicability(row),
+        "chembl": {
+            "chembl_id": row["chembl_id"],
+            "target_count": row["chembl_target_count"] or 0,
+            "strong_count": row["chembl_strong_count"] or 0,
+            "activities": chembl_acts,
+        },
         "rule_summary": f"Lipinski 口服有利特征 {n_pass}/{len(feats)} 项命中",
         "note": "以上为模型判断依据的科普化展示（特征区间），非严格贡献值；"
                 "模型为课题自研 PU-Learning 入血预测，prob 越高表示越可能被吸收入血。",
@@ -149,3 +163,32 @@ def recipe_compounds(rid: int) -> dict | None:
             "rules": [v for v in RO5.values()],
             "note": "prob_cctcm：模型预测的「被吸收入血」概率；特征命中越多、概率通常越高，"
                     "但模型还参考了训练数据中的其他规律。"}
+
+
+# 应用域档位说明：把「模型在哪适用」从被动免责升级为主动量化披露
+_AD_LEVELS = {
+    "in": {"name": "应用域内", "color": "#2e7d5b",
+           "say": "该成分与模型训练集高度相似，预测结果可靠性较好"},
+    "edge": {"name": "应用域边缘", "color": "#c98a2d",
+             "say": "该成分与训练集相似度偏低，预测结果建议仅作参考"},
+    "out": {"name": "应用域外", "color": "#b04a3a",
+            "say": "该成分在训练集中缺乏相似样本，模型预测可靠性有限，请谨慎解读"},
+}
+
+
+def _applicability(row) -> dict | None:
+    """应用域标注。未计算过（旧库无此列）则返回 None，前端不显示该区块。"""
+    level = row["ad_level"]
+    if level is None:
+        return None
+    info = _AD_LEVELS.get(level, _AD_LEVELS["edge"])
+    return {
+        "level": level,
+        "name": info["name"],
+        "color": info["color"],
+        "say": info["say"],
+        "max_sim": row["max_sim_to_train"],
+        "nearest": row["ad_nearest"],
+        "note": "应用域 = 该成分与模型训练集的最大结构相似度（Morgan 指纹 Tanimoto）。"
+                "相似度越低，模型越可能没见过这类结构，预测越不可靠。",
+    }

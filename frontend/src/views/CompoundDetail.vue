@@ -90,7 +90,43 @@ function goRecipe(id) { router.push(`/recipes/${id}`) }
         <p class="cd-note">{{ data.note }}</p>
       </div>
 
-      <!-- 4. 关联药材 -->
+      <!-- 3. 应用域（这个预测有多可信） -->
+      <div class="card" v-if="data.applicability">
+        <b class="cd-sec">模型可信度 · 应用域
+          <span class="cd-ad-badge" :style="{ background: data.applicability.color }">{{ data.applicability.name }}</span>
+        </b>
+        <p class="cd-ad-say">{{ data.applicability.say }}</p>
+        <div class="cd-ad-bar">
+          <i :style="{ width: `${Math.round((data.applicability.max_sim || 0) * 100)}%`, background: data.applicability.color }"></i>
+        </div>
+        <p class="cd-ad-meta">
+          与训练集最大相似度 <b>{{ (data.applicability.max_sim ?? 0).toFixed(3) }}</b>
+          <template v-if="data.applicability.nearest"> · 最相近的训练集成分：{{ data.applicability.nearest }}</template>
+        </p>
+        <p class="cd-note">{{ data.applicability.note }}</p>
+      </div>
+
+      <!-- 4. ChEMBL 实验活性（L1/L2 实测证据） -->
+      <div class="card" v-if="data.chembl && data.chembl.activities.length">
+        <b class="cd-sec">实验实测活性
+          <span class="cd-sec-sub">（ChEMBL · 体外测定，非疗效结论）</span>
+        </b>
+        <p class="cd-chembl-head">
+          {{ data.chembl.chembl_id }} · {{ data.chembl.target_count }} 个蛋白靶点有实验数据
+          <template v-if="data.chembl.strong_count"> · 其中 <b>{{ data.chembl.strong_count }}</b> 个为强证据（pChEMBL ≥ 6）</template>
+        </p>
+        <div v-for="(a, i) in data.chembl.activities" :key="i" class="cd-act">
+          <div class="cd-act-head">
+            <b>{{ a.target_name }}</b>
+            <span class="cd-act-lv" :class="a.evidence_level === 'L1' ? 'lv1' : 'lv2'">{{ a.evidence_level }}</span>
+          </div>
+          <span class="cd-act-val">{{ a.activity_type }} = {{ a.activity_value }}{{ a.activity_unit || '' }} · pChEMBL {{ a.pchembl }}</span>
+        </div>
+        <p class="cd-note">以上为该成分在体外实验中对特定蛋白测得的活性（Ki/IC50 等），属实验证据（L1/L2）；
+          体外活性不等同于人体内功效，更不代表食疗效果。</p>
+      </div>
+
+      <!-- 5. 关联药材 -->
       <div class="card" v-if="data.herbs.length">
         <b class="cd-sec">存在于这些药材（{{ data.herbs.length }}）</b>
         <div class="cd-chips">
@@ -98,7 +134,7 @@ function goRecipe(id) { router.push(`/recipes/${id}`) }
         </div>
       </div>
 
-      <!-- 5. 关联靶点 -->
+      <!-- 6. 关联靶点 -->
       <div class="card" v-if="data.targets.length">
         <b class="cd-sec">关联靶点<span class="cd-sec-sub">（人类蛋白，前 {{ data.targets.length }} 个）</span></b>
         <div class="cd-targets">
@@ -109,7 +145,7 @@ function goRecipe(id) { router.push(`/recipes/${id}`) }
         </div>
       </div>
 
-      <!-- 6. 出现在哪些方子 -->
+      <!-- 7. 出现在哪些方子 -->
       <div class="card" v-if="data.recipes.length">
         <b class="cd-sec">喝这些方子会摄入它</b>
         <button v-for="r in data.recipes" :key="r.id" class="cd-recipe" @click="goRecipe(r.id)">
@@ -172,6 +208,24 @@ function goRecipe(id) { router.push(`/recipes/${id}`) }
 .cd-recipe:active { background: var(--green-50); }
 .cd-recipe-name { font-size: 14px; color: var(--ink-900); font-weight: 500; }
 .cd-recipe-sub { font-size: 11.5px; color: var(--ink-400); }
+
+/* 应用域 */
+.cd-ad-badge { font-size: 11px; color: #fff; padding: 2px 9px; border-radius: 10px; margin-left: 6px; font-weight: 400; }
+.cd-ad-say { font-size: 13px; color: var(--ink-700); margin-top: 8px; line-height: 1.6; }
+.cd-ad-bar { height: 6px; border-radius: 3px; background: var(--green-100); overflow: hidden; margin: 10px 0 6px; }
+.cd-ad-bar i { display: block; height: 100%; border-radius: 3px; transition: width .4s ease; }
+.cd-ad-meta { font-size: 11.5px; color: var(--ink-500); font-variant-numeric: tabular-nums; }
+
+/* ChEMBL 实验活性 */
+.cd-chembl-head { font-size: 12px; color: var(--ink-500); margin-top: 6px; line-height: 1.6; }
+.cd-act { padding: 9px 0; border-bottom: 1px solid var(--green-100); }
+.cd-act:last-of-type { border-bottom: none; }
+.cd-act-head { display: flex; align-items: center; gap: 6px; justify-content: space-between; }
+.cd-act-head b { font-size: 13px; color: var(--ink-900); font-weight: 500; }
+.cd-act-lv { font-size: 10px; padding: 1px 7px; border-radius: 8px; color: #fff; flex-shrink: 0; }
+.cd-act-lv.lv1 { background: var(--green-700); }
+.cd-act-lv.lv2 { background: var(--amber-600, #c98a2d); }
+.cd-act-val { display: block; font-size: 11.5px; color: var(--ink-500); margin-top: 3px; font-variant-numeric: tabular-nums; }
 
 .sk-line { height: 13px; border-radius: 6px; margin-bottom: 10px; }
 .sk-line.w50 { width: 50%; } .sk-line.w90 { width: 90%; } .sk-line.w80 { width: 80%; }

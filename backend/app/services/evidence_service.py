@@ -5,8 +5,13 @@
 
 等级定义（对齐循证医学惯例做科普化）：
   A  权威典籍/官方目录 —— 药食同源目录（卫健委公告）、药典功效、权威媒体中医师出处（方子来源）
-  B  实验数据库 —— TCMSP/CTD/KEGG/BindingDB/PubChem/DrugBank 的成分-靶点关系（PMID 可溯源）
+  B  实验数据库 —— TCMSP/CTD/KEGG/BindingDB/PubChem/DrugBank/ChEMBL 的成分-靶点关系（PMID 可溯源）
   C  模型预测 —— 入血概率（PU-Learning 模型，课题自研，给出模型特征而非文献）
+
+补充：成分级的「实验活性强度」另有一套 L1/L2 标（compound_chembl_activity.evidence_level）：
+  L1  pChEMBL >= 6（IC50/Ki <= 1 μM，强实验证据）
+  L2  5 <= pChEMBL < 6（中等活性）
+  两套体系不冲突：A/B/C 说「出处类型」，L1/L2 说「实验活性有多强」。
 """
 import json
 import sqlite3
@@ -18,7 +23,7 @@ LEVELS = {
     "A": {"name": "权威出处", "color": "#2e7d5b",
           "desc": "卫健委药食同源目录、药典功效或权威媒体中医师出处"},
     "B": {"name": "实验数据库", "color": "#c98a2d",
-          "desc": "TCMSP/CTD/KEGG/BindingDB/PubChem/DrugBank 收录的成分-靶点关系，附文献编号"},
+          "desc": "TCMSP/CTD/KEGG/BindingDB/PubChem/DrugBank/ChEMBL 收录的成分-靶点关系，附文献编号"},
     "C": {"name": "模型预测", "color": "#8a978f",
           "desc": "课题 PU-Learning 入血预测模型输出，非文献直接结论"},
 }
@@ -92,6 +97,24 @@ def recipe_evidence(rid: int) -> dict | None:
                     b_items.append({"what": "文献编号 PMID",
                                     "text": f"{p['compound']} ↔ {p['target_gene']}（PMID {p['reference']}）",
                                     "url": f"https://pubmed.ncbi.nlm.nih.gov/{p['reference']}/"})
+            # ChEMBL 实验活性汇总（体外实测，区别于上述数据库关联）
+            conn = _db()
+            try:
+                ch = conn.execute(
+                    f"SELECT COUNT(DISTINCT cca.compound_id) AS n_comp, "
+                    f"COUNT(*) AS n_act, "
+                    f"SUM(CASE WHEN cca.evidence_level='L1' THEN 1 ELSE 0 END) AS n_l1 "
+                    f"FROM compound_chembl_activity cca JOIN compound c ON c.id=cca.compound_id "
+                    f"WHERE c.name IN ({ph})", names).fetchone()
+            finally:
+                conn.close()
+            if ch and ch["n_act"]:
+                b_items.append({
+                    "what": "ChEMBL 实验活性",
+                    "text": f"本方 {ch['n_comp']} 个成分有 {ch['n_act']} 条体外实测活性记录"
+                            f"（其中 {ch['n_l1'] or 0} 条为强证据 pChEMBL≥6）",
+                    "url": "https://www.ebi.ac.uk/chembl/",
+                })
 
     # ---- C 级：入血概率模型说明 ----
     c_items = [{"what": "PU-Learning 入血预测", "text":

@@ -1,15 +1,23 @@
 # -*- coding: utf-8 -*-
 """
 暴露量估计服务：配料克重 × 药材-成分含量(%) → 每方各成分的估计摄入量(mg)
-公式：摄入量mg = 克重g × 含量% × 1000/100 × 转移率(冲泡/炖煮默认保守 0.5)
+公式：摄入量mg = 克重g × 含量% × 1000/100 × 转移率(冲泡/炖煮)
 吸收期望mg = 摄入量mg × 入血概率(prob_cctcm, PU-Learning 预测) —— C级证据，页面须标注"预测"
-结果为保守估计区间 [min, max]，页面标注"估计值"。
+
+转移率不再用单一常数，而是给三档情景（保守/基准/乐观）：
+  低 0.3 / 中 0.5 / 高 0.7 —— 区间取自文献常见范围，与定量药理课件
+  「不确定的输入取多个值跑一遍、输出区间而非单点」的规范一致。
+含量本身也有 [min, max] 区间，两者组合即得每个成分的暴露量区间。
 """
 import sqlite3
 from pathlib import Path
 
 DB = Path(__file__).resolve().parents[3] / "data" / "shiyang.db"
-TRANSFER_RATE = 0.5  # 水提取转移率（保守假设，文献常见 0.3-0.7）
+
+# 水提取转移率三档情景（保守假设，文献常见 0.3-0.7）
+TRANSFER_LOW = 0.3
+TRANSFER_BASE = 0.5
+TRANSFER_HIGH = 0.7
 
 
 def estimate(recipe_id: int) -> dict | None:
@@ -32,23 +40,34 @@ def estimate(recipe_id: int) -> dict | None:
                 "LEFT JOIN compound c ON c.name = hc.compound_name "
                 "WHERE hc.herb_name=?", (m["name"],)).fetchall()
             for r in rows:
-                lo = m["grams"] * r["content_min_pct"] / 100 * 1000 * TRANSFER_RATE
-                hi = m["grams"] * r["content_max_pct"] / 100 * 1000 * TRANSFER_RATE
+                g = m["grams"]
+                cmin = r["content_min_pct"] / 100 * 1000
+                cmax = r["content_max_pct"] / 100 * 1000
+                # 摄入量三档：含量区间 × 转移率区间 → 保守下界 / 基准 / 乐观上界
+                lo = g * cmin * TRANSFER_LOW
+                mid = g * ((cmin + cmax) / 2) * TRANSFER_BASE
+                hi = g * cmax * TRANSFER_HIGH
                 prob = r["prob_cctcm"]
-                item = {"herb": m["name"], "grams": m["grams"],
+                item = {"herb": m["name"], "grams": g,
                         "compound": r["compound_name"],
-                        "est_mg_min": round(lo, 2), "est_mg_max": round(hi, 2)}
+                        "est_mg_min": round(lo, 2),
+                        "est_mg_base": round(mid, 2),
+                        "est_mg_max": round(hi, 2)}
                 # 入血概率能对上 compound 主表才给吸收期望，对不上的只给摄入量
                 if prob is not None:
-                    # 概率保留 4 位，吸收期望用全精度计算，避免二次舍入误差
                     item["prob_cctcm"] = round(prob, 4)
                     item["absorbed_mg_min"] = round(lo * prob, 2)
+                    item["absorbed_mg_base"] = round(mid * prob, 2)
                     item["absorbed_mg_max"] = round(hi * prob, 2)
                 out.append(item)
         out.sort(key=lambda x: -x["est_mg_max"])
-        return {"transfer_rate": TRANSFER_RATE, "items": out[:15],
-                "note": "估计值 = 克重 × 文献含量区间 × 50%转移率假设；"
-                        "吸收期望 = 摄入量 × 入血概率（PU-Learning 模型预测，C级证据）；"
-                        "仅代表数量级参考"}
+        return {
+            "transfer_rate": TRANSFER_BASE,
+            "transfer_scenarios": {"low": TRANSFER_LOW, "base": TRANSFER_BASE, "high": TRANSFER_HIGH},
+            "items": out[:15],
+            "note": "估计值 = 克重 × 文献含量区间 × 转移率（保守0.3/基准0.5/乐观0.7 三档）；"
+                    "吸收期望 = 摄入量 × 入血概率（PU-Learning 模型预测，C级证据）；"
+                    "仅代表数量级参考，不是药代动力学测定",
+        }
     finally:
         conn.close()

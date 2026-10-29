@@ -236,7 +236,7 @@ async function toggleCheckin() {
               <div v-for="(e, i) in exposure.items.slice(0, 8)" :key="e.compound + i" class="exp-row">
                 <span class="e-comp">{{ e.compound }}</span>
                 <span class="e-src">{{ e.herb }} {{ e.grams }}g</span>
-                <span class="e-val">≈ {{ e.est_mg_min }}–{{ e.est_mg_max }} mg</span>
+                <span class="e-val">≈ {{ e.est_mg_min }}–{{ e.est_mg_max }} mg<small v-if="e.est_mg_base != null" class="e-mid">（基准 {{ e.est_mg_base }}）</small></span>
                 <span v-if="e.absorbed_mg_max != null" class="e-abs">吸收 {{ e.absorbed_mg_min }}–{{ e.absorbed_mg_max }} mg · 入血概率 {{ e.prob_cctcm }}</span>
               </div>
               <p class="a-disclaimer">{{ exposure.note }}</p>
@@ -482,6 +482,7 @@ async function toggleCheckin() {
 .e-comp { font-weight: 600; }
 .e-src { color: var(--ink-400); font-size: 11.5px; }
 .e-val { font-variant-numeric: tabular-nums; color: var(--ink-600); }
+.e-mid { color: var(--ink-400); font-size: 11px; margin-left: 2px; }
 .e-abs { flex-basis: 100%; font-size: 11.5px; color: var(--green-text); font-variant-numeric: tabular-nums; }
 .exp-row:last-child { border-bottom: none; }
 
