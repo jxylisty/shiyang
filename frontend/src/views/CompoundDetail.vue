@@ -90,7 +90,7 @@ function goRecipe(id) { router.push(`/recipes/${id}`) }
         <p class="cd-note">{{ data.note }}</p>
       </div>
 
-      <!-- 3. 应用域（这个预测有多可信） -->
+      <!-- 3. 模型可信度 · 应用域 -->
       <div class="card" v-if="data.applicability">
         <b class="cd-sec">模型可信度 · 应用域
           <span class="cd-ad-badge" :style="{ background: data.applicability.color }">{{ data.applicability.name }}</span>
@@ -104,6 +104,29 @@ function goRecipe(id) { router.push(`/recipes/${id}`) }
           <template v-if="data.applicability.nearest"> · 最相近的训练集成分：{{ data.applicability.nearest }}</template>
         </p>
         <p class="cd-note">{{ data.applicability.note }}</p>
+      </div>
+
+      <!-- 3b. 独立算法交叉验证 -->
+      <div class="card" v-if="data.cross_validation">
+        <b class="cd-sec">独立模型交叉验证
+          <span class="cd-ad-badge" :style="{ background: data.cross_validation.color }"> {{
+            data.cross_validation.level === 'both_high' ? '结论一致 · 高'
+            : data.cross_validation.level === 'both_low' ? '结论一致 · 低'
+            : data.cross_validation.level === 'main_only' ? '主模型单独高' : '独立模型单独高'
+          }}</span>
+        </b>
+        <p class="cd-ad-say">{{ data.cross_validation.say }}</p>
+        <div class="cd-bar-row">
+          <span class="cd-bar-label">主模型</span>
+          <div class="cd-bar"><i :style="{ width: `${Math.round((data.prob_cctcm || 0) * 100)}%`, background: probColor(data.prob_cctcm) }"></i></div>
+          <span class="cd-bar-val">{{ data.prob_cctcm }}</span>
+        </div>
+        <div class="cd-bar-row">
+          <span class="cd-bar-label">独立模型</span>
+          <div class="cd-bar"><i :style="{ width: `${Math.round((data.cross_validation.prob_indep || 0) * 100)}%`, background: data.cross_validation.color }"></i></div>
+          <span class="cd-bar-val">{{ data.cross_validation.prob_indep }}</span>
+        </div>
+        <p class="cd-note">{{ data.cross_validation.note }}</p>
       </div>
 
       <!-- 4. ChEMBL 实验活性（L1/L2 实测证据） -->

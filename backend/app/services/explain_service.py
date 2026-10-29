@@ -70,7 +70,7 @@ def compound_explain(name: str) -> dict | None:
         row = conn.execute(
             "SELECT id,name,smiles,mw,logp,prob_cctcm,prob_herb,target_count,"
             "max_sim_to_train,ad_level,ad_nearest,chembl_id,"
-            "chembl_target_count,chembl_strong_count FROM compound WHERE name=?",
+            "chembl_target_count,chembl_strong_count,prob_indep FROM compound WHERE name=?",
             (name,)).fetchone()
         if not row:
             return None
@@ -123,6 +123,7 @@ def compound_explain(name: str) -> dict | None:
             "strong_count": row["chembl_strong_count"] or 0,
             "activities": chembl_acts,
         },
+        "cross_validation": _cross_validation(row),
         "rule_summary": f"Lipinski 口服有利特征 {n_pass}/{len(feats)} 项命中",
         "note": "以上为模型判断依据的科普化展示（特征区间），非严格贡献值；"
                 "模型为课题自研 PU-Learning 入血预测，prob 越高表示越可能被吸收入血。",
@@ -191,4 +192,53 @@ def _applicability(row) -> dict | None:
         "nearest": row["ad_nearest"],
         "note": "应用域 = 该成分与模型训练集的最大结构相似度（Morgan 指纹 Tanimoto）。"
                 "相似度越低，模型越可能没见过这类结构，预测越不可靠。",
+    }
+
+
+def _indep_threshold(conn) -> float:
+    """独立模型工作阈值（meta 表；未标定则回落 0.5）。
+    注意 sqlite 只读连接同样可查 meta。"""
+    try:
+        r = conn.execute("SELECT value FROM meta WHERE key='indep_threshold'").fetchone()
+        return float(r[0]) if r else 0.5
+    except sqlite3.Error:
+        return 0.5
+
+
+def _cross_validation(row) -> dict | None:
+    """独立算法族交叉验证一致性标注。
+    未跑过独立验证（prob_indep 为空）返回 None，前端不显示。"""
+    p_indep = row["prob_indep"]
+    p_main = row["prob_cctcm"]
+    if p_indep is None or p_main is None:
+        return None
+    # 一致性按双高判定：主模型 ≥0.7 且独立模型 ≥ 其工作阈值
+    # （阈值由训练脚本按 XGB Youden J 标定，存 meta 表）
+    conn = _db()
+    try:
+        thr = _indep_threshold(conn)
+    finally:
+        conn.close()
+    hi_main = p_main >= 0.7
+    hi_indep = p_indep >= thr
+    if hi_main and hi_indep:
+        level, color = "both_high", "#2e7d5b"
+        say = "主模型与独立模型都判它大概率入血——两套算法结论一致，可靠性较好"
+    elif not hi_main and not hi_indep:
+        level, color = "both_low", "#8a978f"
+        say = "主模型与独立模型都认为它入血可能性低——结论一致"
+    elif hi_main:
+        level, color = "main_only", "#c98a2d"
+        say = "主模型认为大概率入血，但独立算法模型持保留意见——多见于皂苷等大分子"
+    else:
+        level, color = "indep_only", "#c98a2d"
+        say = "独立模型认为可能入血，主模型较保守——建议结合实验数据判断"
+    return {
+        "level": level, "color": color, "say": say,
+        "prob_indep": round(p_indep, 4),
+        "threshold": thr,
+        "note": "独立验证 = 用逻辑回归/XGBoost/神经网络三个与主模型不同族的算法，"
+                "在同一数据上独立训练（标准二分类协议），再对比两者判断。"
+                "一致性 73%（Spearman 0.58）；分歧集中在皂苷类，"
+                "源于两类模型对未标注样本的处理协议不同（PU 学习 vs 标准二分类），详见模型说明文档。",
     }
