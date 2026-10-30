@@ -6,6 +6,25 @@
 
 与大创课题（`../my-asthma-system/`）的关系：本平台是**独立新产品**，转化复用大创课题的技术成果——PU-Learning 入血预测模型与分析管线。产品定位为全场景药食同源食养参考（护嗓/助眠/消化/护眼等），不绑定任何单一病种；三维机制评分维度沿用大创课题靶点富集框架，作为成分生物活性的一般性参考展示。
 
+## 产品预览
+
+移动端优先设计，药食同源视觉风格。以下为 2026-10-30 真实数据实测截图：
+
+<table>
+  <tr>
+    <td align="center"><b>首页</b><br><sub>场景入口 + 今日推荐 + 节气食养</sub><br><br><img src="docs/screenshots/01-home.png" width="220" alt="首页"></td>
+    <td align="center"><b>方子库</b><br><sub>场景/体质/安全滤镜多维筛选</sub><br><br><img src="docs/screenshots/02-recipes.png" width="220" alt="方子库"></td>
+    <td align="center"><b>方子详情</b><br><sub>配料克重 + 成分暴露量估计</sub><br><br><img src="docs/screenshots/03-recipe-detail.png" width="220" alt="方子详情"></td>
+  </tr>
+  <tr>
+    <td align="center"><b>成分词典</b><br><sub>双模型入血概率 + Lipinski 解读</sub><br><br><img src="docs/screenshots/04-compound.png" width="220" alt="成分详情"></td>
+    <td align="center"><b>化学空间地图</b><br><sub>UMAP 降维 · 165 成分可视化</sub><br><br><img src="docs/screenshots/05-chem-map.png" width="220" alt="化学空间地图"></td>
+    <td align="center"><b>体质测评</b><br><sub>67 题 CCMQ 量表 · 九种体质</sub><br><br><img src="docs/screenshots/06-quiz.png" width="220" alt="体质测评"></td>
+  </tr>
+</table>
+
+更多页面截图见 [`docs/screenshots/`](docs/screenshots/)。
+
 **数据规模口径（务必区分，2026-10-26 实测）**：
 - 大创原始库（`../my-asthma-system/`）：278 味药材 / 569 化合物 / 7398 靶点——课题全量，本仓库不含；
 - 本产品库（`data/shiyang.db`，2026-10 药材-成分归属重建后）：**34 味**（药食同源目录命中药材）/ **165 化合物** / **2807 人类蛋白靶点**（成分-靶点关联 12168 条）/ **73 方**（69 方有成分分析）/ **39 食物** / **9 体质**。
