@@ -116,6 +116,21 @@ HBuilderX 图形界面：打开 `shiyang-app5` 项目 → 发行 → 原生App-�
    HBuilderX 可能自动退出，要重新 `cli open`。
 6. **签名证书不能丢**。APK 更新必须用同一个 keystore，否则手机上报签名冲突、无法覆盖安装。
    `shiyang-app/certs/shiyang.keystore` + 口令 `shiyang2026`，请离线备份，**不要提交到公开仓库**。
+7. **Android 9+ 默认禁止明文 HTTP**（真机实测踩到：装上去界面在、数据全空）。
+   联调后端是 `http://<局域网IP>:8100`，不加配置的话请求会被系统直接拦掉，
+   表现很像「后端没开」，但其实是客户端拒发。manifest 的 `plus` 段必须有：
+
+   ```json
+   "plus": {
+     "android": { "usesCleartextTraffic": true }
+   }
+   ```
+
+   正式上线换 HTTPS 后可以关掉这一项。
+8. **「没数据」先分三步查**，别急着改代码：
+   `netstat -ano | grep :8100` 看后端是否真的在跑 → 用浏览器/curl 直连
+   `http://<IP>:8100/api/v1/health` 确认局域网可达 → 以上都通再怀疑客户端配置（即上面第 7 条）。
+   注意本机若挂了系统代理，用 curl/python 测局域网地址会报 502，要显式绕开代理再测。
 
 ## 四、当前状态与限制
 
