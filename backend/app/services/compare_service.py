@@ -7,6 +7,8 @@ import json
 import sqlite3
 from pathlib import Path
 
+from services import safety_service as safety
+
 DB_PATH = Path(__file__).resolve().parents[3] / "data" / "shiyang.db"
 
 JACCARD_LABELS = [(0.75, "高度重叠"), (0.45, "中度重叠"), (0.2, "部分重叠"), (0.0, "几乎不同")]
@@ -119,6 +121,36 @@ def compare(a_id: int, b_id: int) -> dict | None:
                 "warn_a": sorted(set(a["constitutions_unsuitable"]) & set(b["constitutions_suitable"])),
                 "warn_b": sorted(set(b["constitutions_unsuitable"]) & set(a["constitutions_suitable"])),
             },
+            "conflicts": _conflicts(a, b),
         }
     finally:
         conn.close()
+
+
+def _conflicts(a: dict, b: dict) -> dict:
+    """叠加/人群冲突提示（只陈述事实，不设剂量阈值——阈值属医疗判断，平台不做）。
+
+    shared_materials: 双方共有配料及各自克重；两边克重已知时给出合计，提示同日饮用酌减。
+    safety: 复用 safety_service 的 5 类人群档案逐方检查，任一方非 pass 才列出。
+    """
+    ga = {m["name"]: m.get("grams") for m in a["materials"]}
+    gb = {m["name"]: m.get("grams") for m in b["materials"]}
+    shared = []
+    for name in sorted(set(ga) & set(gb)):
+        va, vb = ga[name], gb[name]
+        shared.append({
+            "name": name, "grams_a": va, "grams_b": vb,
+            "total": round(va + vb, 1) if va is not None and vb is not None else None,
+        })
+
+    safety_hits = []
+    for code, prof in safety.PROFILES.items():
+        ra = safety.check_recipe(a["id"], code)
+        rb = safety.check_recipe(b["id"], code)
+        if (ra and ra["verdict"] != "pass") or (rb and rb["verdict"] != "pass"):
+            safety_hits.append({
+                "profile": code, "profile_name": prof["name"],
+                "a": {"verdict": ra["verdict"], "blocks": ra["blocks"], "warns": ra["warns"]} if ra else None,
+                "b": {"verdict": rb["verdict"], "blocks": rb["blocks"], "warns": rb["warns"]} if rb else None,
+            })
+    return {"shared_materials": shared, "safety": safety_hits}
