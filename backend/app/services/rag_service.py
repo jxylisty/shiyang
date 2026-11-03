@@ -170,7 +170,8 @@ def _herb_full(conn, herb_ids: list[str]):
 
 def _herb_top_compounds(conn, herb_id: str, limit: int) -> list:
     return conn.execute(
-        "SELECT c.name, c.prob_cctcm, c.target_count FROM rel_herb_compound hc "
+        # 归属关系统一读 v3 修复表（旧 rel_herb_compound 为错乱表，禁用）
+        "SELECT c.name, c.prob_cctcm, c.target_count FROM rel_herb_compound_v3 hc "
         "JOIN compound c ON c.id=hc.compound_id WHERE hc.herb_id=? AND c.prob_cctcm IS NOT NULL "
         "ORDER BY c.prob_cctcm DESC LIMIT ?", (herb_id, limit)).fetchall()
 
