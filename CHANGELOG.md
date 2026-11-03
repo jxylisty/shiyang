@@ -84,7 +84,7 @@
 | 提交 | 功能 | 关键文件 | 验证 |
 |---|---|---|---|
 | （数据，无提交） | 通路富集补跑：8 个缺 `recipe_pathway` 的方子补齐——1 方（温阳暖身茶）ok 8 通路，7 方基因数 0 记 `insufficient`（诚实状态非缺失）；4 方（#25/66/69/72）配料全不在 34 味库内，保持 `analysis_ready=0` 不改 | `data/shiyang.db` | `pregen_pathways.py` 运行记录：62 ok / 7 insufficient |
-| `61b7b71` | 配料克重补录：15 条「原文为颗/枚/片/朵」按通识单件重保守换算（3~5克取下限 3g），note 全部追加「编辑换算，待医药审校」标注；68 条原文无量保持 NULL 不猜 | `scripts/fill_missing_grams.py` `docs/克重补录报告.md` | dry-run 与 --apply 结果一致；NULL 83→68 ✅。性质为编辑性规则（AGENTS §2.5），**发布前需真人医药审校** |
+| （撤销） | 克重换算尝试已回退：15 条「颗/枚/片/朵」按通识换算的克重全部还原为 NULL，备注同步清理；原文未标克重的 83 条一律保持空白，**不做编辑换算** | — | 还原后 `grams IS NULL` 回落至 83 条、note 无残留 ✅ |
 | `080e81d` | 药材-成分归属统一到 v3：`rag_service` 此前仍读旧错乱表 `rel_herb_compound`（活 bug）已修；`explain_service`/证据链端点由 v2 切 v3（两表内容一致，v3 为权威）；新增一致性自检脚本并重算 33 行 `herb.compound_count` + 10 行 `compound.target_count` | `main.py` `explain_service.py` `rag_service.py` `scripts/check_consistency.py` | TestClient 冒烟：health/recipes/detail/chain 全 200，chain 26 节点 70 边；自检脚本退出码 0 ✅ |
 | `74a1ed4` | axios 全局响应拦截：401 清会话跳登录页（带回跳地址，web/hash 两模式兼容，登录页不重复跳）；错误对象原样透传不破坏各页面 `e.response` 分支 | `api/index.js` | build ✅ |
 | `acad9ca` | RecipeDetail 瘦身：echarts 按需引入（GraphChart/SankeyChart + 所需组件）+ qrcode 改弹层打开时动态加载 | `NetworkGraph.vue` `EvidenceChain.vue` `SharePoster.vue` | RecipeDetail chunk **1150 kB → 533 kB**（gzip 384 → 180），build ✅ |
