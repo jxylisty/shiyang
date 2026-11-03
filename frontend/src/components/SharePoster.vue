@@ -3,7 +3,7 @@
 // 打开弹层时才拉取配方并懒绘制，避免进详情页就白跑一次请求
 // P2：右下角加站点二维码（qrcode 包本地生成 dataURL，扫码直达当前站点）
 import { ref, watch, onMounted, onUnmounted } from 'vue'
-import QRCode from 'qrcode'
+// qrcode 改为打开弹层时动态加载（约 20KB gz），不进详情页首包
 import { getRecipe } from '../api'
 
 const props = defineProps({ recipeId: [String, Number] })
@@ -35,6 +35,7 @@ watch(show, async (open) => {
 
 async function drawQr(ctx, x, y, size) {
   try {
+    const { default: QRCode } = await import('qrcode')
     const dataUrl = await QRCode.toDataURL(window.location.origin, {
       width: 240, margin: 1, color: { dark: '#1d4a38', light: '#ffffff' },
     })
