@@ -22,6 +22,28 @@ authApi.interceptors.request.use((cfg) => {
   return cfg
 })
 
+// ---- 全局响应拦截 ----
+// 401（未登录/token过期）：清会话并跳登录页，带上回跳地址；已在登录页则不重复跳。
+// 其余错误原样透传（各页面仍在用 e.response.status / detail 做分支，不能改写错误对象）。
+function redirectToLogin() {
+  const isApp = import.meta.env.MODE === 'app'
+  const cur = isApp ? (window.location.hash.slice(1) || '/') : window.location.pathname
+  if (cur.startsWith('/login')) return
+  const target = `/login?redirect=${encodeURIComponent(cur)}`
+  if (isApp) window.location.hash = `#${target}`
+  else window.location.assign(target)
+}
+function onRespError(err) {
+  if (err.response?.status === 401) {
+    localStorage.removeItem('shiyang_token')
+    localStorage.removeItem('shiyang_user')
+    redirectToLogin()
+  }
+  return Promise.reject(err)
+}
+api.interceptors.response.use((r) => r, onRespError)
+authApi.interceptors.response.use((r) => r, onRespError)
+
 // ---- 公开接口 ----
 export const getQuestionnaire = () => api.get('/constitution/questionnaire')
 export const submitQuiz = (answers) => api.post('/constitution/submit', { answers })
