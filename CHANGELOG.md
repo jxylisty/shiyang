@@ -78,3 +78,17 @@
 | 本提交 | `streamAIReport` 的用户 Key 从 URL query 改 `X-AI-Key` 头（还债：不进 URL/日志） | `api/index.js` | build ✅ |
 
 **本线回归基线（2026-10-27 实测）**：端点 49 路径 / **53 端点**（`app.openapi()`）；单测 **67 passed**；vite build 通过。AI 链路只走本机 ZeroGate 网关（key=zerogate），不接触用户密钥文件。
+
+## 数据质量与体验优化线（2026-11-03，分支 feat/data-and-ux-improvements）
+
+| 提交 | 功能 | 关键文件 | 验证 |
+|---|---|---|---|
+| （数据，无提交） | 通路富集补跑：8 个缺 `recipe_pathway` 的方子补齐——1 方（温阳暖身茶）ok 8 通路，7 方基因数 0 记 `insufficient`（诚实状态非缺失）；4 方（#25/66/69/72）配料全不在 34 味库内，保持 `analysis_ready=0` 不改 | `data/shiyang.db` | `pregen_pathways.py` 运行记录：62 ok / 7 insufficient |
+| `61b7b71` | 配料克重补录：15 条「原文为颗/枚/片/朵」按通识单件重保守换算（3~5克取下限 3g），note 全部追加「编辑换算，待医药审校」标注；68 条原文无量保持 NULL 不猜 | `scripts/fill_missing_grams.py` `docs/克重补录报告.md` | dry-run 与 --apply 结果一致；NULL 83→68 ✅。性质为编辑性规则（AGENTS §2.5），**发布前需真人医药审校** |
+| `080e81d` | 药材-成分归属统一到 v3：`rag_service` 此前仍读旧错乱表 `rel_herb_compound`（活 bug）已修；`explain_service`/证据链端点由 v2 切 v3（两表内容一致，v3 为权威）；新增一致性自检脚本并重算 33 行 `herb.compound_count` + 10 行 `compound.target_count` | `main.py` `explain_service.py` `rag_service.py` `scripts/check_consistency.py` | TestClient 冒烟：health/recipes/detail/chain 全 200，chain 26 节点 70 边；自检脚本退出码 0 ✅ |
+| `74a1ed4` | axios 全局响应拦截：401 清会话跳登录页（带回跳地址，web/hash 两模式兼容，登录页不重复跳）；错误对象原样透传不破坏各页面 `e.response` 分支 | `api/index.js` | build ✅ |
+| `acad9ca` | RecipeDetail 瘦身：echarts 按需引入（GraphChart/SankeyChart + 所需组件）+ qrcode 改弹层打开时动态加载 | `NetworkGraph.vue` `EvidenceChain.vue` `SharePoster.vue` | RecipeDetail chunk **1150 kB → 533 kB**（gzip 384 → 180），build ✅ |
+| `c839bcb` | 对比页「同饮注意」：共有配料克重合计（两边已知才合计，只陈述事实不设阈值）+ 复用 safety 词表的 5 类人群冲突提示 | `compare_service.py` `CompareLab.vue` | TestClient：1v8 人群命中（控糖/孕期 block B），1v2 共有配料合计（桔梗 20g 等）正确；build ✅ |
+| `e960d86` | 详情页「家人适配」：登录用户按每位成员（含本人）最新体质档案对照本方适宜/不宜体质，未登录不渲染 | `FamilyFit.vue`（新） `RecipeDetail.vue` | build ✅；交互为纯前端组装既有 `/constitution/records` 数据，浏览器目检未做 |
+
+**本线回归基线（2026-11-03 实测）**：端点 49 路径 / 53 端点不变（纯服务层改造）；vite build 通过；`scripts/check_consistency.py` 全绿。**单测（pytest 67 基线）因沙箱限制未跑，需在本机 PowerShell 复测后随 PR 记录**。另：`rel_herb_compound` 旧错乱表（201 行）仍在库中、代码已全部禁用，下次重建数据库时删除。
