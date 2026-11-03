@@ -11,6 +11,7 @@ import NetworkGraph from '../components/NetworkGraph.vue'
 import EvidenceChain from '../components/EvidenceChain.vue'
 import SharePoster from '../components/SharePoster.vue'
 import SafetyBanner from '../components/SafetyBanner.vue'
+import FamilyFit from '../components/FamilyFit.vue'
 import EvidenceCard from '../components/EvidenceCard.vue'
 import ExplainPanel from '../components/ExplainPanel.vue'
 
@@ -257,6 +258,7 @@ async function toggleCheckin() {
             <p v-if="recipe.constitutions_unsuitable.length" style="margin-top:6px"><b>不宜体质：</b>{{ recipe.constitutions_unsuitable.join('、') }}</p>
             <p style="margin-top:6px"><b>适合人群：</b>{{ recipe.population }}</p>
             <p class="warn-box">{{ recipe.contraindication }}</p>
+            <FamilyFit :suitable="recipe.constitutions_suitable" :unsuitable="recipe.constitutions_unsuitable" />
           </div>
 
           <!-- 来源 -->
