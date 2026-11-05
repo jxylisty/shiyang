@@ -59,7 +59,8 @@ app.include_router(open_api.router)
 
 
 def ok(data=None, message="success"):
-    return {"code": 0, "message": message, "data": data}
+    # 统一在信封层挂免责声明：AGENTS.md 红线要求每个接口响应都带，逐端点补容易漏
+    return {"code": 0, "message": message, "data": data, "disclaimer": DISCLAIMER}
 
 
 # ==================== 体质测评 ====================
@@ -667,6 +668,7 @@ async def ai_report(rid: int, key: str | None = Query(None), provider: str = "de
                     await asyncio.sleep(DELAY_MS / 1000)
             if buf:
                 yield f"data: {json.dumps({'delta': buf, 'source': 'pregen'}, ensure_ascii=False)}\n\n"
+            yield f"data: {json.dumps({'disclaimer': DISCLAIMER, 'source': 'pregen'}, ensure_ascii=False)}\n\n"
             yield "data: [DONE]\n\n"
 
         return StreamingResponse(replay(), media_type="text/event-stream",
@@ -676,6 +678,7 @@ async def ai_report(rid: int, key: str | None = Query(None), provider: str = "de
         try:
             async for chunk in ai.stream_chat(messages, key, provider, base_url, model):
                 yield f"data: {json.dumps({'delta': chunk}, ensure_ascii=False)}\n\n"
+            yield f"data: {json.dumps({'disclaimer': DISCLAIMER}, ensure_ascii=False)}\n\n"
             yield "data: [DONE]\n\n"
         except ai.AIConfigError as e:
             yield f"data: {json.dumps({'error': e.message, 'code': e.code}, ensure_ascii=False)}\n\n"

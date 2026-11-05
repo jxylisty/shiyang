@@ -35,6 +35,12 @@ def _meta(n_items: int = 0) -> dict:
             "items": n_items, **LICENSE}
 
 
+def _env(data: dict, n_items: int = 0) -> dict:
+    # 顶层也挂 disclaimer：主路由 ok() 统一挂在顶层，开放 API 保持一致以免调用方两套取法
+    return {"code": 0, "message": "success", "data": data,
+            "meta": _meta(n_items), "disclaimer": LICENSE["disclaimer"]}
+
+
 @router.get("")
 def index():
     """自描述索引：列出全部开放端点"""
@@ -47,7 +53,8 @@ def index():
         "stats": "/api/v1/open/stats —— 库存统计",
         "snapshot": "/api/v1/open/snapshot —— 全量数据集打包（catalog+herbs+compounds 一次拉取）",
     }
-    return {"code": 0, "message": "食养有据开放数据 API", "data": {"endpoints": endpoints, **LICENSE}}
+    return {"code": 0, "message": "食养有据开放数据 API",
+            "data": {"endpoints": endpoints, **LICENSE}, "disclaimer": LICENSE["disclaimer"]}
 
 
 @router.get("/catalog")
@@ -62,8 +69,7 @@ def catalog():
         conn.close()
     items = [dict(r) | {"alias": [a for a in (r["alias"] or "").replace("；", ";").split(";") if a]}
              for r in rows]
-    return {"code": 0, "message": "success",
-            "data": {"items": items}, "meta": _meta(len(items))}
+    return _env({"items": items}, len(items))
 
 
 @router.get("/herbs")
@@ -78,7 +84,7 @@ def herbs(limit: int = 300):
     finally:
         conn.close()
     items = [dict(r) for r in rows]
-    return {"code": 0, "message": "success", "data": {"items": items}, "meta": _meta(len(items))}
+    return _env({"items": items}, len(items))
 
 
 @router.get("/compounds")
@@ -97,9 +103,7 @@ def compounds(min_prob: float = 0.0, limit: int = 200):
     finally:
         conn.close()
     items = [dict(r) for r in rows]
-    return {"code": 0, "message": "success",
-            "data": {"query": {"min_prob": min_prob, "limit": limit}, "items": items},
-            "meta": _meta(len(items))}
+    return _env({"query": {"min_prob": min_prob, "limit": limit}, "items": items}, len(items))
 
 
 @router.get("/compounds/{name}/targets")
@@ -127,9 +131,7 @@ def compound_targets(name: str, species: str = "human"):
              for l in links]
     note = ("仅返回人类蛋白靶点（Homo sapiens）；传 species=all 可看全物种实验数据"
             if species == "human" else "含非人物种（小鼠/大鼠/斑马鱼等）实验数据，注意区分")
-    return {"code": 0, "message": "success",
-            "data": {"compound": dict(row), "targets": items, "note": note},
-            "meta": _meta(len(items))}
+    return _env({"compound": dict(row), "targets": items, "note": note}, len(items))
 
 
 @router.get("/constitutions")
@@ -142,7 +144,7 @@ def constitutions():
     finally:
         conn.close()
     items = [dict(r) for r in rows]
-    return {"code": 0, "message": "success", "data": {"items": items}, "meta": _meta(len(items))}
+    return _env({"items": items}, len(items))
 
 
 @router.get("/stats")
@@ -157,7 +159,7 @@ def stats():
             "SELECT COUNT(*) FROM rel_compound_target").fetchone()[0]
     finally:
         conn.close()
-    return {"code": 0, "message": "success", "data": out, "meta": _meta()}
+    return _env(out)
 
 
 @router.get("/snapshot")
@@ -175,6 +177,6 @@ def snapshot():
         conn.close()
     data = {"herbs": herbs, "compounds": compounds, "compound_target_links": links}
     n = len(herbs) + len(compounds) + len(links)
-    resp = JSONResponse({"code": 0, "message": "success", "data": data, "meta": _meta(n)})
+    resp = JSONResponse(_env(data, n))
     resp.headers["Content-Disposition"] = 'attachment; filename="shiyang-open-snapshot.json"'
     return resp

@@ -14,6 +14,7 @@ import SafetyBanner from '../components/SafetyBanner.vue'
 import FamilyFit from '../components/FamilyFit.vue'
 import EvidenceCard from '../components/EvidenceCard.vue'
 import ExplainPanel from '../components/ExplainPanel.vue'
+import DisclaimerBanner from '../components/DisclaimerBanner.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -369,6 +370,8 @@ async function toggleCheckin() {
           <ArrowUp :size="18" :stroke-width="2.2" />
         </button>
       </Transition>
+      <!-- 详情页收束：成分数据与推荐依据均属健康参考，需场景化声明（不只靠全局页脚） -->
+      <DisclaimerBanner variant="recipe" size="lg" style="margin-top: 18px;" />
     </template>
   </div>
 </template>

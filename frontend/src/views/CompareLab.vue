@@ -3,6 +3,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { FlaskConical, ArrowLeftRight, AlertTriangle } from '@lucide/vue'
 import { listRecipes, compareRecipes } from '../api'
+import DisclaimerBanner from '../components/DisclaimerBanner.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -254,6 +255,7 @@ function poly(vals) {
         </div>
       </div>
     </van-popup>
+    <DisclaimerBanner variant="recipe" style="margin-top: 16px;" />
   </div>
 </template>
 

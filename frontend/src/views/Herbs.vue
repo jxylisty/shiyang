@@ -3,6 +3,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import AppIcon from '../components/AppIcon.vue'
+import DisclaimerBanner from '../components/DisclaimerBanner.vue'
 import { listHerbs, matImg } from '../api'
 
 const route = useRoute()
@@ -108,7 +109,10 @@ const hideImg = (name) => { imgFailed.value[name] = true }
           <router-link to="/compounds" class="hd-goto">到成分库按「来源药材」继续查看<AppIcon name="chevron" :size="12" :stroke-width="2.4" /></router-link>
         </div>
         <p class="hd-note hd-in" style="--i: 4" v-if="active.food_catalog_batch">卫健委药食同源目录：第 {{ active.food_catalog_batch }} 批</p>
-        <button class="btn ghost block hd-close hd-in" style="--i: 5" @click="active = null">关闭</button>
+        <div class="hd-in" style="--i: 5">
+          <DisclaimerBanner variant="herb" />
+        </div>
+        <button class="btn ghost block hd-close hd-in" style="--i: 6" @click="active = null">关闭</button>
       </div>
     </van-popup>
   </div>

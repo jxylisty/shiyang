@@ -3,6 +3,7 @@
 // - 默认无 Key 直接生成 → 后端回放平台预生成的解读（SSE 节奏）
 // - 可选自带 DeepSeek/OpenAI Key → 实时个性化生成（Key 仅存本机浏览器，绝不提交后端存储）
 import { ref } from 'vue'
+import DisclaimerBanner from './DisclaimerBanner.vue'
 import { streamAIReport } from '../api'
 
 const props = defineProps({ recipeId: [String, Number] })
@@ -55,11 +56,16 @@ function saveKey() {
         <div class="ai-stream" key="stream">
           <p class="ai-text">{{ text }}<span v-if="phase === 'streaming'" class="cursor">▍</span></p>
           <p v-if="phase === 'streaming'" class="ai-status"><span class="ai-dots"></span>{{ source === 'pregen' ? 'AI 解读（预生成）加载中' : 'AI 正在解读' }}</p>
+          <!-- AI 生成内容必须标注来源（AGENTS.md §2.6）：完成后常驻，不随流式状态消失 -->
+          <p v-if="phase === 'done'" class="ai-src">
+            <span class="ai-src-tag">AI 生成</span>{{ source === 'pregen' ? '平台预生成的通用解读' : '基于你的 Key 实时生成' }}，仅供参考
+          </p>
           <p v-if="phase === 'error'" class="ai-err shake">{{ errMsg }}</p>
           <div class="ai-ops">
             <button v-if="phase !== 'streaming'" class="btn ghost" @click="phase = 'idle'">重新生成</button>
             <button v-if="phase === 'streaming'" class="btn ghost" @click="stop">停止</button>
           </div>
+          <DisclaimerBanner variant="ai" style="margin-top: 12px;" />
         </div>
       </Transition>
     </template>
@@ -99,5 +105,8 @@ function saveKey() {
 }
 @keyframes dots { to { width: 1.2em; } }
 .ai-err { font-size: 12.5px; color: var(--red-text); margin-top: 8px; }
+/* 生成完成后的来源标注：小字灰调，不抢正文 */
+.ai-src { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--ink-400); margin-top: 10px; }
+.ai-src-tag { display: inline-block; padding: 1px 6px; border-radius: 4px; background: var(--green-50); border: 1px solid var(--green-100); color: var(--green-text); font-size: 10.5px; }
 .ai-ops { margin-top: 10px; }
 </style>

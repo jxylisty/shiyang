@@ -3,6 +3,7 @@
 import { ref, onMounted } from 'vue'
 import { listCompounds } from '../api'
 import MiniChemMap from '../components/MiniChemMap.vue'
+import DisclaimerBanner from '../components/DisclaimerBanner.vue'
 
 const items = ref([])
 const loading = ref(true)
@@ -100,6 +101,7 @@ const probColor = (p) => p >= 0.9 ? 'var(--green-700)' : p >= 0.7 ? 'var(--amber
         </router-link>
       </div>
       <p class="disclaimer-note">入血概率为 PU-Learning 模型预测值；三维评分为 Enrichr 通路富集结果（0-100），非临床结论。</p>
+      <DisclaimerBanner variant="compound" style="margin-top: 10px;" />
     </template>
   </div>
 </template>

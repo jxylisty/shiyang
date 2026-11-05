@@ -4,6 +4,7 @@
 import { ref, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import AppIcon from '../components/AppIcon.vue'
+import DisclaimerBanner from '../components/DisclaimerBanner.vue'
 import { streamAssistantChat, getLocalConstitution, matImg } from '../api'
 
 const router = useRouter()
@@ -213,6 +214,7 @@ onMounted(() => { load(); scrollBottom() })
         <AppIcon name="chevron" :size="15" :stroke-width="2.4" />
       </button>
     </div>
+    <DisclaimerBanner variant="ai" style="margin-top: 14px;" />
   </div>
 </template>
 

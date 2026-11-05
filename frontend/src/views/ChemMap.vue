@@ -5,6 +5,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getChemMap } from '../api'
+import DisclaimerBanner from '../components/DisclaimerBanner.vue'
 
 const router = useRouter()
 const items = ref([])
@@ -102,6 +103,7 @@ onMounted(load)
         <em>点按查看成分档案 →</em>
       </div>
       <p class="a-disclaimer">{{ (items[0] && '') || '' }}坐标为 UMAP 降维结果（Morgan 指纹→2 维），相对位置有意义、坐标轴数值无物理含义。</p>
+      <DisclaimerBanner variant="compound" style="margin-top: 12px;" />
     </div>
   </div>
 </template>

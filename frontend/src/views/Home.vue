@@ -8,6 +8,7 @@ import TextReveal from '../components/TextReveal.vue'
 import CloudDivider from '../components/CloudDivider.vue'
 import HScroll from '../components/HScroll.vue'
 import ForYou from '../components/ForYou.vue'
+import DisclaimerBanner from '../components/DisclaimerBanner.vue'
 
 const stats = ref(null)
 const showcaseRecipes = ref([])   // 证据链专区示例方
@@ -295,6 +296,7 @@ function onDailyImgErr() {
     </div>
 
     <CloudDivider />
+    <DisclaimerBanner variant="general" style="margin-top: 18px;" />
   </div>
 </template>
 

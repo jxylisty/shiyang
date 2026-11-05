@@ -3,6 +3,7 @@
 // 双模型概率 + Lipinski 特征人话解读 + 关联药材/靶点 + 出现在哪些方子
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import DisclaimerBanner from '../components/DisclaimerBanner.vue'
 import { getExplainCompound } from '../api'
 
 const route = useRoute()
@@ -180,6 +181,7 @@ function goRecipe(id) { router.push(`/recipes/${id}`) }
           <span class="cd-recipe-sub">{{ r.type }}<template v-if="r.oneliner"> · {{ r.oneliner }}</template></span>
         </button>
       </div>
+      <DisclaimerBanner variant="compound" size="lg" style="margin-top: 16px;" />
     </template>
   </div>
 </template>

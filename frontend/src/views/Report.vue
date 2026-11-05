@@ -7,6 +7,7 @@ import { useRouter } from 'vue-router'
 import { CalendarRange } from '@lucide/vue'
 import { getCycleReport, isLoggedIn } from '../api'
 import ReportPoster from '../components/ReportPoster.vue'
+import DisclaimerBanner from '../components/DisclaimerBanner.vue'
 
 const router = useRouter()
 const report = ref(null)
@@ -127,6 +128,7 @@ const CNAME = { pinghe: '平和质', qixu: '气虚质', yangxu: '阳虚质', yin
       </template>
 
       <p class="foot">{{ report.note }}</p>
+      <DisclaimerBanner variant="report" />
     </template>
 
     <ReportPoster v-model:show="posterShow" :report="report" />

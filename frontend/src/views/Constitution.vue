@@ -4,6 +4,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { getConstitution, listRecipes } from '../api'
+import DisclaimerBanner from '../components/DisclaimerBanner.vue'
 
 const route = useRoute()
 const detail = ref(null)
@@ -68,6 +69,7 @@ onMounted(async () => {
       <p class="ref" v-if="detail.reference_url">
         判定依据：<a :href="detail.reference_url" target="_blank" rel="noopener">中华中医药学会《中医体质分类与判定》</a>
       </p>
+      <DisclaimerBanner variant="recipe" />
     </template>
     <!-- 加载骨架 -->
     <template v-else>

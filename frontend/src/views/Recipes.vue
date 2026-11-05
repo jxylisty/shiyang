@@ -5,6 +5,7 @@ import { BadgeCheck, FlaskConical, ShieldAlert } from '@lucide/vue'
 import AppIcon from '../components/AppIcon.vue'
 import { listRecipes, matImg, getSafetyProfiles, safetyCheckBatch, listFavorites, isLoggedIn } from '../api'
 import TermCard from '../components/TermCard.vue'
+import DisclaimerBanner from '../components/DisclaimerBanner.vue'
 
 const route = useRoute()
 const items = ref([])
@@ -221,6 +222,7 @@ function onCoverErr(r) {
         </router-link>
       </div>
     </van-list>
+    <DisclaimerBanner variant="recipe" size="lg" style="margin-top: 16px;" />
   </div>
 </template>
 

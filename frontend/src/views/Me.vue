@@ -5,6 +5,7 @@ import { showConfirmDialog, showSuccessToast } from 'vant'
 import { currentUser, logout, listRecords, listFavorites, isLoggedIn, getHistory, clearHistory, listCheckins, listFamilyMembers, addFamilyMember, removeFamilyMember } from '../api'
 import ConstitutionCard from '../components/ConstitutionCard.vue'
 import RecipeRow from '../components/RecipeRow.vue'
+import DisclaimerBanner from '../components/DisclaimerBanner.vue'
 
 // ---- 体质名片（T2-10） ----
 const showCard = ref(false)
@@ -330,6 +331,7 @@ function buzz(ms) {
 
     <!-- 体质名片海报（T2-10） -->
     <ConstitutionCard v-model:show="showCard" :record="records[0] || null" :week-count="weekCount" />
+    <DisclaimerBanner variant="general" style="margin-top: 16px;" />
   </div>
 </template>
 

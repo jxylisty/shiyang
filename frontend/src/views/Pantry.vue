@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { ShoppingBasket, Check, Plus } from '@lucide/vue'
 import { showSuccessToast } from 'vant'
 import { getPantryMaterials, pantryMatch, matImg } from '../api'
+import DisclaimerBanner from '../components/DisclaimerBanner.vue'
 
 const materials = ref([])       // 全部可选食材
 const selected = ref(new Set()) // 勾选的食材名
@@ -134,6 +135,7 @@ function coverBar(c) { return Math.round(c * 100) }
         </router-link>
       </div>
     </template>
+    <DisclaimerBanner variant="pantry" style="margin-top: 16px;" />
   </div>
 </template>
 

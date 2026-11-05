@@ -4,6 +4,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppIcon from '../components/AppIcon.vue'
+import DisclaimerBanner from '../components/DisclaimerBanner.vue'
 import { globalSearch } from '../api'
 import { loadHistory as loadSearchHistory, saveHistory as saveSearchHistory, clearHistory as clearSearchHistory, QUICK_WORDS } from '../utils/searchPrefs'
 
@@ -119,6 +120,7 @@ onMounted(() => { if (q.value.trim()) doSearch() })
           <router-link :to="{ path: '/compounds' }" class="s-more">去成分库 →</router-link>
         </div>
       </template>
+      <DisclaimerBanner variant="compound" style="margin-top: 16px;" />
     </template>
   </div>
 </template>
