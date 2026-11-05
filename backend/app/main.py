@@ -239,6 +239,26 @@ def parse_custom_recipe_text(body: ParseFormulaBody,
     return ok(result)
 
 
+class WebLookupBody(BaseModel):
+    name: str = Field(..., description="HERB/知识库未命中的药材或食材名")
+
+
+@app.post("/api/v1/custom-recipe/web-lookup")
+def web_lookup_herb(body: WebLookupBody,
+                    x_ai_key: str | None = Header(None, alias="X-AI-Key")):
+    """联网搜索兜底（导师要求）：HERB/知识库查不到的药材或奇怪输入，
+    用 web-search 搜「有什么作用」，引用列表只取搜索引擎真实返回结果。
+    AI 正文仅供白话理解，须带 AI 标注；30 天缓存。"""
+    name = (body.name or "").strip()
+    if not name or len(name) > 50:
+        raise HTTPException(400, "药材名不能为空且不超过 50 字")
+    result = herb_svc.web_lookup_herb(name, api_key=x_ai_key)
+    result["disclaimer"] = (
+        "以下说明由 AI 根据公开网页整理，仅供了解参考，不构成医疗建议；"
+        "来源列表为真实搜索结果，内容以原网页为准。")
+    return ok(result)
+
+
 class PlainHerb(BaseModel):
     name: str
     grams: float | None = None

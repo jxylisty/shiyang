@@ -1,8 +1,8 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { ShoppingBasket, Sparkles, Search, Check } from '@lucide/vue'
 import { showSuccessToast } from 'vant'
-import { getPantryMaterials, pantryMatch, matImg, analyzeCustomRecipe, parseCustomRecipeText, getCustomPlain } from '../api'
+import { getPantryMaterials, pantryMatch, matImg, analyzeCustomRecipe, parseCustomRecipeText, getCustomPlain, webLookupHerb } from '../api'
 import DisclaimerBanner from '../components/DisclaimerBanner.vue'
 import PlainCard from '../components/PlainCard.vue'
 import ProModeToggle from '../components/ProModeToggle.vue'
@@ -175,6 +175,30 @@ async function parsePaste() {
 // 结果里只要出现 AI 译文，就必须带上 AI 内容声明
 const hasAiText = computed(() =>
   customResult.value?.herbs?.some(h => h.functions_cn_source === 'ai') ?? false)
+
+// ---- 联网搜索兜底（HERB 查不到的药材/奇怪输入 → 搜「有什么作用」+ 真实来源） ----
+const webLookups = ref({})   // {药名: {status, summary_cn, sources, ...}}
+const webLookupLoading = ref(false)
+
+async function runWebLookups(names) {
+  if (!names?.length) return
+  webLookupLoading.value = true
+  // 并发搜，但每味独立 try/catch：一个失败不拖累其他
+  await Promise.all(names.map(async n => {
+    try {
+      webLookups.value = { ...webLookups.value, [n]: (await webLookupHerb(n)).data.data }
+    } catch {
+      webLookups.value = { ...webLookups.value, [n]: { status: 'error', name: n, summary_cn: null, sources: [] } }
+    }
+  }))
+  webLookupLoading.value = false
+}
+
+// 有未找到的药材且尚未查询过 → 自动发起联网兜底
+watch(() => customResult.value, r => {
+  const missing = (r?.not_found || []).filter(n => !webLookups.value[n])
+  if (missing.length) runWebLookups(missing)
+})
 </script>
 
 <template>
@@ -404,6 +428,37 @@ const hasAiText = computed(() =>
 
         <ProModeToggle hint="性味归经、成分与作用靶点等研究数据" style="margin-top: 12px;" />
 
+        <!-- 联网搜索兜底：HERB 未命中的药材，搜「有什么作用」附真实来源 -->
+        <template v-if="customResult.not_found.length">
+          <div class="section-title">
+            数据库没查到的
+            <span v-if="webLookupLoading" class="wl-spin">联网查询中…</span>
+          </div>
+          <div class="wl-list">
+            <div v-for="n in customResult.not_found" :key="n" class="card wl-card">
+              <div class="wl-head">
+                <Search :size="14" />
+                <b>{{ n }}</b>
+                <span class="wl-badge">AI 联网整理</span>
+              </div>
+              <template v-if="webLookups[n]">
+                <p v-if="webLookups[n].status === 'ok'" class="wl-summary">{{ webLookups[n].summary_cn }}</p>
+                <p v-else-if="webLookups[n].status === 'no_result'" class="wl-none">
+                  没有搜到可靠来源的介绍，请谨慎对待这个名字——它可能是误写、自创名或极冷门的叫法。
+                </p>
+                <p v-else class="wl-none">联网查询失败，可稍后重试。</p>
+                <div v-if="webLookups[n].sources?.length" class="wl-sources">
+                  <span class="wl-src-label">来源（真实搜索结果）：</span>
+                  <a v-for="(s, i) in webLookups[n].sources" :key="i" :href="s.url" target="_blank"
+                     rel="noopener noreferrer" class="wl-src">{{ s.title || s.url }}</a>
+                </div>
+              </template>
+              <p v-else class="wl-none">正在联网查询这种材料的作用…</p>
+            </div>
+          </div>
+          <DisclaimerBanner variant="ai" />
+        </template>
+
         <!-- 成分 & 靶点（专业层） -->
         <template v-if="proMode">
         <div class="section-title">成分与靶点</div>
@@ -620,4 +675,23 @@ const hasAiText = computed(() =>
 .pi-miss b { color: var(--amber-text); font-weight: 600; }
 .pi-tags { display: flex; flex-wrap: wrap; gap: 4px; }
 .tag.lab { background: var(--green-700); color: #fff; border-color: var(--green-700); }
+
+/* 联网搜索兜底卡片 */
+.wl-spin { font-size: 11.5px; font-weight: 400; color: var(--ink-400); margin-left: 6px; }
+.wl-list { display: flex; flex-direction: column; gap: 10px; }
+.wl-card { padding: 13px 14px; border-left: 3px solid var(--amber-500); }
+.wl-head { display: flex; align-items: center; gap: 7px; margin-bottom: 7px; color: var(--ink-700); }
+.wl-badge {
+  font-size: 9.5px; padding: 1px 6px; border-radius: 6px; line-height: 1.6;
+  background: var(--amber-500); color: #fff; font-weight: 500;
+}
+.wl-summary { font-size: 13px; color: var(--ink-700); line-height: 1.7; margin: 0 0 8px; }
+.wl-none { font-size: 12.5px; color: var(--ink-400); margin: 0 0 6px; }
+.wl-sources { display: flex; flex-direction: column; gap: 3px; }
+.wl-src-label { font-size: 11px; color: var(--ink-400); font-weight: 600; }
+.wl-src {
+  font-size: 12px; color: var(--green-text); text-decoration: none;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.wl-src:hover { text-decoration: underline; }
 </style>

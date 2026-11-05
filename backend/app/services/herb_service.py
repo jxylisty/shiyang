@@ -259,6 +259,16 @@ def _ensure_cache_table():
                 created_at REAL                     -- 缓存时间戳
             )
         """)
+        # 联网搜索兜底缓存：HERB/SymMap 查不到的药材，用 web-search 查「有什么作用」
+        # sources 必须来自网关返回的 web_search[]（真实搜索结果），不允许模型自由发挥
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS herb_web_lookup (
+                herb_name TEXT PRIMARY KEY,         -- 查询的药名/食材名
+                summary_cn TEXT NOT NULL,           -- 作用的白话总结（AI 生成，须标注）
+                sources TEXT NOT NULL,              -- JSON: [{title, url, publish_date, site}]
+                searched_at REAL                    -- 缓存时间戳
+            )
+        """)
         conn.commit()
     finally:
         conn.close()
@@ -289,7 +299,15 @@ def _cache_get(herb_name: str) -> dict | None:
 
 
 def _cache_put(data: dict) -> None:
-    """写入缓存（INSERT OR REPLACE）"""
+    """写入缓存（INSERT OR REPLACE）。
+    HERB 返回的 summary 行里任何文本列都可能是 {link, title} dict（不同药材字段
+    行为不一致），这里统一剥成字符串/None 兜底，避免逐个字段打地鼠。"""
+    def _txt(v):
+        if isinstance(v, dict):
+            t = v.get("title")
+            return t if isinstance(t, str) else None
+        return v if isinstance(v, str) else None
+
     conn = _db()
     try:
         conn.execute("""
@@ -299,9 +317,14 @@ def _cache_put(data: dict) -> None:
              ingredient_count, target_count, disease_count, cached_at)
             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         """, (
-            data["herb_name"], data["herb_id"], data["pinyin"], data["latin_name"],
-            data["properties"], data["meridians"],
-            data["function_en"], data["indication_en"],
+            data["herb_name"],
+            _txt(data["herb_id"]),
+            _txt(data["pinyin"]),
+            _txt(data["latin_name"]),
+            _txt(data["properties"]),
+            _txt(data["meridians"]),
+            _txt(data["function_en"]),
+            _txt(data["indication_en"]),
             json.dumps(data["ingredients"], ensure_ascii=False),
             json.dumps(data["targets"], ensure_ascii=False),
             json.dumps(data["diseases"], ensure_ascii=False),
@@ -642,23 +665,21 @@ def get_herb_detail(keyword: str) -> dict:
         #       7=use part, 8=function, 9=indication, 10=clinical, 11=therapeutic, 12=therapeutic_cn, ...
         pinyin = row[1] if len(row) > 1 else None
         name_cn = row[2] if len(row) > 2 else keyword
-        if isinstance(row[4], dict):
-            latin = row[4].get("title")
-        else:
-            latin = row[4] if len(row) > 4 else None
-        props_cell = row[5] if len(row) > 5 else None
-        merid_cell = row[6] if len(row) > 6 else None
-        # 这两列有时也是 {link, title} 格式，有时是纯字符串
-        if isinstance(props_cell, dict):
-            props = props_cell.get("title")
-        else:
-            props = props_cell
-        if isinstance(merid_cell, dict):
-            merid = merid_cell.get("title")
-        else:
-            merid = merid_cell
-        func_en = row[8] if len(row) > 8 else None
-        indic_en = row[9] if len(row) > 9 else None
+        # summary 行的文本列（拼音/拉丁/性味/归经/功效/主治）都可能是 {link, title}
+        # dict，不同药材行为不一致，统一剥成字符串/None
+        def _cell(v):
+            if isinstance(v, dict):
+                t = v.get("title")
+                return t if isinstance(t, str) else None
+            return v if isinstance(v, str) else None
+
+        latin = _cell(row[4] if len(row) > 4 else None)
+        props = _cell(row[5] if len(row) > 5 else None)
+        merid = _cell(row[6] if len(row) > 6 else None)
+        func_en = _cell(row[8] if len(row) > 8 else None)
+        indic_en = _cell(row[9] if len(row) > 9 else None)
+        if not isinstance(name_cn, str):
+            name_cn = _cell(name_cn) or keyword
 
     # 成分表
     ing_rows = d.get("herb_ingredient", [])[1:]  # 跳表头
@@ -1023,3 +1044,114 @@ def parse_formula_text(text: str, api_key: str | None = None) -> dict:
 def _name_exists_locally(name: str) -> bool:
     """药名是否在本地知识库或 SymMap 里能对上（不联网）"""
     return bool(_kb_herb_dict().get(name)) or _lookup_symmap(name, _symmap_dict()) is not None
+
+
+# ---------- 联网搜索兜底（导师要求：HERB 查不到的药材/奇怪输入，给出「有什么作用 + 真实来源」） ----------
+# 数据通路：ZeroGate 网关 web-search 模型（智谱搜索后端）。
+# 来源真实性约定：引用列表只取网关响应里的 web_search[]（搜索引擎返回的真实结果），
+# AI 正文仅作白话总结；web_search[] 为空 = 没搜到，直接放弃，不产出无来源的结果。
+
+WEB_LOOKUP_TTL_DAYS = 30   # 药材常识性信息变化慢，30 天内不重复搜
+WEB_SEARCH_TIMEOUT = 90    # 秒；web-search 实测 ~17s，留足余量
+
+_WEB_LOOKUP_PROMPT = (
+    "你是中医药科普编辑。用户会给你一个药材/食材名（可能来自民间偏方或网络文案，"
+    "未必是规范中药名）。请基于给出的搜索结果回答：\n"
+    "1. 这个东西传统上/民间被认为有什么作用（3-5 句白话，别夸大疗效）\n"
+    "2. 如有安全性问题（毒性、禁忌、误认风险）必须提到\n"
+    "3. 只依据搜索结果，不要补充你自己的知识；搜索结果没提到的不要写\n"
+    "4. 不要输出前言、问候、总结句，直接输出正文"
+)
+
+
+def _web_lookup_get(name: str) -> dict | None:
+    """读缓存（30 天 TTL）"""
+    conn = _db()
+    try:
+        row = conn.execute(
+            "SELECT summary_cn, sources, searched_at FROM herb_web_lookup WHERE herb_name=?",
+            (name,)).fetchone()
+        if not row:
+            return None
+        if (time.time() - row["searched_at"]) / 86400 > WEB_LOOKUP_TTL_DAYS:
+            return None
+        return {"summary_cn": row["summary_cn"], "sources": json.loads(row["sources"])}
+    except Exception:
+        return None
+    finally:
+        conn.close()
+
+
+def _web_lookup_put(name: str, summary_cn: str, sources: list) -> None:
+    conn = _db()
+    try:
+        conn.execute(
+            "INSERT OR REPLACE INTO herb_web_lookup(herb_name,summary_cn,sources,searched_at) "
+            "VALUES (?,?,?,?)", (name, summary_cn, json.dumps(sources, ensure_ascii=False), time.time()))
+        conn.commit()
+    except Exception:
+        pass  # 缓存写失败不影响返回
+    finally:
+        conn.close()
+
+
+def web_lookup_herb(name: str, api_key: str | None = None) -> dict:
+    """联网搜索一味药材/食材的作用，带真实来源。
+
+    返回 {
+      "status": "ok" | "no_result" | "error",
+      "name": str,
+      "summary_cn": str | None,      # AI 白话总结（调用方必须标注 AI 生成）
+      "sources": [{title, url, publish_date, site}],  # 真实搜索结果，可能为空
+    }
+    """
+    name = (name or "").strip()
+    if not name:
+        return {"status": "error", "name": name, "summary_cn": None, "sources": []}
+
+    cached = _web_lookup_get(name)
+    if cached:
+        return {"status": "ok", "name": name, **cached, "from_cache": True}
+
+    key = (api_key or "").strip() or os.environ.get("SHIYANG_AI_KEY") or "zerogate"
+    try:
+        r = requests.post(
+            f"{AI_BASE_URL.rstrip('/')}/chat/completions",
+            headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+            json={
+                "model": "web-search",
+                "messages": [
+                    {"role": "system", "content": _WEB_LOOKUP_PROMPT},
+                    {"role": "user", "content": f"药材/食材名：{name}"},
+                ],
+                "temperature": 0.3,
+                "stream": False,
+            },
+            timeout=WEB_SEARCH_TIMEOUT,
+        )
+        r.raise_for_status()
+        d = r.json()
+    except Exception:
+        return {"status": "error", "name": name, "summary_cn": None, "sources": []}
+
+    # 来源只取网关的 web_search[]（真实搜索结果）；没有 = 没搜到，不产出无来源结果
+    raw_sources = d.get("web_search") or []
+    sources = []
+    for w in raw_sources[:6]:
+        url = (w.get("link") or "").strip()
+        if not url:
+            continue
+        sources.append({
+            "title": (w.get("title") or "").strip()[:120],
+            "url": url,
+            "publish_date": w.get("publish_date"),
+            "site": w.get("media") or w.get("site") or None,
+        })
+
+    summary = (d.get("choices", [{}])[0].get("message", {}).get("content") or "").strip()
+    if not sources or not summary:
+        # 没搜到可靠来源 → 如实报 no_result，不编
+        return {"status": "no_result", "name": name, "summary_cn": None, "sources": []}
+
+    _web_lookup_put(name, summary, sources)
+    return {"status": "ok", "name": name, "summary_cn": summary, "sources": sources}

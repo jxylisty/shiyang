@@ -115,6 +115,8 @@ export const analyzeCustomRecipe = (herbs, claim) =>
   api.post('/custom-recipe/analyze', { herbs, claim })
 export const parseCustomRecipeText = (text) =>
   api.post('/custom-recipe/parse-text', { text })
+export const webLookupHerb = (name) =>
+  api.post('/custom-recipe/web-lookup', { name })
 export const getCustomPlain = (herbs) =>
   api.post('/custom-recipe/plain', { herbs })
 
