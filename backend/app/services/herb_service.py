@@ -646,8 +646,17 @@ def get_herb_detail(keyword: str) -> dict:
             latin = row[4].get("title")
         else:
             latin = row[4] if len(row) > 4 else None
-        props = row[5] if len(row) > 5 else None
-        merid = row[6] if len(row) > 6 else None
+        props_cell = row[5] if len(row) > 5 else None
+        merid_cell = row[6] if len(row) > 6 else None
+        # 这两列有时也是 {link, title} 格式，有时是纯字符串
+        if isinstance(props_cell, dict):
+            props = props_cell.get("title")
+        else:
+            props = props_cell
+        if isinstance(merid_cell, dict):
+            merid = merid_cell.get("title")
+        else:
+            merid = merid_cell
         func_en = row[8] if len(row) > 8 else None
         indic_en = row[9] if len(row) > 9 else None
 
