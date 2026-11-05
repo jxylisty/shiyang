@@ -140,3 +140,16 @@
 | `e960d86` | 详情页「家人适配」：登录用户按每位成员（含本人）最新体质档案对照本方适宜/不宜体质，未登录不渲染 | `FamilyFit.vue`（新） `RecipeDetail.vue` | build ✅；交互为纯前端组装既有 `/constitution/records` 数据，浏览器目检未做 |
 
 **本线回归基线（2026-11-03 实测）**：端点 49 路径 / 53 端点不变（纯服务层改造）；vite build 通过；`scripts/check_consistency.py` 全绿。**单测（pytest 67 基线）因沙箱限制未跑，需在本机 PowerShell 复测后随 PR 记录**。另：`rel_herb_compound` 旧错乱表（201 行）仍在库中、代码已全部禁用，下次重建数据库时删除。
+
+## 知识库扩容线（2026-11-05/06：药食同源目录 34→105 味，数据源 herb.ac.cn）
+
+| 提交 | 功能 | 关键文件 | 验证 |
+|---|---|---|---|
+| `1673588` | 前置调研：自定义茶罐外部数据源实测（HERB 接口免注册可用、SymMap 整包可下、死库名单与许可红线） | `docs/自定义茶罐_数据来源调研.md` | 全部结论当日 curl 实测 ✅ |
+| `81c3132` | 扩容方案定稿 + schema 增量：herb 加 source/reference_url/added_batch 三列；ID 命名决定（herb.id=HERB ID、compound.id=HBIN ID、target.gene=gene name，均不伪造 ccTCM 前缀）；幂等迁移函数（时间戳备份→pragma 检查→行数对比校验） | `docs/数据扩容方案_2026-11-05.md`（新）`docs/数据库设计文档.md` §6 `scripts/_migrate_20261105.py`（新） | 内存库语法验证 + 临时副本幂等二遍 PASS；六表行数不变 ✅ |
+| `a540a7d` | **灌库执行**：105 味药材（106 目录−蝮蛇，槐米/槐花共用 HERB002472 落 imp: 惯例行）+ 5,478 新成分（4,397 带 SMILES，预测列全 NULL）+ 7,284 新靶点 + 9,106 成分归属 + 59,437 成分-靶点关联（P/FDR 只在药材级命中时记值，34,909 条如实 P=NA）；采集缓存 2.75MB 断点续传、脚本幂等二遍 0 变更 | `scripts/import_herbs_20261105.py`（新） | 五表行数复核、105/105 带溯源字段、HBIN 预测列 0 非空、pytest 84 passed、TestClient 检索/鉴方/web-lookup 冒烟 ✅ |
+| 本提交 | **双口径一致性自检**：check_consistency.py 的 compound_count 校验改为 ccTCM→v3（修复口径）/HERB·imp→v1（扩容口径），修复 D3 全量按 v1 重算导致的 31 行旧药计数回归（乌梅 3→4、生姜 15→2 等）；清 user.db 8 条 not_found 脏缓存（含槐米——曾致鉴方误报）；扩容执行报告落盘 | `scripts/check_consistency.py` `docs/数据扩容执行报告_2026-11-06.md`（新） | `check_consistency.py` 全绿（v2≡v3、双口径计数一致、target_count 一致）；pytest 84 passed；herbs total=105 ✅ |
+
+**数据真实红线执行情况**：新成分 prob_cctcm/radar 等模型列全 NULL（实测 0 污染）；新靶点 species='未知(herb.ac.cn)'；每味药材带 HERB ID 溯源；蝮蛇无 HERB 条目如实缺（105≠106）。
+**已知口径边界**：证据链/解读端点仍读 v3（旧 34 味），新 71 味成分数据在检索/自定义鉴方/open API 可见、暂不进证据链（双口径取舍，扩容报告 §四 有升级路径）；custom-recipe 先查本地再打 API 的优化（P2）留待下阶段。
+**注意**：`docs/数据扩容方案_2026-11-05.md` 修正了调研文档两处口径——HERB detail_api 数据在响应顶层（无 res_data 包裹）；74 味待新增药材异名映射后全可命中。
