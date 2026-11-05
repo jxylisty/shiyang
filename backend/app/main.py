@@ -24,6 +24,7 @@ from services import exposure_service as es
 from services import pathway_service as ps
 from services import compare_service as cmp_svc
 from services import pantry_service as pantry
+from services import herb_service as herb_svc
 from services import safety_service as safety
 from services import evidence_service as evidence
 from services import explain_service as explain
@@ -176,6 +177,40 @@ def pantry_materials():
         "SELECT name, COUNT(*) AS cnt FROM rel_recipe_material GROUP BY name ORDER BY cnt DESC").fetchall()
     conn.close()
     return ok({"total": len(rows), "items": [{"name": r["name"], "count": r["cnt"]} for r in rows]})
+
+
+# ==================== 自定义茶罐（鉴方） ====================
+
+class CustomRecipeHerb(BaseModel):
+    name: str = Field(..., description="药材/食材名称")
+    grams: float | None = Field(None, description="克重（可选）")
+
+
+class CustomRecipeBody(BaseModel):
+    herbs: list[CustomRecipeHerb] = Field(..., description="用户输入的药材列表")
+    claim: str | None = Field(None, description="用户声称的功效，用于对照判断（可选）")
+
+
+@app.post("/api/v1/custom-recipe/analyze")
+def analyze_custom_recipe(body: CustomRecipeBody):
+    """
+    自定义方子分析：输入几味药材，从 HERB 数据库拉取成分/靶点/功效，
+    合并去重后返回结构化分析结果。
+    数据来源：HERB (herb.ac.cn, CC BY-NC) + 本地知识库
+    """
+    herbs_input = [{"name": h.name.strip(), "grams": h.grams}
+                   for h in body.herbs if h.name and h.name.strip()]
+    if not herbs_input:
+        raise HTTPException(400, "请至少输入一味药材")
+    if len(herbs_input) > 20:
+        raise HTTPException(400, "最多支持 20 味药材")
+    result = herb_svc.analyze_recipe(herbs_input)
+    # 补上声明与数据来源
+    result["sources_note"] = (
+        "成分/靶点/疾病数据来自 HERB 数据库（herb.ac.cn, CC BY-NC 4.0），"
+        "功效为英文原文直译，仅供参考；不构成医疗建议。"
+    )
+    return ok(result)
 
 
 # ==================== 慢病安全滤镜（T1-5） ====================

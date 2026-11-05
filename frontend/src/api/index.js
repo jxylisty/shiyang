@@ -108,6 +108,10 @@ export function streamAssistantChat(question, onCitations, onDelta, onDone, onEr
 export const getPantryMaterials = () => api.get('/pantry/materials')
 export const pantryMatch = (owned, constitution) => api.post('/pantry/match', { owned, constitution })
 
+// ---- 自定义茶罐（鉴方） ----
+export const analyzeCustomRecipe = (herbs, claim) =>
+  api.post('/custom-recipe/analyze', { herbs, claim })
+
 // ---- 慢病安全滤镜 ----
 export const getSafetyProfiles = () => api.get('/safety/profiles')
 export const safetyCheck = (recipeId, profile) => api.get(`/safety/check/${recipeId}`, { params: { profile } })
