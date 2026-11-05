@@ -1,7 +1,9 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { Info } from '@lucide/vue'
 import { makeNavHooks, tween, afterPaint } from '../utils/motion'
 import { getQuestionnaire, submitQuiz, saveRecord, isLoggedIn, listFamilyMembers, saveLocalConstitution } from '../api'
+import RecipeRow from '../components/RecipeRow.vue'
 
 const items = ref({})          // {code: [题...]}
 const order = ref([])          // 维度顺序
@@ -208,13 +210,21 @@ const mainName = computed(() => {
         </div>
       </div>
 
+      <!-- 测评依据声明 -->
+      <div class="card quiz-disclaimer rise" style="--i: 2">
+        <p class="d-title"><Info :size="14" :stroke-width="2" /> 测评依据</p>
+        <ul>
+          <li>量表来源：《中医体质分类与判定》（中华中医药学会标准 ZYYXH/T157-2009），简称 CCMQ</li>
+          <li>判定方法：九种体质转化分算法（原始分 → 转化分，≥40 分判定为"是"，30–39 分为"倾向是"）</li>
+          <li>本测评仅作健康参考，不作为医学诊断或治疗依据</li>
+          <li>体质非一成不变，受季节、作息、饮食、情绪等因素动态影响</li>
+        </ul>
+      </div>
+
       <div class="section-title rise" style="--i: 3">为您推荐的方子</div>
       <div class="card rise" style="--i: 4">
         <template v-if="result.recommendations.length">
-          <router-link v-for="(r, i) in result.recommendations" :key="r.id" :to="`/recipes/${r.id}`" class="recipe-row pressable">
-            <div class="r-name">{{ r.name }} <span class="tag" v-for="c in r.matched_constitutions" :key="c">{{ c }}</span></div>
-            <div class="r-one">{{ r.oneliner }}</div>
-          </router-link>
+          <RecipeRow v-for="(r, i) in result.recommendations" :key="r.id" :recipe="r" />
         </template>
         <p v-else class="empty" style="padding:12px 0">暂无完全匹配的方子，可到<router-link to="/recipes" style="color: var(--green-text)">方子库</router-link>按场景浏览</p>
       </div>
@@ -331,4 +341,10 @@ const mainName = computed(() => {
 
 /* recipe-row 族用全局定义（style.css） */
 .diet-ref p { font-size: 13px; color: var(--ink-600); line-height: 1.7; }
+
+/* 测评依据声明 */
+.quiz-disclaimer { background: var(--green-50); border: 1px dashed var(--green-200); }
+.quiz-disclaimer .d-title { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--green-700); margin: 0 0 8px; }
+.quiz-disclaimer ul { margin: 0; padding-left: 18px; }
+.quiz-disclaimer li { font-size: 12px; color: var(--ink-600); line-height: 1.8; }
 </style>
