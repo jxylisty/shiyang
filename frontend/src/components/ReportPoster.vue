@@ -3,6 +3,7 @@
 // 复用 SharePoster 的绘制风格（品牌绿渐变 + 白卡 + 二维码），打通报告的传播链路
 import { ref, watch, onMounted, onUnmounted } from 'vue'
 import QRCode from 'qrcode'
+import { waitForCanvas } from '../utils/canvasReady'
 
 const props = defineProps({
   show: Boolean,
@@ -24,7 +25,11 @@ onUnmounted(() => mqWide.removeEventListener('change', onMq))
 watch(() => props.show, async (open) => {
   if (!open || url.value || !props.report) return
   busy.value = true; failed.value = false
-  try { await draw(props.report) } catch { failed.value = true } finally { busy.value = false }
+  try {
+    // 弹层 lazyRender，canvas 要等挂载后才存在
+    await waitForCanvas(canvasEl)
+    await draw(props.report)
+  } catch { failed.value = true } finally { busy.value = false }
 })
 
 async function drawQr(ctx, x, y, size) {
@@ -51,7 +56,7 @@ function roundRect(ctx, x, y, w, h, r) {
 async function draw(r) {
   const W = 750, H = 1200
   const c = canvasEl.value
-  if (!c) return
+  if (!c) throw new Error('canvas 未就绪')
   c.width = W; c.height = H
   const ctx = c.getContext('2d')
   // 背景

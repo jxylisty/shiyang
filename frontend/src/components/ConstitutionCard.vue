@@ -6,6 +6,7 @@
  */
 import { ref, watch, onMounted, onUnmounted } from 'vue'
 import QRCode from 'qrcode'
+import { waitForCanvas } from '../utils/canvasReady'
 
 const props = defineProps({
   show: Boolean,
@@ -41,7 +42,12 @@ const PORTRAITS = {
 watch(() => props.show, async (open) => {
   if (!open || url.value) return
   busy.value = true; failed.value = false
-  try { await draw() } catch { failed.value = true } finally { busy.value = false }
+  try {
+    // van-popup 默认 lazyRender：show 变 true 时内容才挂载，此刻 canvas 还不在 DOM。
+    // 等 canvas 真正可用再绘制，否则 canvasEl 为 null，draw() 直接 return，弹层永远空白。
+    await waitForCanvas(canvasEl)
+    await draw()
+  } catch { failed.value = true } finally { busy.value = false }
 })
 
 async function drawQr(ctx, x, y, size) {
@@ -61,7 +67,7 @@ async function draw() {
   const r = props.record
   const W = 750, H = 1000
   const c = canvasEl.value
-  if (!c) return
+  if (!c) throw new Error('canvas 未就绪')
   c.width = W; c.height = H
   const ctx = c.getContext('2d')
   // 背景

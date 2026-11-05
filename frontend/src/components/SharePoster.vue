@@ -3,6 +3,7 @@
 // 打开弹层时才拉取配方并懒绘制，避免进详情页就白跑一次请求
 // P2：右下角加站点二维码（qrcode 包本地生成 dataURL，扫码直达当前站点）
 import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { waitForCanvas } from '../utils/canvasReady'
 // qrcode 改为打开弹层时动态加载（约 20KB gz），不进详情页首包
 import { getRecipe } from '../api'
 
@@ -25,7 +26,8 @@ watch(show, async (open) => {
   if (!open || url.value) return
   busy.value = true; failed.value = false
   try {
-    const { data } = await getRecipe(props.recipeId)
+    // 弹层 lazyRender，canvas 要等挂载后才存在；与取配方并行等待
+    const [, data] = await Promise.all([waitForCanvas(canvasEl), getRecipe(props.recipeId)])
     recipeName.value = data.data.name || ''
     await draw(data.data)
   } catch {
@@ -51,7 +53,7 @@ async function drawQr(ctx, x, y, size) {
 async function draw(r) {
   const W = 750, H = 1000
   const c = canvasEl.value
-  if (!c) return
+  if (!c) throw new Error('canvas 未就绪')
   c.width = W; c.height = H
   const ctx = c.getContext('2d')
   // 背景

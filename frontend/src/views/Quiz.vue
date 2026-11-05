@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { Info } from '@lucide/vue'
 import { makeNavHooks, tween, afterPaint } from '../utils/motion'
-import { getQuestionnaire, submitQuiz, saveRecord, isLoggedIn, listFamilyMembers, saveLocalConstitution } from '../api'
+import { getQuestionnaire, submitQuiz, saveRecord, isLoggedIn, listFamilyMembers, saveLocalConstitution, getLocalConstitution } from '../api'
 import RecipeRow from '../components/RecipeRow.vue'
 
 const items = ref({})          // {code: [题...]}
@@ -17,6 +17,7 @@ const qDir = ref(1)            // 题目切换方向：1 前进 / -1 后退
 const justPicked = ref(null)   // 刚选中的选项值：驱动 pop 弹跳
 const revealed = ref(false)    // 结果页揭示：进度条从 0 生长
 const shownScores = ref({})    // 九维分数滚动显示值
+const lastResult = ref(null)   // 上次测评（本地暂存）：答卷页给个回看入口，避免复测像"记录丢了"
 // 家庭代测（T2-8）：0=本人，>0 为成员 id
 const members = ref([])
 const forMember = ref(0)
@@ -45,6 +46,9 @@ onMounted(async () => {
     answers.value = a
     flat.value = f
     restoreProgress()
+    // 只在没有进行中的作答时回显上次结果，否则会和"继续作答"提示打架
+    const local = getLocalConstitution()
+    if (local?.judged) lastResult.value = local
   } catch {
     error.value = '问卷加载失败，请检查网络后刷新重试'
   }
@@ -182,6 +186,22 @@ const mainName = computed(() => {
   if ((r.judged.results.pinghe?.result ?? '否') !== '否') return '平和质'
   return '多体质兼夹'
 })
+
+// 上次结果的体质名：主体质 → 兼夹首项 → 平和
+const lrMainName = computed(() => {
+  const j = lastResult.value?.judged
+  if (!j) return ''
+  const code = j.main || j.combined?.[0] || 'pinghe'
+  return `${NAME[code] || '平和'}质`
+})
+
+// 上次结果的日期（本地暂存有 ts）
+const lrDate = computed(() => {
+  const ts = lastResult.value?.ts
+  if (!ts) return ''
+  const d = new Date(ts)
+  return `${d.getMonth() + 1} 月 ${d.getDate()} 日`
+})
 </script>
 
 <template>
@@ -241,6 +261,15 @@ const mainName = computed(() => {
 
     <!-- 答题页 -->
     <template v-else>
+      <!-- 上次结果回看：只在还没开始作答时出现，避免与答题卡抢注意力 -->
+      <div class="card last-result" v-if="lastResult && answeredCount() === 0">
+        <span class="lr-icon"><Info :size="15" :stroke-width="2" /></span>
+        <div class="lr-txt">
+          <b>上次测评：{{ lrMainName }}</b>
+          <span>{{ lrDate }} · 体质会随季节作息变化，可重新测一次</span>
+        </div>
+      </div>
+
       <van-progress class="progress-line" :percentage="answerPercent" color="#359068" track-color="#eef7f2" :show-pivot="false" />
       <p class="p-count">{{ answeredCount() }} / {{ flat.length || 67 }} 题 · 当前维度：{{ NAME[cur()?.code] || '' }}</p>
 
@@ -296,6 +325,16 @@ const mainName = computed(() => {
 .progress-line { height: 5px; margin-bottom: 6px; }
 .progress-line :deep(.van-progress__portion) { border-radius: 3px; transition: width var(--dur-med) var(--ease-out-soft); }
 .p-count { font-size: 12px; color: var(--ink-400); margin-bottom: 12px; }
+/* 上次结果回看条：低调的信息卡，不与答题卡抢视觉重心 */
+.last-result { display: flex; align-items: center; gap: 10px; padding: 12px 14px; margin-bottom: 12px; }
+.lr-icon {
+  flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%;
+  background: var(--green-50); border: 1px solid var(--green-100);
+  display: flex; align-items: center; justify-content: center; color: var(--green-text);
+}
+.lr-txt { min-width: 0; }
+.lr-txt b { display: block; font-size: 13.5px; color: var(--ink-900); }
+.lr-txt span { font-size: 11.5px; color: var(--ink-400); }
 
 /* 题目卡过渡视觉由 qEnter/qLeave JS 钩子内联驱动 */
 

@@ -203,6 +203,9 @@ function buzz(ms) {
           <span class="date">{{ fmtDate(r.created_at) }}</span>
         </div>
 
+        <!-- 复测入口：体质随季节/作息变化，有记录也要能再测一次 -->
+        <router-link to="/quiz" class="btn block retest-btn">重新测评</router-link>
+
         <!-- 历史对比 -->
         <template v-if="compare">
           <p class="cmp-title">最近两次对比</p>
@@ -343,6 +346,7 @@ function buzz(ms) {
 .u-info span { font-size: 12px; color: var(--ink-400); }
 .rec-row { display: flex; align-items: center; gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--green-50); }
 .rec-row:last-of-type { border-bottom: none; }
+.retest-btn { margin-top: 12px; }
 .rec-badge { font-size: 10px; background: var(--green-700); color: #fff; padding: 1px 7px; border-radius: 8px; }
 .rec-badge.member { background: var(--amber-600); }
 .fam-list { margin-bottom: 10px; }

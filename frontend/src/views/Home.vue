@@ -1,8 +1,8 @@
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import AppIcon from '../components/AppIcon.vue'
 import RecipeRow from '../components/RecipeRow.vue'
-import { getStats, listRecipes, getTermCurrent, matImg } from '../api'
+import { getStats, listRecipes, getTermCurrent, matImg, getLocalConstitution } from '../api'
 import { useCountUp } from '../utils/motion'
 import TextReveal from '../components/TextReveal.vue'
 import CloudDivider from '../components/CloudDivider.vue'
@@ -17,6 +17,10 @@ const daily = ref(null)        // 今日推荐
 const coverTry = ref(0)
 const cover = ref('')
 const fyouActive = ref(false)  // ForYou 渲染出个性化推荐时隐藏通用今日推荐
+
+// 已测过体质 → hero CTA 改为「再测一次」，避免首页永远显示「开始体质测评」像是从没测过。
+// Quiz 每次提交都会写本地暂存（登录与否都写），比依赖 ForYou 是否渲染出推荐更可靠。
+const hasMeasured = computed(() => !!getLocalConstitution()?.judged)
 
 // 每个场景一个低饱和色调（bg 浅底 / fg 图标色），暗色模式统一回绿（见 .scene-icon 覆写）
 // count 为占位初值，onMounted 拉到全量方子后实算，避免硬编码随数据漂移
@@ -127,7 +131,7 @@ function onDailyImgErr() {
           </h1>
           <p class="sub">体质测评精准匹配食养方案，活性成分、入血概率、作用靶点全程可溯</p>
           <div class="hero-btns">
-            <router-link to="/quiz" class="btn">开始体质测评</router-link>
+            <router-link to="/quiz" class="btn">{{ hasMeasured ? '再测一次体质' : '开始体质测评' }}</router-link>
             <router-link to="/recipes" class="btn ghost">逛方子库</router-link>
           </div>
         </div>
