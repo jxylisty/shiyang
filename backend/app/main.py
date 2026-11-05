@@ -400,15 +400,22 @@ def recipe_plain(rid: int):
 @app.get("/api/v1/herbs")
 def list_herbs(q: str | None = None):
     conn = get_db()
+    # has_prob_data：是否在 v3 修复口径内有成分关联（这些成分才带入血概率预测）。
+    # 2026-11-05 扩容后新药材数据在 v1/HERB 口径，成分无 prob——前端据此前端如实措辞，
+    # 不再对全部药材承诺「含预测入血概率」（数据真实铁律：预测≠事实）。
     if q:
         rows = conn.execute(
-            "SELECT id,name,category,nature,flavor,meridians,functions,compound_count,food_catalog_batch "
-            "FROM herb WHERE name LIKE ? OR pinyin LIKE ? ORDER BY compound_count DESC",
+            "SELECT h.id,h.name,h.category,h.nature,h.flavor,h.meridians,h.functions,"
+            "h.compound_count,h.food_catalog_batch,"
+            "EXISTS(SELECT 1 FROM rel_herb_compound_v3 v WHERE v.herb_id=h.id) AS has_prob_data "
+            "FROM herb h WHERE h.name LIKE ? OR h.pinyin LIKE ? ORDER BY h.compound_count DESC",
             (f"%{q}%", f"{q}%")).fetchall()
     else:
         rows = conn.execute(
-            "SELECT id,name,category,nature,flavor,meridians,functions,compound_count,food_catalog_batch "
-            "FROM herb ORDER BY compound_count DESC").fetchall()
+            "SELECT h.id,h.name,h.category,h.nature,h.flavor,h.meridians,h.functions,"
+            "h.compound_count,h.food_catalog_batch,"
+            "EXISTS(SELECT 1 FROM rel_herb_compound_v3 v WHERE v.herb_id=h.id) AS has_prob_data "
+            "FROM herb h ORDER BY h.compound_count DESC").fetchall()
     conn.close()
     return ok({"total": len(rows), "items": [dict(r) for r in rows]})
 

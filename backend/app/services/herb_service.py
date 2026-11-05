@@ -555,9 +555,91 @@ def search_herb(keyword: str) -> dict:
     }
 
 
+def _local_kb_detail(keyword: str) -> dict | None:
+    """从本地知识库 shiyang.db 取药材详情（2026-11-05 扩容后 105 味）。
+
+    背景：HERB search_api 对部分药材无精确命中（槐米/灵芝/天麻等约 71 味），
+    但这些药的成分/靶点数据已在灌库时写入本地库——先查本地再判 not_found，
+    避免把库内有的数据报成「未找到」。
+
+    靶点取自成分级 rel_compound_target（source_db='herb.ac.cn'），P/FDR 从
+    reference 列解析；药材级统计只对旧 34 味可用，新药材如实为 None。
+    返回与 get_herb_detail 同构的 dict；本地没有该药返回 None。
+    """
+    try:
+        conn = sqlite3.connect(f"file:{_KB_DB.as_posix()}?mode=ro", uri=True)
+        try:
+            row = conn.execute(
+                "SELECT id, name, pinyin, latin_name, nature, flavor, meridians, functions, "
+                "contraindication FROM herb WHERE name=? OR alias LIKE ? ORDER BY "
+                "CASE WHEN name=? THEN 0 ELSE 1 END LIMIT 1",
+                (keyword, f"%{keyword}%", keyword)).fetchone()
+            if not row:
+                return None
+            herb_id, name, pinyin, latin, nature, flavor, meridians, functions, contra = row
+
+            # 性味拆列 → 拼成 HERB 风格的英文口径列位（前端只读 properties/meridians 展示中文，
+            # 这两列主要供 _enrich_with_symmap/白话层兜底，填中文原值）
+            props = "、".join(x for x in (flavor, nature) if x) or None
+            func_en = functions
+
+            ing_rows = conn.execute(
+                "SELECT c.id, c.name FROM rel_herb_compound r JOIN compound c ON c.id=r.compound_id "
+                "WHERE r.herb_id=? ORDER BY c.name LIMIT ?", (herb_id, MAX_INGREDIENTS)).fetchall()
+            ing_total = conn.execute(
+                "SELECT COUNT(*) FROM rel_herb_compound WHERE herb_id=?", (herb_id,)).fetchone()[0]
+
+            tgt_rows = conn.execute(
+                "SELECT rt.target_gene, rt.reference FROM rel_compound_target rt "
+                "JOIN rel_herb_compound r ON r.compound_id=rt.compound_id "
+                "WHERE r.herb_id=? AND rt.source_db='herb.ac.cn' "
+                "GROUP BY rt.target_gene ORDER BY MIN(rt.id) LIMIT ?",
+                (herb_id, MAX_TARGETS)).fetchall()
+            tgt_total = conn.execute(
+                "SELECT COUNT(DISTINCT rt.target_gene) FROM rel_compound_target rt "
+                "JOIN rel_herb_compound r ON r.compound_id=rt.compound_id "
+                "WHERE r.herb_id=? AND rt.source_db='herb.ac.cn'", (herb_id,)).fetchone()[0]
+        finally:
+            conn.close()
+    except Exception:
+        return None  # 知识库不可用时不影响 HERB 主流程
+
+    targets = []
+    for gene, ref in tgt_rows:
+        p_val = fdr = None
+        if ref:
+            # reference 格式：'P=<值>; FDR_BH=<值> (...)' 或 'P=NA; FDR_BH=NA (...)'
+            for seg in ref.split(";"):
+                seg = seg.strip()
+                if seg.startswith("P=") and seg[2:] not in ("NA", "", None):
+                    p_val = seg[2:]
+                elif seg.startswith("FDR_BH=") and seg[7:] not in ("NA", "", None):
+                    fdr = seg[7:]
+        targets.append({"id": None, "name": gene, "p_value": p_val, "fdr": fdr})
+
+    return {
+        "status": "ok",
+        "herb_name": keyword,
+        "herb_id": herb_id,
+        "name_cn": name,
+        "pinyin": pinyin,
+        "latin_name": latin,
+        "properties": props,
+        "meridians": meridians,
+        "function_en": func_en,
+        "indication_en": contra,
+        "ingredients": [{"id": i, "name": n, "alias": ""} for i, n in ing_rows],
+        "targets": targets,
+        "diseases": [],
+        "ingredient_count": ing_total,
+        "target_count": tgt_total,
+        "disease_count": 0,
+    }
+
+
 def get_herb_detail(keyword: str) -> dict:
     """获取药材详情（成分/靶点/疾病/功效）。
-    优先读缓存，miss 则拉 API 并写缓存。
+    优先读缓存 → HERB search_api → 本地知识库兜底（105 味灌库数据），并写缓存。
 
     返回：
     {
@@ -616,6 +698,11 @@ def get_herb_detail(keyword: str) -> dict:
     # 1. 搜索拿 herb_id
     herb_id = _herb_id_from_search(keyword)
     if not herb_id:
+        # HERB 搜不到 → 本地知识库兜底（105 味灌库数据，含槐米/灵芝等 search_api 无命中的药材）
+        local = _local_kb_detail(keyword)
+        if local:
+            _cache_put(local)
+            return _enrich_with_symmap({**local, "from_cache": False})
         _cache_put({
             "herb_name": keyword, "herb_id": None, "pinyin": None, "latin_name": None,
             "properties": None, "meridians": None,

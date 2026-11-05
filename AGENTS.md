@@ -14,7 +14,7 @@
 | 知识库 | `data/shiyang.db`（方子/药材/成分/靶点，**运行时只读** `mode=ro`） | `main.py` 的 `get_db()` |
 | 用户库 | `data/user.db`（账号/档案/收藏/打卡/家庭成员，运行时可写，WAL） | `backend/app/services/user_service.py` |
 | 数据库是否入库 | **否**。`*.db` 在 .gitignore；`scripts/build_db.py` 可重建；重建前的备份 `data/shiyang.db.bak-before-rebuild` 已提交 | `git ls-files data/` |
-| 端点规模 | 2026-10-26 实测 46 路径 / 50 端点（v0.2.0 旧文档写 24 个，已过时，对照见 docs/API扩展记录.md） | 见 §6 自检命令 |
+| 端点规模 | 2026-11-06 实测 55 路径 / 59 端点（v0.2.0 旧文档写 24 个、2026-10-26 为 46/50，均过时，对照见 docs/API扩展记录.md） | 见 §6 自检命令 |
 | 运行环境 | Python 3.12 / Node 20（Windows + Git Bash） | `python --version; node --version` |
 
 **红线（每页、每个接口响应都要在）**：

@@ -105,8 +105,10 @@ const hideImg = (name) => { imgFailed.value[name] = true }
         <div class="hd-sec hd-in" style="--i: 2" v-if="active.functions"><b>功效</b><p>{{ active.functions }}</p></div>
         <div class="hd-sec hd-in" style="--i: 3">
           <b>成分数据</b>
-          <p class="hd-comp">关联 <span class="hd-num">{{ active.compound_count }}</span> 个活性成分，含预测入血概率与靶点数据</p>
-          <router-link to="/compounds" class="hd-goto">到成分库按「来源药材」继续查看<AppIcon name="chevron" :size="12" :stroke-width="2.4" /></router-link>
+          <p class="hd-comp" v-if="active.has_prob_data">关联 <span class="hd-num">{{ active.compound_count }}</span> 个活性成分，含预测入血概率与靶点数据</p>
+          <p class="hd-comp" v-else-if="active.compound_count > 0">关联 <span class="hd-num">{{ active.compound_count }}</span> 个活性成分（成分-靶点关联来自 HERB 数据库；本平台入血概率预测暂未覆盖该药材）</p>
+          <p class="hd-comp" v-else>成分数据待补</p>
+          <router-link v-if="active.has_prob_data" to="/compounds" class="hd-goto">到成分库按「来源药材」继续查看<AppIcon name="chevron" :size="12" :stroke-width="2.4" /></router-link>
         </div>
         <p class="hd-note hd-in" style="--i: 4" v-if="active.food_catalog_batch">卫健委药食同源目录：第 {{ active.food_catalog_batch }} 批</p>
         <div class="hd-in" style="--i: 5">
