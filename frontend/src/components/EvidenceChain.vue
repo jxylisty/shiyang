@@ -3,7 +3,12 @@
 // 与 NetworkGraph 的区别：Sankey 保留层级流向，一眼看出"哪味药贡献了哪些成分、打到哪些靶点"；
 // 力导向图适合看聚类，Sankey 适合讲故事。
 import { ref, onMounted, onBeforeUnmount, watch, watchEffect, nextTick } from 'vue'
-import * as echarts from 'echarts'
+// echarts 按需引入（sankey 桑基图），避免全量打包进详情页 chunk
+import * as echarts from 'echarts/core'
+import { SankeyChart } from 'echarts/charts'
+import { TooltipComponent } from 'echarts/components'
+import { CanvasRenderer } from 'echarts/renderers'
+echarts.use([SankeyChart, TooltipComponent, CanvasRenderer])
 import { getEvidenceChain } from '../api'
 
 const props = defineProps({ recipeId: [String, Number] })

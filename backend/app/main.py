@@ -692,7 +692,7 @@ async def ai_report(rid: int, key: str | None = Query(None), provider: str = "de
 def evidence_chain(rid: int, max_herbs: int = 6, max_compounds: int = 10,
                    max_targets: int = 10):
     """方子 → 药材(克重) → 活性成分(入血概率) → 人类蛋白靶点，四层证据链。
-    归属关系取自 rel_herb_compound_v2（原始文献含量表重建，非旧错乱表）。"""
+    归属关系取自 rel_herb_compound_v3（大创库修复版，与 v2 内容一致；旧 rel_herb_compound 为错乱表，禁用）。"""
     max_herbs = max(1, min(max_herbs, 12))
     max_compounds = max(1, min(max_compounds, 20))
     max_targets = max(1, min(max_targets, 20))
@@ -706,7 +706,7 @@ def evidence_chain(rid: int, max_herbs: int = 6, max_compounds: int = 10,
     herbs = conn.execute("""
         SELECT m.herb_id, m.name, m.grams FROM rel_recipe_material m
         WHERE m.recipe_id=? AND m.herb_id IS NOT NULL AND m.herb_id IN (
-            SELECT DISTINCT herb_id FROM rel_herb_compound_v2)
+            SELECT DISTINCT herb_id FROM rel_herb_compound_v3)
         ORDER BY COALESCE(m.grams, 0) DESC LIMIT ?""", (rid, max_herbs)).fetchall()
     if not herbs:
         conn.close()
@@ -719,7 +719,7 @@ def evidence_chain(rid: int, max_herbs: int = 6, max_compounds: int = 10,
     comps = conn.execute(f"""
         SELECT c.id, c.name, c.prob_cctcm,
                GROUP_CONCAT(DISTINCT h.name) AS herbs
-        FROM rel_herb_compound_v2 rc
+        FROM rel_herb_compound_v3 rc
         JOIN compound c ON c.id = rc.compound_id
         JOIN herb h ON h.id = rc.herb_id
         WHERE rc.herb_id IN ({hp})
@@ -759,10 +759,10 @@ def evidence_chain(rid: int, max_herbs: int = 6, max_compounds: int = 10,
     for h in herbs:
         links.append({"source": r["name"], "target": h["name"],
                       "value": h["grams"] or 5})
-    # 药材 → 成分（真实归属，来自重建表）
+    # 药材 → 成分（真实归属，来自大创库修复表 v3）
     hc = conn.execute(f"""
         SELECT h.name hn, c.name cn, c.prob_cctcm p
-        FROM rel_herb_compound_v2 rc
+        FROM rel_herb_compound_v3 rc
         JOIN compound c ON c.id = rc.compound_id
         JOIN herb h ON h.id = rc.herb_id
         WHERE rc.herb_id IN ({hp}) AND rc.compound_id IN ({cp})""",

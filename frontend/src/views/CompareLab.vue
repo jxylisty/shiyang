@@ -206,6 +206,38 @@ function poly(vals) {
           {{ result.constitution.warn_b.length ? `${result.b.name} 不宜 ${result.constitution.warn_b.join('、')}体质` : '' }}
         </p>
       </div>
+
+      <!-- 叠加/人群冲突提示（数据来自后端 conflicts：共有配料克重合计 + safety 人群档案） -->
+      <template v-if="result.conflicts && (result.conflicts.shared_materials.length || result.conflicts.safety.length)">
+        <div class="section-title">同饮注意</div>
+        <div class="card">
+          <template v-if="result.conflicts.shared_materials.length">
+            <h4 class="cf-h">共有配料 {{ result.conflicts.shared_materials.length }} 味</h4>
+            <div v-for="m in result.conflicts.shared_materials" :key="m.name" class="cf-row">
+              <span class="cf-name">{{ m.name }}</span>
+              <span class="cf-g">
+                <template v-if="m.total != null">{{ m.grams_a }}g + {{ m.grams_b }}g = 合计 {{ m.total }}g</template>
+                <template v-else>两方的用量均未完整标注</template>
+              </span>
+            </div>
+            <p class="hint warn">
+              <AlertTriangle :size="13" style="vertical-align: -2px" />
+              同日饮用两方时上述配料会叠加，请酌减总量；超过日常食用量前请咨询医生。
+            </p>
+          </template>
+          <template v-if="result.conflicts.safety.length">
+            <h4 class="cf-h">人群禁忌提示</h4>
+            <div v-for="s in result.conflicts.safety" :key="s.profile" class="cf-profile">
+              <span class="tag" :class="{ 'cf-block': [s.a?.verdict, s.b?.verdict].includes('block') }">{{ s.profile_name }}</span>
+              <span class="cf-detail">
+                <template v-if="s.a && s.a.verdict !== 'pass'">A「{{ result.a.name }}」{{ s.a.verdict === 'block' ? '不建议' : '需注意' }}（{{ [...s.a.blocks, ...s.a.warns].map(x => x.material).slice(0, 3).join('、') }}）</template>
+                <template v-if="s.b && s.b.verdict !== 'pass'">B「{{ result.b.name }}」{{ s.b.verdict === 'block' ? '不建议' : '需注意' }}（{{ [...s.b.blocks, ...s.b.warns].map(x => x.material).slice(0, 3).join('、') }}）</template>
+              </span>
+            </div>
+            <p class="hint">人群禁忌基于药典通识整理，仅供参考，不构成医疗建议。</p>
+          </template>
+        </div>
+      </template>
     </template>
 
     <!-- 选择器抽屉 -->
@@ -292,4 +324,14 @@ function poly(vals) {
   .vs-grid, .duo { grid-template-columns: 1fr; }
 }
 .wide-popup { width: min(480px, 90vw); }
+
+/* 同饮注意 */
+.cf-h { font-size: 12px; color: var(--ink-400); font-weight: 600; margin: 4px 0 8px; }
+.cf-row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 13px; padding: 5px 0; border-top: 1px dashed var(--green-100); }
+.cf-name { font-weight: 600; color: var(--ink-900); }
+.cf-g { font-size: 12px; color: var(--ink-600); text-align: right; }
+.cf-profile { display: flex; gap: 8px; align-items: flex-start; padding: 6px 0; border-top: 1px dashed var(--green-100); }
+.cf-profile .tag { flex-shrink: 0; margin-top: 1px; }
+.cf-profile .tag.cf-block { background: var(--amber-50); color: var(--amber-text); }
+.cf-detail { font-size: 12px; color: var(--ink-600); line-height: 1.6; display: flex; flex-direction: column; gap: 2px; }
 </style>

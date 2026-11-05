@@ -126,3 +126,17 @@
 | 本提交 | **衍生新功能：成分化学空间地图**——165 成分 Morgan 指纹 UMAP 降维（random_state=42 可复现），SVG 散点三视角切换（入血概率着色/应用域着色/主模型 vs 独立模型一致性着色），点按圆点出成分卡跳详情页。**分歧点聚团 = "分歧来自皂苷等结构类别而非随机噪声"的可视化证据** | `scripts/compute_map_coords.py`（新）`compound_map` 表（新）`GET /explain/map`（新端点）`ChemMap.vue`（新页）`/chem-map` 路由 + 成分库页入口链接 | 端点 200/count=165；端点 50 路径/54 端点；单测 67 passed；vite build 通过；浏览器验收见 docs/验收_化学空间地图_2026-10-30.md ✅ |
 
 **备注**：`umap-learn` 为开发期依赖（坐标离线预计算，运行时只读表），不进 backend/requirements.txt。
+
+## 数据质量与体验优化线（2026-11-03，分支 feat/data-and-ux-improvements）
+
+| 提交 | 功能 | 关键文件 | 验证 |
+|---|---|---|---|
+| （数据，无提交） | 通路富集补跑：8 个缺 `recipe_pathway` 的方子补齐——1 方（温阳暖身茶）ok 8 通路，7 方基因数 0 记 `insufficient`（诚实状态非缺失）；4 方（#25/66/69/72）配料全不在 34 味库内，保持 `analysis_ready=0` 不改 | `data/shiyang.db` | `pregen_pathways.py` 运行记录：62 ok / 7 insufficient |
+| （撤销） | 克重换算尝试已回退：15 条「颗/枚/片/朵」按通识换算的克重全部还原为 NULL，备注同步清理；原文未标克重的 83 条一律保持空白，**不做编辑换算** | — | 还原后 `grams IS NULL` 回落至 83 条、note 无残留 ✅ |
+| `080e81d` | 药材-成分归属统一到 v3：`rag_service` 此前仍读旧错乱表 `rel_herb_compound`（活 bug）已修；`explain_service`/证据链端点由 v2 切 v3（两表内容一致，v3 为权威）；新增一致性自检脚本并重算 33 行 `herb.compound_count` + 10 行 `compound.target_count` | `main.py` `explain_service.py` `rag_service.py` `scripts/check_consistency.py` | TestClient 冒烟：health/recipes/detail/chain 全 200，chain 26 节点 70 边；自检脚本退出码 0 ✅ |
+| `74a1ed4` | axios 全局响应拦截：401 清会话跳登录页（带回跳地址，web/hash 两模式兼容，登录页不重复跳）；错误对象原样透传不破坏各页面 `e.response` 分支 | `api/index.js` | build ✅ |
+| `acad9ca` | RecipeDetail 瘦身：echarts 按需引入（GraphChart/SankeyChart + 所需组件）+ qrcode 改弹层打开时动态加载 | `NetworkGraph.vue` `EvidenceChain.vue` `SharePoster.vue` | RecipeDetail chunk **1150 kB → 533 kB**（gzip 384 → 180），build ✅ |
+| `c839bcb` | 对比页「同饮注意」：共有配料克重合计（两边已知才合计，只陈述事实不设阈值）+ 复用 safety 词表的 5 类人群冲突提示 | `compare_service.py` `CompareLab.vue` | TestClient：1v8 人群命中（控糖/孕期 block B），1v2 共有配料合计（桔梗 20g 等）正确；build ✅ |
+| `e960d86` | 详情页「家人适配」：登录用户按每位成员（含本人）最新体质档案对照本方适宜/不宜体质，未登录不渲染 | `FamilyFit.vue`（新） `RecipeDetail.vue` | build ✅；交互为纯前端组装既有 `/constitution/records` 数据，浏览器目检未做 |
+
+**本线回归基线（2026-11-03 实测）**：端点 49 路径 / 53 端点不变（纯服务层改造）；vite build 通过；`scripts/check_consistency.py` 全绿。**单测（pytest 67 基线）因沙箱限制未跑，需在本机 PowerShell 复测后随 PR 记录**。另：`rel_herb_compound` 旧错乱表（201 行）仍在库中、代码已全部禁用，下次重建数据库时删除。

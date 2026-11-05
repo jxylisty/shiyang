@@ -1,7 +1,12 @@
 <script setup>
 // 成分-靶点网络图（ECharts graph 力导向）
 import { ref, onMounted, onBeforeUnmount, watch, watchEffect } from 'vue'
-import * as echarts from 'echarts'
+// echarts 按需引入（力导向 graph 图），避免全量打包进详情页 chunk
+import * as echarts from 'echarts/core'
+import { GraphChart } from 'echarts/charts'
+import { TooltipComponent, LegendComponent } from 'echarts/components'
+import { CanvasRenderer } from 'echarts/renderers'
+echarts.use([GraphChart, TooltipComponent, LegendComponent, CanvasRenderer])
 import { getNetwork } from '../api'
 
 const props = defineProps({ recipeId: [String, Number] })
