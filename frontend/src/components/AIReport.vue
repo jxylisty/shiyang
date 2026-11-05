@@ -2,7 +2,7 @@
 // AI 流式解读面板（P2 免门槛版）：
 // - 默认无 Key 直接生成 → 后端回放平台预生成的解读（SSE 节奏）
 // - 可选自带 DeepSeek/OpenAI Key → 实时个性化生成（Key 仅存本机浏览器，绝不提交后端存储）
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import DisclaimerBanner from './DisclaimerBanner.vue'
 import { streamAIReport } from '../api'
 
@@ -16,6 +16,54 @@ const phase = ref('idle')   // idle | streaming | done | error
 const errMsg = ref('')
 const source = ref('')      // pregen | live
 let abort = null
+
+// 轻量 Markdown 解析（纯组件渲染，不用 v-html 防注入）
+// 支持：#/##/### 标题、**加粗**、*斜体*、空行分段、行内换行
+function parseMarkdown(md) {
+  const lines = String(md || '').replace(/\r\n/g, '\n').split('\n')
+  const blocks = []
+  let paraBuf = []
+
+  function flushPara() {
+    if (!paraBuf.length) return
+    blocks.push({ type: 'p', spans: parseInline(paraBuf.join(' ')) })
+    paraBuf = []
+  }
+
+  for (const raw of lines) {
+    const line = raw.trimEnd()
+    if (!line.trim()) { flushPara(); continue }
+    let m
+    if ((m = line.match(/^(#{1,3})\s+(.*)/))) {
+      flushPara()
+      blocks.push({ type: 'h' + m[1].length, spans: parseInline(m[2].trim()) })
+    } else {
+      paraBuf.push(line)
+    }
+  }
+  flushPara()
+  return blocks
+}
+
+function parseInline(str) {
+  // 先按 ** 拆，再在每段里按 * 拆（避免 ** 被 * 吃掉）
+  const parts = []
+  const boldChunks = str.split('**')
+  const oddBold = (boldChunks.length - 1) % 2 === 1
+  boldChunks.forEach((chunk, bi) => {
+    const isBold = bi % 2 === 1 && !(oddBold && bi === boldChunks.length - 1)
+    const italicChunks = chunk.split('*')
+    const oddItalic = (italicChunks.length - 1) % 2 === 1
+    italicChunks.forEach((seg, si) => {
+      if (!seg) return
+      const isItalic = si % 2 === 1 && !(oddItalic && si === italicChunks.length - 1)
+      parts.push({ t: seg, b: isBold, i: isItalic })
+    })
+  })
+  return parts
+}
+
+const mdBlocks = computed(() => parseMarkdown(text.value))
 
 function start() {
   phase.value = 'streaming'; text.value = ''; errMsg.value = ''
@@ -54,7 +102,23 @@ function saveKey() {
     <template v-else>
       <Transition name="ai-fade" mode="out-in">
         <div class="ai-stream" key="stream">
-          <p class="ai-text">{{ text }}<span v-if="phase === 'streaming'" class="cursor">▍</span></p>
+          <div class="ai-md">
+            <template v-for="(blk, bi) in mdBlocks" :key="bi">
+              <h1 v-if="blk.type === 'h1'" class="md-h1">
+                <template v-for="(s, si) in blk.spans" :key="si"><i v-if="s.i"><b v-if="s.b">{{ s.t }}</b><template v-else>{{ s.t }}</template></i><b v-else-if="s.b">{{ s.t }}</b><template v-else>{{ s.t }}</template></template>
+              </h1>
+              <h2 v-else-if="blk.type === 'h2'" class="md-h2">
+                <template v-for="(s, si) in blk.spans" :key="si"><i v-if="s.i"><b v-if="s.b">{{ s.t }}</b><template v-else>{{ s.t }}</template></i><b v-else-if="s.b">{{ s.t }}</b><template v-else>{{ s.t }}</template></template>
+              </h2>
+              <h3 v-else-if="blk.type === 'h3'" class="md-h3">
+                <template v-for="(s, si) in blk.spans" :key="si"><i v-if="s.i"><b v-if="s.b">{{ s.t }}</b><template v-else>{{ s.t }}</template></i><b v-else-if="s.b">{{ s.t }}</b><template v-else>{{ s.t }}</template></template>
+              </h3>
+              <p v-else class="md-p">
+                <template v-for="(s, si) in blk.spans" :key="si"><i v-if="s.i"><b v-if="s.b">{{ s.t }}</b><template v-else>{{ s.t }}</template></i><b v-else-if="s.b">{{ s.t }}</b><template v-else>{{ s.t }}</template></template>
+                <span v-if="phase === 'streaming' && bi === mdBlocks.length - 1" class="cursor">▍</span>
+              </p>
+            </template>
+          </div>
           <p v-if="phase === 'streaming'" class="ai-status"><span class="ai-dots"></span>{{ source === 'pregen' ? 'AI 解读（预生成）加载中' : 'AI 正在解读' }}</p>
           <!-- AI 生成内容必须标注来源（AGENTS.md §2.6）：完成后常驻，不随流式状态消失 -->
           <p v-if="phase === 'done'" class="ai-src">
@@ -92,9 +156,16 @@ function saveKey() {
 /* idle → streaming 面板淡入 */
 .ai-fade-enter-active, .ai-fade-leave-active { transition: opacity .25s ease, transform .25s var(--ease-out-soft); }
 .ai-fade-enter-from, .ai-fade-leave-to { opacity: 0; transform: translateY(6px); }
-.ai-stream { white-space: pre-wrap; }
-.ai-text { font-size: 13.5px; line-height: 1.8; color: var(--ink-900); }
-.cursor { animation: blink 1s infinite; color: var(--green-600); }
+.ai-stream { line-height: 1.8; }
+.ai-md { font-size: 13.5px; color: var(--ink-900); }
+.md-h1 { font-size: 17px; font-weight: 600; margin: 4px 0 12px; color: var(--ink-900); line-height: 1.4; }
+.md-h2 { font-size: 15px; font-weight: 600; margin: 16px 0 8px; color: var(--ink-900); line-height: 1.5; }
+.md-h3 { font-size: 14px; font-weight: 600; margin: 14px 0 6px; color: var(--ink-900); line-height: 1.5; }
+.md-p { margin: 0 0 12px; }
+.md-p:last-child { margin-bottom: 0; }
+.ai-md b { font-weight: 600; color: var(--ink-900); }
+.ai-md i { font-style: italic; }
+.cursor { animation: blink 1s infinite; color: var(--green-600); margin-left: 1px; }
 @keyframes blink { 50% { opacity: 0; } }
 /* 生成中三点跳动 */
 .ai-status { font-size: 12px; color: var(--green-600); margin-top: 8px; }
