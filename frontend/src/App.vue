@@ -30,27 +30,31 @@ const baseUrl = import.meta.env.BASE_URL
 
 <template>
   <header class="topbar">
-    <router-link to="/" class="logo"><AppIcon name="leaf" class="logo-icon" :size="20" :stroke-width="2.2" />食养有据<small>药食同源 · 成分有据</small></router-link>
-    <nav>
-      <router-link v-for="n in NAV" :key="n.to" :to="n.to">
-        <AppIcon :name="n.icon" :size="15" :stroke-width="2" /><span class="nav-label">{{ n.name }}</span>
-      </router-link>
-    </nav>
-    <SearchBox />
+    <div class="topbar-inner">
+      <router-link to="/" class="logo"><AppIcon name="leaf" class="logo-icon" :size="20" :stroke-width="2.2" />食养有据<small>药食同源 · 成分有据</small></router-link>
+      <nav>
+        <router-link v-for="n in NAV" :key="n.to" :to="n.to">
+          <AppIcon :name="n.icon" :size="15" :stroke-width="2" /><span class="nav-label">{{ n.name }}</span>
+        </router-link>
+      </nav>
+      <SearchBox />
+    </div>
   </header>
-  <router-view v-slot="{ Component }">
-    <!-- JS 钩子驱动（见 pageEnter/pageLeave）：setTimeout 收尾，隐藏页签不卡死 -->
-    <transition :css="false" mode="out-in" @enter="pageEnter" @leave="pageLeave">
-      <component :is="Component" :key="route.path" />
-    </transition>
-  </router-view>
-  <!-- 页脚收束：回纹压边 + 云纹，给内容较少的页面（登录/测评）一个体面的结束 -->
-  <footer class="site-foot">
-    <div class="fret-rule tight"></div>
-    <CloudDivider label="药食同源 · 有据可查" />
-  </footer>
-  <div class="disclaimer">本平台内容为健康参考信息，不构成医疗建议，不用于诊断或治疗<br/>
-    <span class="img-credit">食材图片来自 <a href="https://commons.wikimedia.org" target="_blank" rel="noopener">Wikimedia Commons</a>（CC0 / 公有领域 / CC BY / CC BY-SA），作者与许可明细见 <a :href="`${baseUrl}img/credits.json`" target="_blank" rel="noopener">credits.json</a></span>
+  <div class="app-shell">
+    <router-view v-slot="{ Component }">
+      <!-- JS 钩子驱动（见 pageEnter/pageLeave）：setTimeout 收尾，隐藏页签不卡死 -->
+      <transition :css="false" mode="out-in" @enter="pageEnter" @leave="pageLeave">
+        <component :is="Component" :key="route.path" />
+      </transition>
+    </router-view>
+    <!-- 页脚收束：回纹压边 + 云纹，给内容较少的页面（登录/测评）一个体面的结束 -->
+    <footer class="site-foot">
+      <div class="fret-rule tight"></div>
+      <CloudDivider label="药食同源 · 有据可查" />
+    </footer>
+    <div class="disclaimer">本平台内容为健康参考信息，不构成医疗建议，不用于诊断或治疗<br/>
+      <span class="img-credit">食材图片来自 <a href="https://commons.wikimedia.org" target="_blank" rel="noopener">Wikimedia Commons</a>（CC0 / 公有领域 / CC BY / CC BY-SA），作者与许可明细见 <a :href="`${baseUrl}img/credits.json`" target="_blank" rel="noopener">credits.json</a></span>
+    </div>
   </div>
 </template>
 

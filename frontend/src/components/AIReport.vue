@@ -3,6 +3,7 @@
 // - 默认无 Key 直接生成 → 后端回放平台预生成的解读（SSE 节奏）
 // - 可选自带 DeepSeek/OpenAI Key → 实时个性化生成（Key 仅存本机浏览器，绝不提交后端存储）
 import { ref, computed } from 'vue'
+import { Sparkles } from '@lucide/vue'
 import DisclaimerBanner from './DisclaimerBanner.vue'
 import { streamAIReport } from '../api'
 
@@ -85,7 +86,7 @@ function saveKey() {
   <div class="ai-panel">
     <template v-if="phase === 'idle'">
       <p class="ai-tip">让 AI 把这个方子的成分数据翻译成人话</p>
-      <button class="btn block" @click="start">生成 AI 解读</button>
+      <button class="btn ai-start-btn" @click="start"><Sparkles :size="15" :stroke-width="2.2" /> 生成 AI 解读</button>
       <div class="ai-key-row">
         <button class="ai-key-toggle" @click="toggleKeyInput">{{ showKeyInput ? '收起' : '用自己的 Key（可选）' }}</button>
         <!-- Key 输入行：高度过渡展开/收起；收起时按有无已存 Key 显示不同提示 -->
@@ -137,7 +138,11 @@ function saveKey() {
 </template>
 
 <style scoped>
-.ai-tip { font-size: 12px; color: var(--ink-400); margin-bottom: 8px; line-height: 1.5; }
+.ai-tip { font-size: 12.5px; color: var(--ink-600); margin-bottom: 10px; line-height: 1.55; }
+.ai-start-btn { width: 100%; }
+@media (min-width: 540px) {
+  .ai-start-btn { width: auto; min-width: 176px; padding: 9px 22px; }
+}
 .ai-key-row { margin-top: 10px; }
 .ai-key-toggle { border: none; background: none; color: var(--green-text); font-size: 12px; cursor: pointer; padding: 0; }
 .key-wrap { overflow: hidden; }

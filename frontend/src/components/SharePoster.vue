@@ -3,6 +3,7 @@
 // 打开弹层时才拉取配方并懒绘制，避免进详情页就白跑一次请求
 // P2：右下角加站点二维码（qrcode 包本地生成 dataURL，扫码直达当前站点）
 import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { Share2 } from '@lucide/vue'
 import { waitForCanvas } from '../utils/canvasReady'
 // qrcode 改为打开弹层时动态加载（约 20KB gz），不进详情页首包
 import { getRecipe } from '../api'
@@ -156,7 +157,7 @@ function download() {
       </div>
     </div>
   </van-popup>
-  <button class="btn ghost" @click="show = true">生成分享海报</button>
+  <button class="btn ghost poster-trigger" @click="show = true"><Share2 :size="14" :stroke-width="2.2" /> 生成分享海报</button>
 </template>
 
 <style scoped>

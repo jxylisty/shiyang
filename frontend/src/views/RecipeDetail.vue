@@ -449,13 +449,14 @@ async function toggleCheckin() {
 .h-top { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
 .h-top h2 { font-family: var(--font-serif); font-size: 22px; font-weight: 700; color: var(--ink-900); letter-spacing: 0.02em; }
 .h-one { font-size: 13px; color: var(--ink-600); margin: 6px 0; }
-.tag.lab { background: var(--green-700); color: #fff; border-color: var(--green-700); }
-.h-ops { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+.tag.lab { display: inline-flex; align-items: center; gap: 3px; background: var(--green-50); color: var(--green-text); border-color: rgba(58, 122, 94, 0.28); font-weight: 500; }
+.h-ops { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; align-items: center; }
+.h-ops :deep(.btn) { padding: 7px 13px; font-size: 13px; border-radius: 9px; gap: 5px; }
 .h-ops .h-fav { display: inline-flex; align-items: center; gap: 5px; }
 .fav-star { display: inline-flex; }
 .fav-star.pop { animation: pop 0.45s var(--ease-spring); }
-.h-ops .h-checkin { display: inline-flex; align-items: center; gap: 5px; background: var(--green-700); color: #fff; transition: background var(--dur-fast) ease, color var(--dur-fast) ease; }
-.h-ops .h-checkin.done { background: var(--green-100); color: var(--green-text); }
+.h-ops .h-checkin.done { background: var(--green-50); color: var(--green-text); border-color: rgba(58, 122, 94, 0.3); box-shadow: none; }
+/* 今日已打卡态见上一条规则 */
 
 /* 配料行入场错峰 + 图片懒加载淡入 */
 .mat { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed var(--green-50); gap: 10px; animation: rise .4s var(--ease-out-soft) backwards; animation-delay: calc(var(--i) * 40ms); }

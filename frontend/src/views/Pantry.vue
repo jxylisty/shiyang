@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { ShoppingBasket, Sparkles, Search } from '@lucide/vue'
+import { ShoppingBasket, Sparkles, Search, Check } from '@lucide/vue'
 import { showSuccessToast } from 'vant'
 import { getPantryMaterials, pantryMatch, matImg, analyzeCustomRecipe, parseCustomRecipeText, getCustomPlain } from '../api'
 import DisclaimerBanner from '../components/DisclaimerBanner.vue'
@@ -186,9 +186,11 @@ const hasAiText = computed(() =>
 
     <!-- Tab 切换 -->
     <div class="tab-bar">
-      <button class="tab-btn" :class="{ active: activeTab === 'own' }" @click="activeTab = 'own'">我的茶罐</button>
+      <button class="tab-btn" :class="{ active: activeTab === 'own' }" @click="activeTab = 'own'">
+        <ShoppingBasket :size="14" /> 我的茶罐
+      </button>
       <button class="tab-btn" :class="{ active: activeTab === 'custom' }" @click="activeTab = 'custom'">
-        自定义鉴方 <span class="tab-new">新</span>
+        <Sparkles :size="14" /> 自定义鉴方 <span class="tab-new">新</span>
       </button>
     </div>
 
@@ -205,8 +207,12 @@ const hasAiText = computed(() =>
           </button>
         </div>
         <p v-else class="hint">从下面勾选你手边有的食材（会记住你的茶罐）</p>
-        <button class="btn" style="margin-top: 10px; width: 100%" :disabled="!selected.size || loading"
-                @click="runMatch">{{ loading ? '配伍中…' : '找能煮的方子' }}</button>
+        <div class="cta-bar">
+          <button class="btn cta-btn" :disabled="!selected.size || loading" @click="runMatch">
+            <Search :size="15" :stroke-width="2.2" />
+            {{ loading ? '配伍中…' : '找能煮的方子' }}
+          </button>
+        </div>
       </div>
 
       <!-- 食材选择 -->
@@ -333,11 +339,14 @@ const hasAiText = computed(() =>
           </div>
         </div>
 
-        <button class="btn block" style="margin-top: 14px;"
-                :disabled="!customCanAnalyze || customLoading"
-                @click="runCustomAnalyze">
-          {{ customLoading ? '分析中…' : '分析这个方子' }}
-        </button>
+        <div class="cta-bar" style="margin-top: 14px;">
+          <button class="btn cta-btn"
+                  :disabled="!customCanAnalyze || customLoading"
+                  @click="runCustomAnalyze">
+            <Sparkles :size="15" :stroke-width="2.2" />
+            {{ customLoading ? '分析中…' : '分析这个方子' }}
+          </button>
+        </div>
       </div>
 
       <!-- 分析结果 -->
@@ -442,25 +451,52 @@ const hasAiText = computed(() =>
 .p-title { font-size: 18px; display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--green-text); }
 .p-sub { font-size: 12px; color: var(--ink-400); margin-top: 6px; }
 .search-box { padding: 0 0 10px; background: transparent; }
-.chip-wrap { display: flex; flex-wrap: wrap; gap: 6px; }
-.sel-tag { background: var(--green-700); color: #fff; border-color: var(--green-700); cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
-.sel-tag .x { opacity: .85; font-size: 10px; }
-.opt-tag { cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
-.opt-tag img { width: 16px; height: 16px; border-radius: 50%; object-fit: cover; }
+.chip-wrap { display: flex; flex-wrap: wrap; gap: 7px; }
+.sel-tag {
+  background: var(--green-50); color: var(--green-text);
+  border: 1px solid rgba(58, 122, 94, 0.28); border-radius: 999px;
+  padding: 4px 11px; font-size: 12.5px; font-weight: 500;
+  cursor: pointer; display: inline-flex; align-items: center; gap: 5px; margin: 0;
+}
+.sel-tag:hover { background: var(--green-100); border-color: var(--green-600); }
+.sel-tag .x { opacity: .65; font-size: 10px; line-height: 1; transition: opacity var(--dur-fast) ease, color var(--dur-fast) ease; }
+.sel-tag:hover .x { opacity: 1; color: var(--red-text); }
+.opt-tag {
+  cursor: pointer; display: inline-flex; align-items: center; gap: 5px;
+  border-radius: 999px; padding: 4px 11px 4px 5px; font-size: 12.5px; margin: 0;
+}
+.opt-tag:hover { border-color: rgba(58, 122, 94, 0.36); background: var(--green-100); }
+.opt-tag img { width: 18px; height: 18px; border-radius: 50%; object-fit: cover; }
 .hint { font-size: 12px; color: var(--ink-400); }
+.cta-bar { margin-top: 14px; display: flex; justify-content: center; }
+.cta-btn { width: 100%; }
+@media (min-width: 540px) {
+  .cta-bar { justify-content: flex-start; }
+  .cta-btn { width: auto; min-width: 196px; padding: 10px 26px; }
+}
 
-/* Tab 切换 */
-.tab-bar { display: flex; gap: 0; margin: 0 0 14px; background: var(--card); border-radius: 12px; padding: 4px; }
+/* Tab 切换：暖凹槽 + 纸白浮卡，避免与下方主操作按钮撞成两块深绿大长条 */
+.tab-bar {
+  display: flex; gap: 4px; margin: 0 0 14px;
+  background: rgba(120, 95, 60, 0.075);
+  border: 1px solid var(--card-border);
+  border-radius: 12px; padding: 4px;
+}
 .tab-btn {
-  flex: 1; padding: 10px 0; border: none; background: transparent;
-  font-size: 13.5px; font-weight: 500; color: var(--ink-500); cursor: pointer;
+  flex: 1; padding: 9px 12px; border: 1px solid transparent; background: transparent;
+  font-size: 13.5px; font-weight: 500; color: var(--ink-600); cursor: pointer;
   border-radius: 9px; transition: all var(--dur-fast) ease; font-family: inherit;
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
 }
-.tab-btn.active { background: var(--green-700); color: #fff; font-weight: 600; }
+.tab-btn:hover:not(.active) { color: var(--ink-900); background: rgba(255, 255, 255, 0.35); }
+.tab-btn.active {
+  background: var(--card); color: var(--green-text); font-weight: 600;
+  border-color: var(--card-border);
+  box-shadow: 0 2px 8px -2px rgba(74, 56, 32, 0.12), 0 1px 2px rgba(74, 56, 32, 0.06);
+}
 .tab-new {
-  display: inline-block; font-size: 10px; padding: 1px 5px;
-  background: var(--amber-500); color: #fff; border-radius: 8px; line-height: 1.4;
+  display: inline-block; font-size: 10px; font-weight: 600; padding: 1px 5px;
+  background: var(--cinnabar); color: #fbf3e4; border-radius: 6px; line-height: 1.35;
 }
 
 /* 自定义鉴方介绍卡 */
@@ -472,7 +508,7 @@ const hasAiText = computed(() =>
 }
 .ci-text { flex: 1; min-width: 0; }
 .ci-text b { display: block; font-size: 14px; color: var(--ink-900); margin-bottom: 3px; }
-.ci-text span { font-size: 12px; color: var(--ink-500); line-height: 1.5; }
+.ci-text span { font-size: 12px; color: var(--ink-600); line-height: 1.5; }
 
 /* 粘贴解析 */
 .paste-box {
@@ -485,8 +521,8 @@ const hasAiText = computed(() =>
 .paste-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
 .paste-feedback { margin-top: 10px; font-size: 12.5px; line-height: 1.6; }
 .pf-ok { color: var(--green-text); margin: 0 0 6px; }
-.pf-none { color: var(--ink-500); margin: 0 0 6px; }
-.pf-rej { background: var(--amber-50); border: 1px solid var(--amber-200); border-radius: 8px; padding: 8px 10px; }
+.pf-none { color: var(--ink-600); margin: 0 0 6px; }
+.pf-rej { background: var(--amber-50); border: 1px solid rgba(176, 124, 46, 0.28); border-radius: 8px; padding: 8px 10px; }
 .pf-rej b { display: block; color: var(--amber-text); margin-bottom: 4px; }
 .pf-rej ul { margin: 0; padding-left: 16px; color: var(--ink-600); }
 .pf-rej li { margin-bottom: 2px; }
@@ -509,7 +545,7 @@ const hasAiText = computed(() =>
 .cr-grams { display: flex; align-items: center; gap: 4px; }
 .cr-grams input {
   width: 72px; padding: 6px 8px; border: 1px solid var(--green-100);
-  border-radius: 6px; font-size: 12.5px; font-family: inherit; background: #fff; text-align: right;
+  border-radius: 6px; font-size: 12.5px; font-family: inherit; background: var(--card); color: var(--ink-900); text-align: right;
 }
 .cr-unit { font-size: 12px; color: var(--ink-400); }
 .cr-del {
@@ -527,7 +563,7 @@ const hasAiText = computed(() =>
 .crs-badge.lv-A { background: #1d6b4c; }
 .crs-badge.lv-B { background: var(--green-700); }
 .crs-badge.lv-C { background: var(--amber-600); }
-.crs-text { font-size: 14px; color: var(--ink-800); line-height: 1.7; margin: 0 0 6px; }
+.crs-text { font-size: 14px; color: var(--ink-900); line-height: 1.7; margin: 0 0 6px; }
 .crs-text .miss { color: var(--amber-text); }
 .crs-note { font-size: 12px; color: var(--ink-400); margin: 0; }
 
@@ -538,16 +574,16 @@ const hasAiText = computed(() =>
 .hc-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px; }
 .hc-name { font-size: 16px; color: var(--ink-900); font-family: var(--font-serif); }
 .hc-py { font-size: 11.5px; color: var(--ink-400); text-transform: capitalize; }
-.hc-prop { font-size: 12px; color: var(--ink-500); display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+.hc-prop { font-size: 12px; color: var(--ink-600); display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
 .hc-label { font-size: 11px; color: var(--green-text); font-weight: 600; display: block; margin-bottom: 3px; }
 .hc-label .src-tag {
   display: inline-block; margin-left: 5px; padding: 0 5px; border-radius: 6px;
   font-size: 9.5px; font-weight: 500; line-height: 1.6;
-  background: var(--amber-500); color: #fff; vertical-align: middle;
+  background: var(--amber-600); color: #fff; vertical-align: middle;
 }
 .hc-func, .hc-indic { margin: 6px 0; }
 .hc-func p, .hc-indic p {
-  font-size: 13px; color: var(--ink-700); line-height: 1.6; margin: 0;
+  font-size: 13px; color: var(--ink-600); line-height: 1.6; margin: 0;
   font-style: italic; opacity: .9;
 }
 .hc-stats {
