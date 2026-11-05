@@ -7,7 +7,7 @@
  */
 import { ref, onMounted } from 'vue'
 import AppIcon from './AppIcon.vue'
-import { getMyRecommend, guestRecommend, getLocalConstitution, isLoggedIn } from '../api'
+import { getMyRecommend, guestRecommend, getLocalConstitution, isLoggedIn, matImg } from '../api'
 
 const emit = defineEmits(['active'])   // 是否渲染出了个性化推荐（父页据此隐藏通用今日推荐）
 const data = ref(null)        // 后端推荐 payload
@@ -47,6 +47,9 @@ const codeOf = (name) => name ? name.replace('质', '') : ''
         挑的 {{ data.items.length }} 款茶饮方
       </p>
       <router-link v-for="r in data.items" :key="r.id" :to="`/recipes/${r.id}`" class="fy-row pressable">
+        <div v-if="r.materials?.[0]" class="fy-cover">
+          <img :src="matImg(r.materials[0])" :alt="r.materials[0]" loading="lazy" />
+        </div>
         <div class="fy-main">
           <b class="fy-name">{{ r.name }}</b>
           <span class="fy-one">{{ r.oneliner }}</span>
@@ -85,9 +88,16 @@ const codeOf = (name) => name ? name.replace('质', '') : ''
 .fy-card { padding: 6px 14px; }
 .fy-lead { font-size: 12px; color: var(--ink-400); padding: 8px 0 4px; }
 .fy-row {
-  display: flex; align-items: center; gap: 8px; text-decoration: none; color: inherit;
+  display: flex; align-items: center; gap: 10px; text-decoration: none; color: inherit;
   padding: 10px 0; border-top: 1px dashed var(--green-100);
 }
+.fy-cover {
+  width: 42px; height: 42px; border-radius: 50%; flex-shrink: 0;
+  overflow: hidden; border: 1px solid var(--card-border);
+  background: var(--green-50);
+  display: flex; align-items: center; justify-content: center;
+}
+.fy-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .fy-main { flex: 1; min-width: 0; }
 .fy-name { display: block; font-family: var(--font-serif); font-size: 15px; color: var(--ink-900); }
 .fy-one {

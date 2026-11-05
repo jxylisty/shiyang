@@ -111,6 +111,13 @@ def _recommend(judged: dict | None, main_name: str | None, uid: int | None, limi
         rows = conn.execute(
             "SELECT id,name,type,oneliner,scenes,constitutions_suitable FROM recipe "
             "WHERE status != '弃用'").fetchall()
+        # 批量查配料：输出用前 2 味必需配料名（前端封面图取第一味）
+        mat_rows = conn.execute(
+            "SELECT recipe_id, name FROM rel_recipe_material "
+            "WHERE optional = 0 ORDER BY recipe_id, id").fetchall()
+        mats_by_rid: dict[int, list[str]] = {}
+        for m in mat_rows:
+            mats_by_rid.setdefault(m["recipe_id"], []).append(m["name"])
     finally:
         conn.close()
     by_id = {r["id"]: r for r in rows}
@@ -144,10 +151,12 @@ def _recommend(judged: dict | None, main_name: str | None, uid: int | None, limi
     out = []
     for e in items:
         it = e["item"]
+        rid = it["id"]
         out.append({
-            "id": it["id"], "name": it["name"], "type": it["type"], "oneliner": it["oneliner"],
+            "id": rid, "name": it["name"], "type": it["type"], "oneliner": it["oneliner"],
             "scenes": it.get("scenes", []),
             "matched_constitutions": it.get("matched_constitutions", []),
+            "materials": mats_by_rid.get(rid, [])[:2],
             "reasons": e["reasons"][:3],
         })
     return {
