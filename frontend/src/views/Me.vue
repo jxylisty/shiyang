@@ -1,14 +1,14 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import { useRouter } from 'vue-router'
 import { showConfirmDialog, showSuccessToast } from 'vant'
 import { currentUser, logout, listRecords, listFavorites, isLoggedIn, getHistory, clearHistory, listCheckins, listFamilyMembers, addFamilyMember, removeFamilyMember } from '../api'
 import ConstitutionCard from '../components/ConstitutionCard.vue'
 import RecipeRow from '../components/RecipeRow.vue'
 import DisclaimerBanner from '../components/DisclaimerBanner.vue'
 import { proMode } from '../utils/proMode'
+import { getGuestConstitutionRecord, GUEST_EXTRA_KEYS, CODE_NAME } from '../utils/guestArchive'
 
-// ---- 体质名片（T2-10） ----
+// ---- 体质名片（T2-10，登录档案与未登录本机暂存均支持） ----
 const showCard = ref(false)
 const weekCount = computed(() => {
   const recs = checkins.value?.records || []
@@ -17,12 +17,15 @@ const weekCount = computed(() => {
   return days.size
 })
 
-const router = useRouter()
-const user = currentUser()
+const loggedIn = ref(isLoggedIn())
+const user = ref(currentUser())
+const guestRec = ref(getGuestConstitutionRecord())
 const records = ref([])
 const favorites = ref([])
 const loading = ref(true)
 const checkins = ref(null)   // {records, streak, total, today}
+
+const cardRecord = computed(() => loggedIn.value ? (records.value[0] || null) : guestRec.value)
 
 // ---- 家庭成员档案（T2-8） ----
 const members = ref([])
@@ -30,7 +33,7 @@ const newMemberName = ref('')
 const newMemberRelation = ref('')
 const RELATIONS = ['母亲', '父亲', '孩子', '伴侣', '其他']
 async function loadMembers() {
-  if (!isLoggedIn()) return
+  if (!loggedIn.value) return
   try { members.value = (await listFamilyMembers()).data.data } catch { /* 静默 */ }
 }
 async function addMember() {
@@ -94,12 +97,13 @@ function toggleDark(v, ev) {
 async function clearLocalData() {
   await showConfirmDialog({
     title: '清空本地数据',
-    message: '将清除本机的测评作答缓存、浏览历史与 AI 密钥，不影响账号与收藏。',
+    message: '将清除本机的测评缓存与暂存结果、浏览历史与 AI 密钥，不影响云端账号与收藏。',
   })
-  for (const k of ['shiyang_quiz_v1', 'shiyang_history_v1', 'shiyang_ai_key']) {
+  for (const k of ['shiyang_quiz_v1', 'shiyang_history_v1', 'shiyang_ai_key', ...GUEST_EXTRA_KEYS]) {
     localStorage.removeItem(k)
   }
   history.value = []
+  guestRec.value = null
   showSuccessToast('已清空')
 }
 
@@ -111,15 +115,17 @@ function doClearHistory() {
   showSuccessToast('浏览历史已清空')
 }
 
-const CODE_NAME = { pinghe: '平和质', qixu: '气虚质', yangxu: '阳虚质', yinxu: '阴虚质', tanshi: '痰湿质', shire: '湿热质', xueyu: '血瘀质', qiyu: '气郁质', tebing: '特禀质' }
-
 onMounted(async () => {
   document.documentElement.dataset.fontsize = FONT_KEYS.includes(fontScale.value) ? fontScale.value : 'standard'
   if (darkMode.value) {
     document.documentElement.classList.add('van-theme-dark')
     document.documentElement.dataset.theme = 'dark'
   }
-  if (!isLoggedIn()) { router.push('/login'); return }
+  // 访客不强制踢登录：直接开放本机体质结果、浏览历史、适老化字号/暗色/专业模式设置与开放 API
+  if (!loggedIn.value) {
+    loading.value = false
+    return
+  }
   loadMembers()
   try {
     const [r1, r2, r3] = await Promise.all([listRecords(), listFavorites(), listCheckins()])
@@ -127,7 +133,11 @@ onMounted(async () => {
     favorites.value = r2.data.data
     checkins.value = r3.data.data
   } catch (e) {
-    if (e?.response?.status === 401) { logout(); router.push('/login') }
+    if (e?.response?.status === 401) {
+      logout()
+      loggedIn.value = false
+      user.value = null
+    }
   } finally { loading.value = false }
 })
 
@@ -162,17 +172,24 @@ const weekGrid = computed(() => {
 })
 const recentCheckins = computed(() => (checkins.value?.records || []).slice(0, 5))
 
-function doLogout() { logout(); router.push('/') }
-function fmtDate(s) { return (s || '').slice(0, 16) }
-function buzz(ms) {
-  try { navigator.vibrate?.(ms) } catch { /* 不支持则静默 */ }
+function doLogout() {
+  logout()
+  loggedIn.value = false
+  user.value = null
+  records.value = []
+  favorites.value = []
+  checkins.value = null
+  members.value = []
+  guestRec.value = getGuestConstitutionRecord()
+  showSuccessToast('已退出登录')
 }
+function fmtDate(s) { return (s || '').slice(0, 16) }
 </script>
 
 <template>
   <div class="page">
-    <!-- 用户卡 -->
-    <div class="card user-card">
+    <!-- 顶部身份卡：已登录显示用户信息，未登录展示本机访客模式 -->
+    <div v-if="loggedIn" class="card user-card">
       <div class="avatar">{{ (user?.nickname || user?.username || '?')[0] }}</div>
       <div class="u-info">
         <b>{{ user?.nickname || user?.username }}</b>
@@ -180,114 +197,174 @@ function buzz(ms) {
       </div>
       <button class="btn ghost" @click="doLogout">退出</button>
     </div>
+    <div v-else class="card user-card guest-card">
+      <div class="avatar guest-avatar">访</div>
+      <div class="u-info">
+        <b>本机访客模式</b>
+        <span>检索、茶罐、体质测评与适老化设置均免登录可用；登录可跨端留存档案</span>
+      </div>
+      <router-link :to="{ path: '/login', query: { redirect: '/me' } }" class="btn guest-login-btn">登录 / 注册</router-link>
+    </div>
 
     <div v-if="loading" class="card">
       <div class="sk-row sk-anim" v-for="i in 3" :key="i"></div>
     </div>
 
     <template v-else>
-      <!-- 体质档案历史 -->
-      <div class="section-title">体质档案（{{ records.length }} 次）
-        <button v-if="records.length" @click="showCard = true"
-                style="margin-left: auto; font-size: 12px; font-weight: 400; color: var(--green-text); background: none; border: none; cursor: pointer;">体质名片 →</button>
-      </div>
-      <div class="card" v-if="!records.length">
-        <p class="empty" style="padding:12px 0">还没有测评记录</p>
-        <router-link to="/quiz" class="btn block">去测评</router-link>
-      </div>
-      <div class="card" v-else>
-        <div v-for="(r, i) in records" :key="r.id" class="rec-row">
-          <span class="rec-badge" v-if="i === 0">最新</span>
-          <span class="rec-badge member" v-if="r.member_name">{{ r.member_name }}</span>
-          <b>{{ r.main_name }}</b>
-          <span v-if="r.combined.length > 1" class="combined">兼夹{{ r.combined.join('、') }}</span>
-          <span class="date">{{ fmtDate(r.created_at) }}</span>
+      <!-- ==================== 已登录专属区块 ==================== -->
+      <template v-if="loggedIn">
+        <!-- 体质档案历史 -->
+        <div class="section-title">体质档案（{{ records.length }} 次）
+          <button v-if="records.length" @click="showCard = true" class="title-action">体质名片 →</button>
         </div>
-
-        <!-- 复测入口：体质随季节/作息变化，有记录也要能再测一次 -->
-        <router-link to="/quiz" class="btn block retest-btn">重新测评</router-link>
-
-        <!-- 历史对比 -->
-        <template v-if="compare">
-          <p class="cmp-title">最近两次对比</p>
-          <div v-for="c in compare" :key="c.dim" class="cmp-row">
-            <span class="c-name">{{ c.name }}</span>
-            <span class="c-prev">{{ c.prev }}</span>
-            <span class="c-arrow">→</span>
-            <span class="c-now">{{ c.now }}</span>
-            <span class="c-delta" :class="{ up: c.delta > 0, down: c.delta < 0 }">
-              {{ c.delta > 0 ? '+' : '' }}{{ c.delta }}
-            </span>
+        <div class="card" v-if="!records.length">
+          <p class="empty" style="padding:12px 0">还没有测评记录</p>
+          <router-link to="/quiz" class="btn block">去测评</router-link>
+        </div>
+        <div class="card" v-else>
+          <div v-for="(r, i) in records" :key="r.id" class="rec-row">
+            <span class="rec-badge" v-if="i === 0">最新</span>
+            <span class="rec-badge member" v-if="r.member_name">{{ r.member_name }}</span>
+            <b>{{ r.main_name }}</b>
+            <span v-if="r.combined.length > 1" class="combined">兼夹{{ r.combined.join('、') }}</span>
+            <span class="date">{{ fmtDate(r.created_at) }}</span>
           </div>
-          <p class="cmp-note">分数下降通常意味着该体质倾向减轻（转化分越低越不明显）</p>
-        </template>
-      </div>
 
-      <!-- 家庭体质档案（T2-8） -->
-      <div class="section-title">家庭成员
-        <router-link to="/quiz" style="margin-left: auto; font-size: 12px; font-weight: 400; color: var(--green-text); text-decoration: none;">替家人测评 →</router-link>
-      </div>
-      <div class="card">
-        <div v-if="members.length" class="fam-list">
-          <div v-for="m in members" :key="m.id" class="fam-row">
-            <span class="fam-avatar" :style="{ background: m.color || 'var(--green-100)' }">{{ m.name[0] }}</span>
-            <div class="fam-info">
-              <b>{{ m.name }}</b>
-              <span v-if="m.relation" class="fam-rel">{{ m.relation }}</span>
+          <!-- 复测入口：体质随季节/作息变化，有记录也要能再测一次 -->
+          <router-link to="/quiz" class="btn block retest-btn">重新测评</router-link>
+
+          <!-- 历史对比 -->
+          <template v-if="compare">
+            <p class="cmp-title">最近两次对比</p>
+            <div v-for="c in compare" :key="c.dim" class="cmp-row">
+              <span class="c-name">{{ c.name }}</span>
+              <span class="c-prev">{{ c.prev }}</span>
+              <span class="c-arrow">→</span>
+              <span class="c-now">{{ c.now }}</span>
+              <span class="c-delta" :class="{ up: c.delta > 0, down: c.delta < 0 }">
+                {{ c.delta > 0 ? '+' : '' }}{{ c.delta }}
+              </span>
             </div>
-            <button class="fam-del" @click="delMember(m)">移除</button>
+            <p class="cmp-note">分数下降通常意味着该体质倾向减轻（转化分越低越不明显）</p>
+          </template>
+        </div>
+
+        <!-- 家庭体质档案（T2-8） -->
+        <div class="section-title">家庭成员
+          <router-link to="/quiz" class="title-action">替家人测评 →</router-link>
+        </div>
+        <div class="card">
+          <div v-if="members.length" class="fam-list">
+            <div v-for="m in members" :key="m.id" class="fam-row">
+              <span class="fam-avatar" :style="{ background: m.color || 'var(--green-100)' }">{{ m.name[0] }}</span>
+              <div class="fam-info">
+                <b>{{ m.name }}</b>
+                <span v-if="m.relation" class="fam-rel">{{ m.relation }}</span>
+              </div>
+              <button class="fam-del" @click="delMember(m)">移除</button>
+            </div>
+          </div>
+          <p v-else class="empty" style="padding:8px 0 12px">还没有家庭成员，添加后可在测评页替他们答题</p>
+          <div class="fam-add">
+            <input v-model="newMemberName" placeholder="称呼，如：妈妈" maxlength="12" class="fam-input" />
+            <select v-model="newMemberRelation" class="fam-input fam-sel">
+              <option value="">关系（可选）</option>
+              <option v-for="r in RELATIONS" :key="r" :value="r">{{ r }}</option>
+            </select>
+            <button class="btn" :disabled="!newMemberName.trim()" @click="addMember">添加</button>
           </div>
         </div>
-        <p v-else class="empty" style="padding:8px 0 12px">还没有家庭成员，添加后可在测评页替他们答题</p>
-        <div class="fam-add">
-          <input v-model="newMemberName" placeholder="称呼，如：妈妈" maxlength="12" class="fam-input" />
-          <select v-model="newMemberRelation" class="fam-input fam-sel">
-            <option value="">关系（可选）</option>
-            <option v-for="r in RELATIONS" :key="r" :value="r">{{ r }}</option>
-          </select>
-          <button class="btn" :disabled="!newMemberName.trim()" @click="addMember">添加</button>
-        </div>
-      </div>
 
-      <!-- 饮用打卡 -->
-      <div class="section-title">饮用打卡
-        <router-link to="/report" style="margin-left: auto; font-size: 12px; font-weight: 400; color: var(--green-text); text-decoration: none;">周期报告 →</router-link>
-      </div>
-      <div class="card" v-if="checkins">
-        <div class="ck-head">
-          <span class="ck-streak">连续 <b>{{ checkins.streak }}</b> 天</span>
-          <span class="ck-total">累计 {{ checkins.total }} 天</span>
+        <!-- 饮用打卡 -->
+        <div class="section-title">饮用打卡
+          <router-link to="/report" class="title-action">周期报告 →</router-link>
         </div>
-        <div class="ck-week">
-          <div v-for="d in weekGrid" :key="d.iso" class="ck-cell" :class="{ hit: d.hit, future: d.future }">
-            <span class="ck-label">{{ d.label }}</span>
-            <span class="ck-dot"></span>
+        <div class="card" v-if="checkins">
+          <div class="ck-head">
+            <span class="ck-streak">连续 <b>{{ checkins.streak }}</b> 天</span>
+            <span class="ck-total">累计 {{ checkins.total }} 天</span>
+          </div>
+          <div class="ck-week">
+            <div v-for="d in weekGrid" :key="d.iso" class="ck-cell" :class="{ hit: d.hit, future: d.future }">
+              <span class="ck-label">{{ d.label }}</span>
+              <span class="ck-dot"></span>
+            </div>
+          </div>
+          <template v-if="recentCheckins.length">
+            <p class="ck-title">最近打卡</p>
+            <div v-for="(r, i) in recentCheckins" :key="i" class="ck-row">
+              <router-link :to="`/recipes/${r.recipe_id}`" class="ck-name">{{ r.recipe_name }}</router-link>
+              <span class="ck-day">{{ r.day }}</span>
+            </div>
+          </template>
+          <p v-else class="ck-empty">还没有打卡记录，去方子详情页试试「今日打卡」</p>
+        </div>
+
+        <!-- 收藏 -->
+        <div class="section-title">我的收藏（{{ favorites.length }}）</div>
+        <div class="card" v-if="!favorites.length">
+          <p class="empty" style="padding:12px 0">还没有收藏，去方子库逛逛</p>
+          <router-link to="/recipes" class="btn ghost block">逛方子库</router-link>
+        </div>
+        <div class="card" v-else>
+          <router-link v-for="f in favorites" :key="f.id" :to="`/recipes/${f.id}`" class="recipe-row">
+            <div class="r-name">{{ f.name }} <span class="tag warm">{{ f.type }}</span></div>
+            <div class="r-one">{{ f.oneliner }}</div>
+          </router-link>
+        </div>
+      </template>
+
+      <!-- ==================== 未登录访客档案与账号能力概览 ==================== -->
+      <template v-else>
+        <div class="section-title">本机体质测评
+          <button v-if="guestRec" @click="showCard = true" class="title-action">体质名片 →</button>
+        </div>
+        <div v-if="guestRec" class="card">
+          <div class="rec-row">
+            <span class="rec-badge">本机暂存</span>
+            <b>{{ guestRec.main_name }}</b>
+            <span v-if="guestRec.combined.length > 1" class="combined">兼夹{{ guestRec.combined.join('、') }}</span>
+            <span class="date">{{ guestRec.created_at }}</span>
+          </div>
+          <p class="guest-rec-note">当前结果仅保存在本浏览器，已为你驱动首页个性化推荐；登录后将自动同步进个人档案。</p>
+          <div class="guest-rec-ops">
+            <router-link to="/quiz" class="btn ghost">重新测评</router-link>
+            <router-link :to="{ path: '/login', query: { redirect: '/me' } }" class="btn">登录并归入账号</router-link>
           </div>
         </div>
-        <template v-if="recentCheckins.length">
-          <p class="ck-title">最近打卡</p>
-          <div v-for="(r, i) in recentCheckins" :key="i" class="ck-row">
-            <router-link :to="`/recipes/${r.recipe_id}`" class="ck-name">{{ r.recipe_name }}</router-link>
-            <span class="ck-day">{{ r.day }}</span>
+        <div v-else class="card guest-quiz-empty">
+          <p class="guest-empty-txt">免登录即可完成 67 题《中医体质分类与判定》量表，获取本机专属茶饮推荐与体质名片</p>
+          <router-link to="/quiz" class="btn">开始体质测评</router-link>
+        </div>
+
+        <div class="section-title">账号长期追踪</div>
+        <div class="card cloud-preview">
+          <div class="cp-grid">
+            <div class="cp-item">
+              <b>多阶段体质对比</b>
+              <span>留存历次测评，直观对比九维转化分升降</span>
+            </div>
+            <div class="cp-item">
+              <b>家庭共养档案</b>
+              <span>替父母伴侣建档，看方子时一键核对全家适宜度</span>
+            </div>
+            <div class="cp-item">
+              <b>每日饮用打卡</b>
+              <span>记录茶饮习惯与连续天数，陪伴日常轻养</span>
+            </div>
+            <div class="cp-item">
+              <b>21 天周期报告 & 收藏</b>
+              <span>汇总摄入成分与靶点覆盖，跨设备同步收藏夹</span>
+            </div>
           </div>
-        </template>
-        <p v-else class="ck-empty">还没有打卡记录，去方子详情页试试「今日打卡」</p>
-      </div>
+          <div class="cp-foot">
+            <span>遵循个人信息最小必要原则，以上跨期管理功能按需开启</span>
+            <router-link :to="{ path: '/login', query: { redirect: '/me' } }" class="cp-link">去登录开启 →</router-link>
+          </div>
+        </div>
+      </template>
 
-      <!-- 收藏 -->
-      <div class="section-title">我的收藏（{{ favorites.length }}）</div>
-      <div class="card" v-if="!favorites.length">
-        <p class="empty" style="padding:12px 0">还没有收藏，去方子库逛逛</p>
-        <router-link to="/recipes" class="btn ghost block">逛方子库</router-link>
-      </div>
-      <div class="card" v-else>
-        <router-link v-for="f in favorites" :key="f.id" :to="`/recipes/${f.id}`" class="recipe-row">
-          <div class="r-name">{{ f.name }} <span class="tag warm">{{ f.type }}</span></div>
-          <div class="r-one">{{ f.oneliner }}</div>
-        </router-link>
-      </div>
-
-      <!-- 最近浏览（本地，未登录也可用） -->
+      <!-- ==================== 免登录通用模块（最近浏览 / 设置 / 开放 API） ==================== -->
       <div class="section-title">最近浏览</div>
       <div class="card" v-if="!history.length">
         <p class="empty" style="padding:12px 0">暂无浏览记录</p>
@@ -302,7 +379,7 @@ function buzz(ms) {
       <div class="section-title">设置</div>
       <div class="card">
         <div class="set-row">
-          <span class="set-label">字号大小</span>
+          <span class="set-label">字号大小<small class="set-sub">适老化大字阅读支持</small></span>
           <div class="seg" :style="{ '--seg-i': FONT_KEYS.indexOf(fontScale) }">
             <span class="seg-slider" aria-hidden="true"></span>
             <button v-for="k in FONT_KEYS" :key="k" class="seg-item"
@@ -327,36 +404,70 @@ function buzz(ms) {
           <span class="set-label">本地数据</span>
           <button class="btn ghost danger" @click="clearLocalData">清空作答/历史/AI密钥</button>
         </div>
-        <p class="set-note">字号与主题仅保存在本机；收藏与体质档案跟随账号。</p>
+        <p class="set-note">字号、主题与专业模式保存在本机，免登录即生效；收藏与长期档案跟随账号。</p>
       </div>
 
       <!-- 开放数据 API（T1-6） -->
-      <div class="section-title">开发者</div>
+      <div class="section-title">开发者与科研共享</div>
       <div class="card">
         <router-link to="/open-api" class="recipe-row" style="display: flex; align-items: center; gap: 8px;">
           <b>开放数据 API</b>
-          <span style="font-size: 12px; color: var(--ink-400);">目录/药材/成分/靶点，免 Key 只读</span>
+          <span style="font-size: 12px; color: var(--ink-400);">目录 / 药材 / 成分 / 靶点，免 Key 只读</span>
         </router-link>
       </div>
     </template>
 
     <!-- 体质名片海报（T2-10） -->
-    <ConstitutionCard v-model:show="showCard" :record="records[0] || null" :week-count="weekCount" />
+    <ConstitutionCard v-model:show="showCard" :record="cardRecord" :week-count="weekCount" />
     <DisclaimerBanner variant="general" style="margin-top: 16px;" />
   </div>
 </template>
 
 <style scoped>
-.user-card { display: flex; align-items: center; gap: 14px; }
-.avatar { width: 52px; height: 52px; border-radius: 50%; background: var(--green-100); color: var(--green-text); font-size: 22px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
-.u-info { flex: 1; }
+.user-card { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.avatar { width: 52px; height: 52px; border-radius: 50%; background: var(--green-100); color: var(--green-text); font-size: 22px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.guest-avatar { font-family: var(--font-serif); font-size: 20px; background: var(--green-50); border: 1px solid var(--green-100); }
+.u-info { flex: 1; min-width: 170px; }
 .u-info b { font-family: var(--font-serif); font-size: 18px; font-weight: 700; color: var(--ink-900); display: block; }
-.u-info span { font-size: 12px; color: var(--ink-400); }
-.rec-row { display: flex; align-items: center; gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--green-50); }
+.u-info span { font-size: 12px; color: var(--ink-400); line-height: 1.45; display: block; margin-top: 2px; }
+.guest-login-btn { flex-shrink: 0; }
+
+.title-action {
+  margin-left: auto; font-size: 12px; font-weight: 500;
+  color: var(--green-text); background: none; border: none;
+  cursor: pointer; text-decoration: none; font-family: var(--font-sans);
+}
+.title-action:hover { text-decoration: underline; }
+
+.rec-row { display: flex; align-items: center; gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--green-50); flex-wrap: wrap; }
 .rec-row:last-of-type { border-bottom: none; }
 .retest-btn { margin-top: 12px; }
 .rec-badge { font-size: 10px; background: var(--green-700); color: #fff; padding: 1px 7px; border-radius: 8px; }
 .rec-badge.member { background: var(--amber-600); }
+
+/* 访客本机测评与账号能力预览 */
+.guest-rec-note { font-size: 12px; color: var(--ink-400); margin-top: 6px; line-height: 1.5; }
+.guest-rec-ops { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+.guest-rec-ops .btn { flex: 1; min-width: 130px; }
+.guest-quiz-empty { text-align: center; padding: 20px 16px; }
+.guest-empty-txt { font-size: 13px; color: var(--ink-600); line-height: 1.6; margin-bottom: 14px; }
+
+.cp-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+@media (min-width: 540px) { .cp-grid { grid-template-columns: 1fr 1fr; } }
+.cp-item {
+  padding: 10px 12px; border-radius: 10px;
+  background: var(--green-50); border: 1px solid var(--green-100);
+}
+.cp-item b { display: block; font-size: 13.5px; color: var(--ink-900); margin-bottom: 3px; }
+.cp-item span { display: block; font-size: 11.5px; color: var(--ink-600); line-height: 1.5; }
+.cp-foot {
+  margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--card-border);
+  display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;
+  font-size: 11.5px; color: var(--ink-400);
+}
+.cp-link { color: var(--green-text); font-weight: 600; text-decoration: none; font-size: 12.5px; }
+.cp-link:hover { text-decoration: underline; }
+
 .fam-list { margin-bottom: 10px; }
 .fam-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--green-50); }
 .fam-avatar { width: 36px; height: 36px; border-radius: 50%; color: var(--green-text); font-size: 15px; font-weight: 700;
@@ -367,7 +478,7 @@ function buzz(ms) {
 .fam-del { border: none; background: none; color: var(--red-text); font-size: 12px; cursor: pointer; }
 .fam-add { display: flex; gap: 6px; }
 .fam-input { flex: 1; min-width: 0; border: 1.5px solid var(--green-100); border-radius: 10px; padding: 8px 10px;
-             font-size: 13px; background: var(--green-50); outline: none; }
+             font-size: 13px; background: var(--green-50); color: var(--ink-900); outline: none; }
 .fam-input:focus { border-color: var(--green-600); }
 .fam-sel { flex: 0 0 92px; }
 .rec-row b { font-size: 15px; }
@@ -421,12 +532,12 @@ function buzz(ms) {
 }
 .seg-item { position: relative; z-index: 1; border: none; background: transparent; padding: 6px 14px; font-size: 13px; color: var(--ink-600); border-radius: 8px; cursor: pointer; transition: color var(--dur-fast) ease; white-space: nowrap; }
 .seg-item.on { color: #fff; font-weight: 600; }
-.switch-btn { width: 46px; height: 26px; border-radius: 13px; border: none; background: #d7e0db; position: relative; cursor: pointer; transition: background .2s; }
+.switch-btn { width: 46px; height: 26px; border-radius: 13px; border: none; background: #d7e0db; position: relative; cursor: pointer; transition: background .2s; flex-shrink: 0; }
 .switch-btn.on { background: var(--green-600); }
 .switch-btn .knob { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: left .2s var(--ease-spring); }
 .switch-btn.on .knob { left: 23px; }
 .set-sub { display: block; font-size: 11px; font-weight: 400; color: var(--ink-400); margin-top: 2px; }
-.btn.danger { color: var(--red-text); background: var(--red-50); font-size: 13px; padding: 7px 12px; }
+.btn.danger { color: var(--red-text); background: var(--red-50); border-color: rgba(176, 74, 58, 0.22); font-size: 13px; padding: 7px 12px; }
 .set-note { font-size: 11px; color: var(--ink-400); margin-top: 10px; }
 
 /* 骨架屏 */

@@ -3,6 +3,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { Info } from '@lucide/vue'
 import { makeNavHooks, tween, afterPaint } from '../utils/motion'
 import { getQuestionnaire, submitQuiz, saveRecord, isLoggedIn, listFamilyMembers, saveLocalConstitution, getLocalConstitution } from '../api'
+import { recordQuizSnapshot } from '../utils/guestArchive'
 import RecipeRow from '../components/RecipeRow.vue'
 
 const items = ref({})          // {code: [题...]}
@@ -153,12 +154,18 @@ async function submit() {
     const res = (await submitQuiz(answers.value)).data.data
     result.value = res
     clearProgress()
-    // 本地暂存判定结果（登录与否都存）：首页「为你推荐」等处免重测即可用
-    saveLocalConstitution(res.judged, res.transformed)
+    // 本地暂存判定结果（登录与否都存，替家人代测时不覆盖本人暂存）；
+    // 同时保存作答快照，未登录测完后若注册/登录可自动认领入云端档案
+    if (!forMember.value) {
+      saveLocalConstitution(res.judged, res.transformed)
+      recordQuizSnapshot(answers.value, false)
+    }
     // 已登录 → 自动存入体质档案（可挂家庭成员；失败不打断展示）
     if (isLoggedIn()) {
       saveRecord(res.judged, res.transformed, answers.value,
-                 forMember.value || null).catch(() => {})
+                 forMember.value || null).then(() => {
+        if (!forMember.value) recordQuizSnapshot(answers.value, true)
+      }).catch(() => {})
     }
     window.scrollTo({ top: 0, behavior: 'smooth' })
     // 揭示动画：afterPaint 下一拍把进度条从 0 播到终值，同时分数滚动
@@ -218,6 +225,10 @@ const lrDate = computed(() => {
           偏颇体质：{{ result.judged.combined.map(c => NAME[c] + '质').join('、') }}
         </div>
         <div v-else class="combined">各体质得分均未达偏颇标准，保持平和即为理想状态</div>
+        <div v-if="!isLoggedIn()" class="guest-claim-tip">
+          <span>已保存在本机（免登录可直接用推荐）</span>
+          <router-link :to="{ path: '/login', query: { redirect: '/me' } }">登录并长期归档 →</router-link>
+        </div>
       </div>
 
       <div class="section-title rise" style="--i: 1">九种体质得分</div>
@@ -369,6 +380,14 @@ const lrDate = computed(() => {
 .result-hero h2 { font-family: var(--font-serif); font-size: 26px; font-weight: 700; color: var(--green-text); margin: 6px 0; animation: pop .55s var(--ease-spring) .25s backwards; }
 .result-hero .principle { font-size: 13px; color: var(--ink-600); }
 .combined { margin-top: 8px; font-size: 12px; color: var(--amber-text); }
+.guest-claim-tip {
+  margin-top: 12px; padding: 8px 12px; border-radius: 9px;
+  background: var(--green-50); border: 1px solid var(--green-100);
+  font-size: 12px; color: var(--ink-600);
+  display: inline-flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 10px;
+}
+.guest-claim-tip a { color: var(--green-text); font-weight: 600; text-decoration: none; }
+.guest-claim-tip a:hover { text-decoration: underline; }
 
 .score-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; }
 .s-name { width: 42px; font-size: 13px; color: var(--ink-600); }
