@@ -192,11 +192,13 @@ class CustomRecipeBody(BaseModel):
 
 
 @app.post("/api/v1/custom-recipe/analyze")
-def analyze_custom_recipe(body: CustomRecipeBody):
+def analyze_custom_recipe(body: CustomRecipeBody,
+                          x_ai_key: str | None = Header(None, alias="X-AI-Key")):
     """
     自定义方子分析：输入几味药材，从 HERB 数据库拉取成分/靶点/功效，
     合并去重后返回结构化分析结果。
-    数据来源：HERB (herb.ac.cn, CC BY-NC) + 本地知识库
+    数据来源：HERB (herb.ac.cn, CC BY-NC) + 本地知识库 + SymMap
+    中文功效：本地策展库优先，其次 SymMap 性味归经，最后 AI 翻译兜底（标注来源）
     """
     herbs_input = [{"name": h.name.strip(), "grams": h.grams}
                    for h in body.herbs if h.name and h.name.strip()]
@@ -204,11 +206,11 @@ def analyze_custom_recipe(body: CustomRecipeBody):
         raise HTTPException(400, "请至少输入一味药材")
     if len(herbs_input) > 20:
         raise HTTPException(400, "最多支持 20 味药材")
-    result = herb_svc.analyze_recipe(herbs_input)
+    result = herb_svc.analyze_recipe(herbs_input, api_key=x_ai_key)
     # 补上声明与数据来源
     result["sources_note"] = (
-        "成分/靶点/疾病数据来自 HERB 数据库（herb.ac.cn, CC BY-NC 4.0），"
-        "功效为英文原文直译，仅供参考；不构成医疗建议。"
+        "成分/靶点/疾病数据来自 HERB 数据库（herb.ac.cn, CC BY-NC 4.0）；"
+        "中文性味归经来自本地知识库与 SymMap，AI 译文仅供参考；不构成医疗建议。"
     )
     return ok(result)
 

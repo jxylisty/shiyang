@@ -23,6 +23,10 @@ frontend/.app_api_base
 # 运行时缓存（后端 embedding/chembl 等，随用随建，不入库）
 data/cache/
 
+# SymMap 下载数据（scripts/fetch_symmap.py 可重建，第三方数据不入库）
+data/symmap_smhb_v2.xlsx
+data/symmap_smhb_v2.json
+
 # 编辑器/系统
 .vscode/
 .idea/

@@ -115,6 +115,10 @@ function evidenceLevel(r) {
   return 'C'
 }
 const evidenceLabel = { A: '临床证据支持', B: '实验数据支持', C: '传统应用记载' }
+
+// 结果里只要出现 AI 译文，就必须带上 AI 内容声明
+const hasAiText = computed(() =>
+  customResult.value?.herbs?.some(h => h.functions_cn_source === 'ai') ?? false)
 </script>
 
 <template>
@@ -277,16 +281,18 @@ const evidenceLabel = { A: '临床证据支持', B: '实验数据支持', C: '�
               <b class="hc-name">{{ h.name_cn || h.herb_name }}</b>
               <span v-if="h.pinyin" class="hc-py">{{ h.pinyin }}</span>
             </div>
-            <div v-if="h.properties || h.meridians" class="hc-prop">
-              <span v-if="h.properties">性味：{{ h.properties }}</span>
-              <span v-if="h.meridians">归经：{{ h.meridians }}</span>
+            <div v-if="h.properties_cn || h.meridians_cn || h.properties || h.meridians" class="hc-prop">
+              <span v-if="h.properties_cn || h.properties">性味：{{ h.properties_cn || h.properties }}</span>
+              <span v-if="h.meridians_cn || h.meridians">归经：{{ h.meridians_cn || h.meridians }}</span>
             </div>
-            <div v-if="h.function_en" class="hc-func">
-              <span class="hc-label">传统功效（英译）</span>
-              <p>{{ h.function_en }}</p>
+            <div v-if="h.functions_cn || h.function_en" class="hc-func">
+              <span class="hc-label">
+                传统功效<small v-if="h.functions_cn && h.functions_cn_source === 'ai'" class="src-tag">AI 译</small>
+              </span>
+              <p>{{ h.functions_cn || h.function_en }}</p>
             </div>
             <div v-if="h.indication_en" class="hc-indic">
-              <span class="hc-label">主治（英译）</span>
+              <span class="hc-label">主治<small class="src-tag">英译</small></span>
               <p>{{ h.indication_en }}</p>
             </div>
             <div class="hc-stats">
@@ -326,6 +332,7 @@ const evidenceLabel = { A: '临床证据支持', B: '实验数据支持', C: '�
         </div>
 
         <DisclaimerBanner variant="compound" size="lg" />
+        <DisclaimerBanner v-if="hasAiText" variant="ai" />
       </template>
 
       <p v-if="customError" class="submit-error shake">{{ customError }}</p>
@@ -422,6 +429,11 @@ const evidenceLabel = { A: '临床证据支持', B: '实验数据支持', C: '�
 .hc-py { font-size: 11.5px; color: var(--ink-400); text-transform: capitalize; }
 .hc-prop { font-size: 12px; color: var(--ink-500); display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
 .hc-label { font-size: 11px; color: var(--green-text); font-weight: 600; display: block; margin-bottom: 3px; }
+.hc-label .src-tag {
+  display: inline-block; margin-left: 5px; padding: 0 5px; border-radius: 6px;
+  font-size: 9.5px; font-weight: 500; line-height: 1.6;
+  background: var(--amber-500); color: #fff; vertical-align: middle;
+}
 .hc-func, .hc-indic { margin: 6px 0; }
 .hc-func p, .hc-indic p {
   font-size: 13px; color: var(--ink-700); line-height: 1.6; margin: 0;
