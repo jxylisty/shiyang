@@ -2,8 +2,11 @@
 import { ref, computed, onMounted } from 'vue'
 import { ShoppingBasket, Sparkles, Search } from '@lucide/vue'
 import { showSuccessToast } from 'vant'
-import { getPantryMaterials, pantryMatch, matImg, analyzeCustomRecipe, parseCustomRecipeText } from '../api'
+import { getPantryMaterials, pantryMatch, matImg, analyzeCustomRecipe, parseCustomRecipeText, getCustomPlain } from '../api'
 import DisclaimerBanner from '../components/DisclaimerBanner.vue'
+import PlainCard from '../components/PlainCard.vue'
+import ProModeToggle from '../components/ProModeToggle.vue'
+import { proMode } from '../utils/proMode'
 
 const activeTab = ref('own')  // 'own' = 我的茶罐 / 'custom' = 自定义鉴方
 const materials = ref([])       // 全部可选食材
@@ -63,6 +66,10 @@ const customInput = ref('')
 const customLoading = ref(false)
 const customError = ref('')
 const customResult = ref(null)
+// 「说人话」解读：分析结果出来后再请求 AI 改写，失败不影响主结果
+const customPlain = ref(null)
+const customPlainLoading = ref(false)
+const customPlainError = ref('')
 
 const customCanAnalyze = computed(() =>
   customHerbs.value.length > 0 && customHerbs.value.every(h => h.name.trim()))
@@ -97,9 +104,29 @@ async function runCustomAnalyze() {
       customHerbs.value,
       customClaim.value || null,
     )).data.data
+    runCustomPlain()
   } catch (e) {
     customError.value = e?.response?.data?.detail || '分析失败，请检查网络后重试'
   } finally { customLoading.value = false }
+}
+
+async function runCustomPlain() {
+  customPlain.value = null
+  customPlainError.value = ''
+  // 只送数据库里查到的药材及其传统资料；未找到的不送，避免模型凭空编作用
+  const herbs = (customResult.value?.herbs || []).map(h => ({
+    name: h.name_cn || h.herb_name,
+    grams: h.grams ?? null,
+    properties: String(h.properties_cn || h.properties || '') || null,
+    functions: String(h.functions_cn || h.function_en || '') || null,
+  }))
+  if (!herbs.length) return
+  customPlainLoading.value = true
+  try {
+    customPlain.value = (await getCustomPlain(herbs)).data.data
+  } catch {
+    customPlainError.value = '白话解读暂时没生成出来，可以先看下方每味药的传统功效。'
+  } finally { customPlainLoading.value = false }
 }
 
 const customClaim = ref('')
@@ -323,7 +350,7 @@ const hasAiText = computed(() =>
             </span>
           </div>
           <p class="crs-text">
-            这个方子的 <b>{{ customResult.matched_count }}</b> 味药材中，
+            这个方子的 <b>{{ customResult.matched_count + customResult.not_found.length }}</b> 味药材中，
             有 <b>{{ customResult.matched_count }}</b> 味在 HERB 数据库有记录
             <template v-if="customResult.not_found.length">
               ，<b class="miss">{{ customResult.not_found.length }}</b> 味未找到（{{ customResult.not_found.join('、') }}）
@@ -333,6 +360,10 @@ const hasAiText = computed(() =>
           <p class="crs-note">以下分析基于成分和靶点的统计富集结果，为体外/文献层面，不等同于人体内功效。</p>
         </div>
 
+        <!-- 大众层：整方白话解读（AI 生成，组件内带来源标注） -->
+        <PlainCard :plain="customPlain" :loading="customPlainLoading" :error="customPlainError"
+                   title="用大白话说说这个方子" />
+
         <!-- 逐味药材说人话（主视觉） -->
         <div class="section-title">每味药管什么</div>
         <div class="herb-cards">
@@ -341,7 +372,7 @@ const hasAiText = computed(() =>
               <b class="hc-name">{{ h.name_cn || h.herb_name }}</b>
               <span v-if="h.pinyin" class="hc-py">{{ h.pinyin }}</span>
             </div>
-            <div v-if="h.properties_cn || h.meridians_cn || h.properties || h.meridians" class="hc-prop">
+            <div v-if="proMode && (h.properties_cn || h.meridians_cn || h.properties || h.meridians)" class="hc-prop">
               <span v-if="h.properties_cn || h.properties">性味：{{ h.properties_cn || h.properties }}</span>
               <span v-if="h.meridians_cn || h.meridians">归经：{{ h.meridians_cn || h.meridians }}</span>
             </div>
@@ -351,18 +382,21 @@ const hasAiText = computed(() =>
               </span>
               <p>{{ h.functions_cn || h.function_en }}</p>
             </div>
-            <div v-if="h.indication_en" class="hc-indic">
+            <div v-if="proMode && h.indication_en" class="hc-indic">
               <span class="hc-label">主治<small class="src-tag">英译</small></span>
               <p>{{ h.indication_en }}</p>
             </div>
-            <div class="hc-stats">
+            <div v-if="proMode" class="hc-stats">
               <span>{{ h.ingredient_count }} 个成分</span>
               <span>{{ h.target_count }} 个靶点</span>
             </div>
           </div>
         </div>
 
-        <!-- 成分 & 靶点（折叠展开） -->
+        <ProModeToggle hint="性味归经、成分与作用靶点等研究数据" style="margin-top: 12px;" />
+
+        <!-- 成分 & 靶点（专业层） -->
+        <template v-if="proMode">
         <div class="section-title">成分与靶点</div>
         <div class="card cr-extra">
           <p class="hint">
@@ -390,6 +424,7 @@ const hasAiText = computed(() =>
             </div>
           </div>
         </div>
+        </template>
 
         <DisclaimerBanner variant="compound" size="lg" />
         <DisclaimerBanner v-if="hasAiText" variant="ai" />

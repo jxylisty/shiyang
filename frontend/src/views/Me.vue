@@ -6,6 +6,7 @@ import { currentUser, logout, listRecords, listFavorites, isLoggedIn, getHistory
 import ConstitutionCard from '../components/ConstitutionCard.vue'
 import RecipeRow from '../components/RecipeRow.vue'
 import DisclaimerBanner from '../components/DisclaimerBanner.vue'
+import { proMode } from '../utils/proMode'
 
 // ---- 体质名片（T2-10） ----
 const showCard = ref(false)
@@ -316,6 +317,13 @@ function buzz(ms) {
           </button>
         </div>
         <div class="set-row">
+          <span class="set-label">专业模式<small class="set-sub">显示入血成分预测、靶点网络等研究分析</small></span>
+          <button class="switch-btn" :class="{ on: proMode }" role="switch"
+                  :aria-checked="proMode" @click="proMode = !proMode">
+            <span class="knob"></span>
+          </button>
+        </div>
+        <div class="set-row">
           <span class="set-label">本地数据</span>
           <button class="btn ghost danger" @click="clearLocalData">清空作答/历史/AI密钥</button>
         </div>
@@ -417,6 +425,7 @@ function buzz(ms) {
 .switch-btn.on { background: var(--green-600); }
 .switch-btn .knob { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: left .2s var(--ease-spring); }
 .switch-btn.on .knob { left: 23px; }
+.set-sub { display: block; font-size: 11px; font-weight: 400; color: var(--ink-400); margin-top: 2px; }
 .btn.danger { color: var(--red-text); background: var(--red-50); font-size: 13px; padding: 7px 12px; }
 .set-note { font-size: 11px; color: var(--ink-400); margin-top: 10px; }
 

@@ -57,6 +57,8 @@ export const getExposure = (id) => api.get(`/recipes/${id}/exposure`)
 export const getNetwork = (id) => api.get(`/recipes/${id}/network`)
 export const getEvidenceChain = (id) => api.get(`/recipes/${id}/chain`)
 export const getPathways = (id) => api.get(`/recipes/${id}/pathways`)
+// 「说人话」白话解读（AI 生成，大众层）
+export const getRecipePlain = (id) => api.get(`/recipes/${id}/plain`)
 export const compareRecipes = (a, b) => api.get('/recipes/compare', { params: { a, b } })
 
 // ---- 全局搜索 ----
@@ -113,6 +115,8 @@ export const analyzeCustomRecipe = (herbs, claim) =>
   api.post('/custom-recipe/analyze', { herbs, claim })
 export const parseCustomRecipeText = (text) =>
   api.post('/custom-recipe/parse-text', { text })
+export const getCustomPlain = (herbs) =>
+  api.post('/custom-recipe/plain', { herbs })
 
 // ---- 慢病安全滤镜 ----
 export const getSafetyProfiles = () => api.get('/safety/profiles')

@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { BadgeCheck, Clock, ExternalLink, Star, StarOff, CheckCircle2, ArrowUp } from '@lucide/vue'
 import AppIcon from '../components/AppIcon.vue'
 import { showSuccessToast } from 'vant'
-import { getRecipe, getExposure, getPathways, addFavorite, removeFavorite, listFavorites, isLoggedIn, pushHistory, doCheckin, undoCheckin, matImg } from '../api'
+import { getRecipe, getRecipePlain, getExposure, getPathways, addFavorite, removeFavorite, listFavorites, isLoggedIn, pushHistory, doCheckin, undoCheckin, matImg } from '../api'
 import { afterPaint } from '../utils/motion'
 import AIReport from '../components/AIReport.vue'
 import NetworkGraph from '../components/NetworkGraph.vue'
@@ -15,6 +15,9 @@ import FamilyFit from '../components/FamilyFit.vue'
 import EvidenceCard from '../components/EvidenceCard.vue'
 import ExplainPanel from '../components/ExplainPanel.vue'
 import DisclaimerBanner from '../components/DisclaimerBanner.vue'
+import PlainCard from '../components/PlainCard.vue'
+import ProModeToggle from '../components/ProModeToggle.vue'
+import { proMode } from '../utils/proMode'
 
 const route = useRoute()
 const router = useRouter()
@@ -22,6 +25,8 @@ const recipe = ref(null)
 const error = ref('')
 const exposure = ref(null)
 const pathways = ref(null)
+const plain = ref(null)          // 「说人话」白话解读（AI 预生成）
+const plainLoading = ref(true)
 const favBusy = ref(false)
 const favState = ref({})
 const matFailed = ref({})
@@ -72,6 +77,8 @@ onMounted(async () => {
     // 下一拍再给进度条终值：让 width transition 从 0 播到目标（afterPaint，与骨架屏同款收口）
     afterPaint(() => { barsGrown.value = true })
   } catch { error.value = '加载失败' }
+  getRecipePlain(route.params.id).then(({ data }) => { plain.value = data.data })
+    .catch(() => {}).finally(() => { plainLoading.value = false })
   getExposure(route.params.id).then(({ data }) => { exposure.value = data.data }).catch(() => {})
   getPathways(route.params.id).then(({ data }) => { pathways.value = data.data }).catch(() => {})
   syncFavState()
@@ -214,6 +221,9 @@ async function toggleCheckin() {
             </div>
           </div>
 
+          <!-- 大众层：白话解读（AI 生成，组件内带来源标注） -->
+          <PlainCard :plain="plain" :loading="plainLoading" />
+
           <!-- 配方 -->
           <div class="section-title">配方</div>
           <div class="card">
@@ -232,7 +242,7 @@ async function toggleCheckin() {
           </div>
 
           <!-- 暴露量估计：由本页配方的克重 × 文献含量推出，紧贴配方展示 -->
-          <template v-if="exposure && exposure.items.length">
+          <template v-if="proMode && exposure && exposure.items.length">
             <div class="section-title">每杯实际摄入多少（估计）</div>
             <div class="card">
               <div v-for="(e, i) in exposure.items.slice(0, 8)" :key="e.compound + i" class="exp-row">
@@ -275,8 +285,11 @@ async function toggleCheckin() {
         </div>
 
         <div class="col-side">
-          <!-- 成分分析（核心卖点） -->
-          <template v-if="recipe.analysis">
+          <!-- 专业模式开关：研究分析默认收起，面向大众先讲人话 -->
+          <ProModeToggle v-if="recipe.analysis" />
+
+          <!-- 成分分析（核心卖点，专业层） -->
+          <template v-if="proMode && recipe.analysis">
             <div class="section-title">有效成分说明书</div>
             <div class="card analysis">
               <p class="a-intro">共关联 <b>{{ recipe.analysis.compound_count }}</b> 个活性成分（来自成分库）。以下为预测入血概率 Top10：</p>
@@ -311,7 +324,7 @@ async function toggleCheckin() {
             <!-- 入血概率可解释（T1-4） -->
             <ExplainPanel :recipe-id="recipe.id" style="margin-bottom: 12px;" />
           </template>
-          <div v-else class="card">
+          <div v-else-if="!recipe.analysis" class="card">
             <van-empty image="search" description="该方配料以普通食材为主，暂无成分分析（营养素视角开发中）" />
           </div>
 
@@ -328,7 +341,7 @@ async function toggleCheckin() {
       <!-- ===== 可视化专区（全宽，三卡并排）=====
            证据链/网络图/通路富集都是"看图"型内容，原本堆在右列导致左右严重失衡；
            移出网格单独成区，桌面端三栏并排、平板两栏、手机单栏 -->
-      <template v-if="recipe.analysis">
+      <template v-if="proMode && recipe.analysis">
         <div class="viz-zone">
           <div class="viz-item">
             <div class="section-title">证据链全景</div>

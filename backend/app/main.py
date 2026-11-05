@@ -32,6 +32,7 @@ from services import open_api
 from services import report_service as report
 from services import term_service as terms
 from services import search_service as search
+from services import plain_service as plain
 
 DB_PATH = Path(__file__).resolve().parent.parent.parent / "data" / "shiyang.db"
 DISCLAIMER = "本平台内容为健康参考信息，不构成医疗建议，不用于诊断或治疗。"
@@ -238,6 +239,32 @@ def parse_custom_recipe_text(body: ParseFormulaBody,
     return ok(result)
 
 
+class PlainHerb(BaseModel):
+    name: str
+    grams: float | None = None
+    properties: str | None = Field(None, description="性味（已查到的中文/英文）")
+    functions: str | None = Field(None, description="传统功效（已查到的中文/英文）")
+
+
+class CustomPlainBody(BaseModel):
+    herbs: list[PlainHerb]
+
+
+@app.post("/api/v1/custom-recipe/plain")
+def custom_recipe_plain(body: CustomPlainBody,
+                        x_ai_key: str | None = Header(None, alias="X-AI-Key")):
+    """自定义方子「说人话」解读：AI 依据已查到的传统功效改写成白话（标注 AI 生成、未审校）"""
+    if not body.herbs or len(body.herbs) > 20:
+        raise HTTPException(400, "药材数量需在 1–20 味之间")
+    try:
+        result = plain.custom_plain([h.model_dump() for h in body.herbs], api_key=x_ai_key)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    except RuntimeError as e:
+        raise HTTPException(502, str(e))
+    return ok(result)
+
+
 # ==================== 慢病安全滤镜（T1-5） ====================
 
 @app.get("/api/v1/safety/profiles")
@@ -340,6 +367,12 @@ def recipe_detail(rid: int):
     conn.close()
     out["disclaimer"] = DISCLAIMER
     return ok(out)
+
+
+@app.get("/api/v1/recipes/{rid:int}/plain")
+def recipe_plain(rid: int):
+    """「说人话」白话解读（AI 预生成，见 scripts/pregen_plain.py）；未生成时 data=null"""
+    return ok(plain.get_recipe_plain(rid))
 
 
 # ==================== 成分查询 ====================
