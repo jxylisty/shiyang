@@ -20,6 +20,9 @@ frontend/.app_api_base
 *.db-wal
 *.sqlite
 
+# 运行时缓存（后端 embedding/chembl 等，随用随建，不入库）
+data/cache/
+
 # 编辑器/系统
 .vscode/
 .idea/

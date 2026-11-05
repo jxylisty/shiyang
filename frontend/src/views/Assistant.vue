@@ -4,7 +4,7 @@
 import { ref, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import AppIcon from '../components/AppIcon.vue'
-import { streamAssistantChat, getLocalConstitution } from '../api'
+import { streamAssistantChat, getLocalConstitution, matImg } from '../api'
 
 const router = useRouter()
 const HISTORY_KEY = 'shiyang_assistant_history_v1'
@@ -18,9 +18,16 @@ const listRef = ref(null)
 const citationsByRound = ref({})   // 本轮流式中的引用（随 citations 事件更新）
 
 // 体质快捷注入：本地暂存的测评结果（登录用户后端档案为准，这里只是快捷入口）
+// combined 里存的是拼音 code（qixu/xueyu/qiyu/tebing 等），这里转成中文短名
+const CONST_SHORT = {
+  pinghe: '平和', qixu: '气虚', yangxu: '阳虚', yinxu: '阴虚',
+  tanshi: '痰湿', shire: '湿热', qiyu: '气郁', tebing: '特禀', xueyu: '血瘀',
+}
 const localConst = getLocalConstitution()
 const constNames = localConst?.judged?.combined?.length
-  ? localConst.judged.combined.map((c) => ({ code: c, name: c.replace('质', '') }))
+  ? localConst.judged.combined
+      .filter(c => CONST_SHORT[c])
+      .map(c => ({ code: c, name: CONST_SHORT[c] }))
   : []
 const injectConst = ref(false)
 const enabledConst = () => constNames.find((c) => c.code === injectCode.value)
@@ -103,6 +110,26 @@ function goCite(c) {
   else router.push({ path: '/herbs', query: { h: c.title } })
 }
 
+// 引用卡封面图：
+// - 方子：从 detail 的「配料：xxx、yyy」里拆出第一味
+// - 药材：直接用自身名
+// - 成分：无图，用图标兜底
+function citeCover(c) {
+  if (c.kind === 'herb') return matImg(c.title)
+  if (c.kind === 'recipe' && c.detail) {
+    const m = c.detail.match(/配料[：:]\s*([^、·]+)/)
+    if (m && m[1]) return matImg(m[1].trim())
+  }
+  return ''
+}
+function citeIconName(c) {
+  if (c.kind === 'recipe') return 'tea'
+  if (c.kind === 'compound') return 'molecule'
+  return 'herb'
+}
+const citeImgFailed = {}
+function onCiteImgErr(c) { citeImgFailed[c.id] = true }
+
 // **加粗** 拆段渲染（不用 v-html 防注入）；流式期间未闭合的 ** 尾段按普通文本
 function segments(text) {
   const parts = String(text || '').split('**')
@@ -130,8 +157,9 @@ onMounted(() => { load(); scrollBottom() })
       <div v-if="constNames.length" class="as-const" @click.prevent>
         <label class="as-switch">
           <input type="checkbox" v-model="injectConst" />
-          <span>以{{ constNames.map((c) => c.name).join('/') }}身份提问</span>
+          <span>以{{ constNames.map((c) => c.name).join('/') }}体质提问</span>
         </label>
+        <p class="as-const-tip">回答会按你的体质倾向推荐更对路的方子</p>
       </div>
     </div>
 
@@ -157,8 +185,13 @@ onMounted(() => { load(); scrollBottom() })
           <!-- 引用卡（方子/药材/成分），流式开始前就能看到 -->
           <div v-if="m.citations?.length" class="as-cites">
             <button v-for="c in m.citations" :key="c.id" class="as-cite pressable" @click="goCite(c)">
-              <span class="ac-id">{{ c.id }}</span>
+              <span class="ac-cover">
+                <img v-if="citeCover(c) && !citeImgFailed[c.id]"
+                     :src="citeCover(c)" :alt="c.title" loading="lazy" @error="onCiteImgErr(c)" />
+                <AppIcon v-else :name="citeIconName(c)" :size="18" />
+              </span>
               <span class="ac-main">
+                <span class="ac-id">{{ c.id }}</span>
                 <span class="ac-title">{{ c.title }}</span>
                 <span class="ac-sub">{{ c.sub }}<template v-if="c.detail"> · {{ c.detail }}</template></span>
               </span>
@@ -194,6 +227,7 @@ onMounted(() => { load(); scrollBottom() })
 .as-const { margin-top: 10px; }
 .as-switch { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink-600); cursor: pointer; }
 .as-switch input { accent-color: var(--green-600); }
+.as-const-tip { margin: 4px 0 0 22px; font-size: 11px; color: var(--ink-400); }
 
 .as-list { display: flex; flex-direction: column; gap: 14px; min-height: 40vh; }
 .as-empty { padding: 26px 18px; text-align: center; color: var(--ink-400); font-size: 13.5px; }
@@ -223,15 +257,27 @@ onMounted(() => { load(); scrollBottom() })
 
 .as-cites { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; border-top: 1px dashed var(--card-border); padding-top: 10px; }
 .as-cite {
-  display: flex; align-items: center; gap: 9px; text-align: left; width: 100%;
-  border: 1px solid var(--card-border); background: transparent; border-radius: 8px;
-  padding: 7px 10px; cursor: pointer; font-family: inherit;
+  display: flex; align-items: center; gap: 10px; text-align: left; width: 100%;
+  border: 1px solid var(--card-border); background: transparent; border-radius: 10px;
+  padding: 8px 10px; cursor: pointer; font-family: inherit;
   transition: border-color var(--dur-fast) ease, background var(--dur-fast) ease;
 }
 .as-cite:hover { border-color: var(--green-600); background: var(--green-50); }
-.ac-id { flex-shrink: 0; font-size: 10px; font-weight: 700; color: var(--green-text); background: var(--green-50); border: 1px solid var(--green-100); border-radius: 4px; padding: 1px 5px; }
+.ac-cover {
+  position: relative; width: 42px; height: 42px; border-radius: 8px; flex-shrink: 0;
+  background: var(--green-50); border: 1px solid rgba(0,0,0,0.04);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--tile-ink); overflow: hidden;
+}
+.ac-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ac-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ac-id {
+  align-self: flex-start;
+  font-size: 10px; font-weight: 700; color: var(--green-text);
+  background: var(--green-50); border: 1px solid var(--green-100);
+  border-radius: 3px; padding: 0 5px; line-height: 15px;
+}
 .as-cite:hover .ac-id { background: #fff; }
-.ac-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .ac-title { font-size: 13px; font-weight: 600; color: var(--ink-900); font-family: var(--font-serif); }
 .ac-sub { font-size: 11px; color: var(--ink-400); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .as-cite svg { flex-shrink: 0; color: var(--ink-400); }
