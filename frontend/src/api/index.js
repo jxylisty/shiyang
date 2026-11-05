@@ -111,6 +111,8 @@ export const pantryMatch = (owned, constitution) => api.post('/pantry/match', { 
 // ---- 自定义茶罐（鉴方） ----
 export const analyzeCustomRecipe = (herbs, claim) =>
   api.post('/custom-recipe/analyze', { herbs, claim })
+export const parseCustomRecipeText = (text) =>
+  api.post('/custom-recipe/parse-text', { text })
 
 // ---- 慢病安全滤镜 ----
 export const getSafetyProfiles = () => api.get('/safety/profiles')

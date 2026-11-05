@@ -911,3 +911,106 @@ def analyze_recipe(herbs: list[dict], api_key: str | None = None) -> dict:
         "matched_count": len(herb_details),
         "not_found": not_found,
     }
+
+
+# ---------- P2：从粘贴的方子文案里提取药材+克重 ----------
+
+_PARSE_PROMPT = (
+    "你是中药方剂信息抽取器。用户会给一段可能来自小红书/公众号的方子文案，"
+    "请只抽取「药材名 + 克重」两部分，规则：\n"
+    "1. 只输出文案里**明确出现**的药材名，不要补充、不要推荐、不要联想同类药\n"
+    "2. 克重只取文案明确写出的数字（含 g/克/钱），没写就填 null，不要估算\n"
+    "3. 剔除剂量单位之外的修饰语（如「特级」「野生」「古法炮制」）\n"
+    "4. 如果同一味药出现多次，只保留一条\n"
+    "5. 文案里没有药材，返回空数组\n"
+    "严格输出 JSON 数组，形如 [{\"name\":\"金银花\",\"grams\":10}]，不要输出其他文字。"
+)
+
+
+def _call_parse_model(text: str, api_key: str) -> str:
+    """调模型抽取药材，返回模型原始输出字符串（已剥掉 ``` 包裹）。
+    单独成函数便于测试注入假输出，不必依赖真实网关。"""
+    r = requests.post(
+        f"{AI_BASE_URL.rstrip('/')}/chat/completions",
+        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+        json={
+            "model": AI_MODEL,
+            "messages": [
+                {"role": "system", "content": _PARSE_PROMPT},
+                {"role": "user", "content": text[:2000]},  # 截断超长文案，防刷
+            ],
+            "temperature": 0.0,
+            "stream": False,
+        },
+        timeout=TRANSLATE_TIMEOUT,
+    )
+    r.raise_for_status()
+    content = (r.json()["choices"][0]["message"]["content"] or "").strip()
+    if content.startswith("```"):
+        content = content.strip("`")
+        if "[" in content:
+            content = content[content.find("["):]
+    return content
+
+
+def parse_formula_text(text: str, api_key: str | None = None) -> dict:
+    """用 AI 从一段自由文本里抽取药材名与克重。
+
+    安全设计：模型输出**必须**经本地校验才算数——名字要在知识库/SymMap/HERB 里
+    真能对上（用 search_herb 复核），克重必须在合理区间（0.5–200g）。
+    模型编出来的药名会被标进 rejected，不会静默进入分析流程。
+
+    返回：
+      {"ok": bool, "herbs": [{name, grams, verified}], "rejected": [{name, reason}],
+       "model": str|None, "error": str|None}
+    """
+    if not text or not text.strip():
+        return {"ok": False, "herbs": [], "rejected": [], "model": None,
+                "error": "文本为空"}
+
+    key = (api_key or "").strip() or os.environ.get("SHIYANG_AI_KEY") or "zerogate"
+    try:
+        raw = json.loads(_call_parse_model(text, key))
+    except Exception as e:
+        return {"ok": False, "herbs": [], "rejected": [], "model": None,
+                "error": f"解析失败：{e}"}
+
+    if not isinstance(raw, list):
+        return {"ok": False, "herbs": [], "rejected": [], "model": AI_MODEL,
+                "error": "模型输出不是数组"}
+
+    herbs, rejected = [], []
+    for item in raw[:25]:  # 上限 25 味，超过大概率是模型发散
+        if not isinstance(item, dict):
+            continue
+        name = (item.get("name") or "").strip()
+        if not name:
+            continue
+        grams = item.get("grams")
+        if grams is not None:
+            try:
+                grams = float(grams)
+            except (TypeError, ValueError):
+                grams = None
+        if grams is not None and not (0.5 <= grams <= 200):
+            rejected.append({"name": name, "reason": f"克重 {grams}g 超出合理范围（0.5–200g）"})
+            continue
+        # 复核药名真实性：先查本地（知识库 / SymMap，零网络开销），
+        # 都未命中才走 HERB 联网确认——避免 25 味药串行打 25 次外部请求
+        if _name_exists_locally(name):
+            canon = name
+        else:
+            detail = get_herb_detail(name)
+            if detail.get("status") != "ok":
+                rejected.append({"name": name, "reason": "在 HERB/本地知识库中查不到这味药"})
+                continue
+            canon = detail.get("name_cn") or name
+        herbs.append({"name": canon, "grams": grams, "verified": True})
+
+    return {"ok": True, "herbs": herbs, "rejected": rejected,
+            "model": AI_MODEL, "error": None}
+
+
+def _name_exists_locally(name: str) -> bool:
+    """药名是否在本地知识库或 SymMap 里能对上（不联网）"""
+    return bool(_kb_herb_dict().get(name)) or _lookup_symmap(name, _symmap_dict()) is not None

@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { ShoppingBasket, Sparkles, Search } from '@lucide/vue'
 import { showSuccessToast } from 'vant'
-import { getPantryMaterials, pantryMatch, matImg, analyzeCustomRecipe } from '../api'
+import { getPantryMaterials, pantryMatch, matImg, analyzeCustomRecipe, parseCustomRecipeText } from '../api'
 import DisclaimerBanner from '../components/DisclaimerBanner.vue'
 
 const activeTab = ref('own')  // 'own' = 我的茶罐 / 'custom' = 自定义鉴方
@@ -116,6 +116,35 @@ function evidenceLevel(r) {
 }
 const evidenceLabel = { A: '临床证据支持', B: '实验数据支持', C: '传统应用记载' }
 
+// ---- 粘贴文案自动解析 ----
+const pasteText = ref('')
+const pasteLoading = ref(false)
+const pasteError = ref('')
+const pasteInfo = ref(null)   // { herbs: [...], rejected: [...] }
+
+async function parsePaste() {
+  const t = pasteText.value.trim()
+  if (!t) return
+  pasteLoading.value = true
+  pasteError.value = ''
+  pasteInfo.value = null
+  try {
+    pasteInfo.value = (await parseCustomRecipeText(t)).data.data
+    // 抽到的药材直接并进输入列表（去重，克重保留）
+    for (const h of pasteInfo.value.herbs) {
+      const exist = customHerbs.value.find(x => x.name === h.name)
+      if (exist) {
+        if (h.grams != null && exist.grams == null) exist.grams = h.grams
+      } else {
+        customHerbs.value.push({ name: h.name, grams: h.grams ?? null })
+      }
+    }
+    if (pasteInfo.value.herbs.length) pasteText.value = ''
+  } catch (e) {
+    pasteError.value = e?.response?.data?.detail || '解析失败，请稍后重试'
+  } finally { pasteLoading.value = false }
+}
+
 // 结果里只要出现 AI 译文，就必须带上 AI 内容声明
 const hasAiText = computed(() =>
   customResult.value?.herbs?.some(h => h.functions_cn_source === 'ai') ?? false)
@@ -219,6 +248,37 @@ const hasAiText = computed(() =>
           <b>把网上看到的方子输进来，看看靠不靠谱</b>
           <span>从 HERB 数据库查成分/靶点/功效，每味药说清楚管什么的</span>
         </div>
+      </div>
+
+      <!-- 粘贴文案自动解析 -->
+      <div class="section-title">或者直接粘贴方子文案</div>
+      <div class="card">
+        <textarea v-model="pasteText" class="paste-box" rows="4"
+                  placeholder="把网上看到的方子整段粘进来，如：「金银花10g、菊花5g、枸杞8克，煮水代茶饮」"
+                  maxlength="2000"></textarea>
+        <div class="paste-row">
+          <button class="btn" :disabled="!pasteText.trim() || pasteLoading" @click="parsePaste">
+            {{ pasteLoading ? '解析中…' : '自动提取药材' }}
+          </button>
+          <span class="hint">AI 抽取，逐条核对数据源</span>
+        </div>
+
+        <!-- 解析结果反馈 -->
+        <div v-if="pasteInfo" class="paste-feedback">
+          <p v-if="pasteInfo.herbs.length" class="pf-ok">
+            已提取 <b>{{ pasteInfo.herbs.length }}</b> 味药材并加入上方列表
+          </p>
+          <p v-else class="pf-none">这段文案里没有识别到可查证的药材</p>
+          <div v-if="pasteInfo.rejected.length" class="pf-rej">
+            <b>未采用的条目：</b>
+            <ul>
+              <li v-for="(r, i) in pasteInfo.rejected" :key="i">
+                {{ r.name }} —— {{ r.reason }}
+              </li>
+            </ul>
+          </div>
+        </div>
+        <p v-if="pasteError" class="submit-error shake">{{ pasteError }}</p>
       </div>
 
       <!-- 添加药材 -->
@@ -379,9 +439,25 @@ const hasAiText = computed(() =>
 .ci-text b { display: block; font-size: 14px; color: var(--ink-900); margin-bottom: 3px; }
 .ci-text span { font-size: 12px; color: var(--ink-500); line-height: 1.5; }
 
+/* 粘贴解析 */
+.paste-box {
+  width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 10px;
+  border: 1px solid var(--green-100); font-size: 13.5px; font-family: inherit;
+  line-height: 1.6; color: var(--ink-900); background: var(--card);
+  resize: vertical; outline: none; transition: border-color var(--dur-fast);
+}
+.paste-box:focus { border-color: var(--green-600); }
+.paste-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+.paste-feedback { margin-top: 10px; font-size: 12.5px; line-height: 1.6; }
+.pf-ok { color: var(--green-text); margin: 0 0 6px; }
+.pf-none { color: var(--ink-500); margin: 0 0 6px; }
+.pf-rej { background: var(--amber-50); border: 1px solid var(--amber-200); border-radius: 8px; padding: 8px 10px; }
+.pf-rej b { display: block; color: var(--amber-text); margin-bottom: 4px; }
+.pf-rej ul { margin: 0; padding-left: 16px; color: var(--ink-600); }
+.pf-rej li { margin-bottom: 2px; }
+
 /* 添加行 */
-.add-row { display: flex; gap: 8px; }
-.add-input {
+.add-row { display: flex; gap: 8px; }.add-input {
   flex: 1; padding: 10px 12px; border: 1px solid var(--green-100); border-radius: 10px;
   font-size: 14px; font-family: inherit; background: var(--card); color: var(--ink-900);
   outline: none; transition: border-color var(--dur-fast);

@@ -215,6 +215,29 @@ def analyze_custom_recipe(body: CustomRecipeBody,
     return ok(result)
 
 
+class ParseFormulaBody(BaseModel):
+    text: str = Field(..., description="用户粘贴的方子文案（小红书/公众号等）")
+
+
+@app.post("/api/v1/custom-recipe/parse-text")
+def parse_custom_recipe_text(body: ParseFormulaBody,
+                             x_ai_key: str | None = Header(None, alias="X-AI-Key")):
+    """从粘贴的自由文本里抽取药材名与克重（AI 抽取 + 本地复核）。
+    只抽文案里明确写出的药材，模型编造的名字会被 rejected 拒绝，不进分析流程。
+    """
+    if not body.text or not body.text.strip():
+        raise HTTPException(400, "请粘贴方子文案")
+    if len(body.text) > 2000:
+        raise HTTPException(400, "文案过长，请控制在 2000 字以内")
+    result = herb_svc.parse_formula_text(body.text, api_key=x_ai_key)
+    if not result["ok"]:
+        raise HTTPException(502, result.get("error") or "AI 解析失败")
+    result["disclaimer"] = (
+        "药材与克重由 AI 从你的文案中抽取，并已逐条核对数据源；"
+        "仍请自行确认原文，平台不对文案准确性负责。")
+    return ok(result)
+
+
 # ==================== 慢病安全滤镜（T1-5） ====================
 
 @app.get("/api/v1/safety/profiles")
