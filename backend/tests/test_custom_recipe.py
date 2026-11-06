@@ -98,3 +98,80 @@ def test_analyze_endpoint_requires_herbs():
     too_many = [{"name": f"药{i}"} for i in range(21)]
     assert client.post("/api/v1/custom-recipe/analyze",
                        json={"herbs": too_many}).status_code == 400
+
+
+# ---------- 拍照识药（离线：模型调用用 monkeypatch 注入） ----------
+
+def _fake_vision(monkeypatch, model_output):
+    """替换模型的 HTTP 调用，返回给定的 JSON 字符串"""
+    class _Resp:
+        def __init__(self, text):
+            self._text = text
+        def raise_for_status(self):
+            pass
+        def json(self):
+            return {"choices": [{"message": {"content": self._text}}]}
+    monkeypatch.setattr(hs.requests, "post", lambda *a, **k: _Resp(model_output))
+
+
+def test_recognize_filters_unverified_names(monkeypatch):
+    """模型给的库外名字必须进 unverified，不能标成 verified"""
+    _fake_vision(monkeypatch, '{"image_kind":"herb","items":['
+                              '{"name":"金银花","grams":null,"confidence":0.9},'
+                              '{"name":"龙须凤尾草","grams":null,"confidence":0.8}]}')
+    r = hs.recognize_herb_image(b"fake-bytes")
+    assert r["status"] == "ok"
+    assert [i["name"] for i in r["items"] if i["verified"]] == ["金银花"]
+    assert r["unverified"] == ["龙须凤尾草"]
+
+
+def test_recognize_enriches_verified_items(monkeypatch):
+    """入库的药材要回填中文性味与功效"""
+    _fake_vision(monkeypatch, '{"image_kind":"herb","items":['
+                              '{"name":"金银花","grams":null,"confidence":0.9}]}')
+    r = hs.recognize_herb_image(b"fake-bytes")
+    it = r["items"][0]
+    assert it["verified"] is True
+    assert it["properties_cn"] == "甘,寒"
+    assert it["functions_cn"]
+
+
+def test_recognize_normalizes_chinese_kind(monkeypatch):
+    """模型偶尔吐中文 image_kind，要归一化成固定枚举"""
+    _fake_vision(monkeypatch, '{"image_kind":"文本","items":['
+                              '{"name":"菊花","grams":5,"confidence":1.0}]}')
+    r = hs.recognize_herb_image(b"fake-bytes")
+    assert r["image_kind"] == "text"
+
+
+def test_recognize_drops_absurd_grams(monkeypatch):
+    _fake_vision(monkeypatch, '{"image_kind":"text","items":['
+                              '{"name":"甘草","grams":999,"confidence":0.9}]}')
+    r = hs.recognize_herb_image(b"fake-bytes")
+    assert r["items"][0]["grams"] is None
+
+
+def test_recognize_bad_json_returns_error(monkeypatch):
+    _fake_vision(monkeypatch, "这不是 JSON")
+    r = hs.recognize_herb_image(b"fake-bytes")
+    assert r["status"] == "error"
+
+
+def test_recognize_empty_image():
+    assert hs.recognize_herb_image(b"")["status"] == "error"
+
+
+def test_recognize_endpoint_checks_mime_and_size():
+    # 非图片类型
+    r = client.post("/api/v1/custom-recipe/recognize-image",
+                    files={"file": ("x.txt", b"hello", "text/plain")})
+    assert r.status_code == 400
+    # 空文件
+    r = client.post("/api/v1/custom-recipe/recognize-image",
+                    files={"file": ("x.jpg", b"", "image/jpeg")})
+    assert r.status_code == 400
+    # 超过 8MB
+    big = b"\xff" * (hs.MAX_IMAGE_BYTES + 1)
+    r = client.post("/api/v1/custom-recipe/recognize-image",
+                    files={"file": ("x.jpg", big, "image/jpeg")})
+    assert r.status_code == 413

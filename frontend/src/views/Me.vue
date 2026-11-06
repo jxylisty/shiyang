@@ -5,6 +5,7 @@ import { currentUser, logout, listRecords, listFavorites, isLoggedIn, getHistory
 import ConstitutionCard from '../components/ConstitutionCard.vue'
 import RecipeRow from '../components/RecipeRow.vue'
 import DisclaimerBanner from '../components/DisclaimerBanner.vue'
+import AppIcon from '../components/AppIcon.vue'
 import { proMode } from '../utils/proMode'
 import { getGuestConstitutionRecord, GUEST_EXTRA_KEYS, CODE_NAME } from '../utils/guestArchive'
 
@@ -341,20 +342,32 @@ function fmtDate(s) { return (s || '').slice(0, 16) }
         <div class="card cloud-preview">
           <div class="cp-grid">
             <div class="cp-item">
-              <b>多阶段体质对比</b>
-              <span>留存历次测评，直观对比九维转化分升降</span>
+              <div class="cp-icon cp-icon-trend"><AppIcon name="trendChart" :size="20" /></div>
+              <div class="cp-info">
+                <b>多阶段体质对比</b>
+                <span>留存历次测评，直观对比九维转化分升降</span>
+              </div>
             </div>
             <div class="cp-item">
-              <b>家庭共养档案</b>
-              <span>替父母伴侣建档，看方子时一键核对全家适宜度</span>
+              <div class="cp-icon cp-icon-family"><AppIcon name="familyCare" :size="20" /></div>
+              <div class="cp-info">
+                <b>家庭共养档案</b>
+                <span>替父母伴侣建档，看方子时一键核对全家适宜度</span>
+              </div>
             </div>
             <div class="cp-item">
-              <b>每日饮用打卡</b>
-              <span>记录茶饮习惯与连续天数，陪伴日常轻养</span>
+              <div class="cp-icon cp-icon-checkin"><AppIcon name="calendarCheck" :size="20" /></div>
+              <div class="cp-info">
+                <b>每日饮用打卡</b>
+                <span>记录茶饮习惯与连续天数，陪伴日常轻养</span>
+              </div>
             </div>
             <div class="cp-item">
-              <b>21 天周期报告 & 收藏</b>
-              <span>汇总摄入成分与靶点覆盖，跨设备同步收藏夹</span>
+              <div class="cp-icon cp-icon-report"><AppIcon name="periodReport" :size="20" /></div>
+              <div class="cp-info">
+                <b>21 天周期报告 & 收藏</b>
+                <span>汇总摄入成分与靶点覆盖，跨设备同步收藏夹</span>
+              </div>
             </div>
           </div>
           <div class="cp-foot">
@@ -379,7 +392,13 @@ function fmtDate(s) { return (s || '').slice(0, 16) }
       <div class="section-title">设置</div>
       <div class="card">
         <div class="set-row">
-          <span class="set-label">字号大小<small class="set-sub">适老化大字阅读支持</small></span>
+          <div class="set-meta">
+            <span class="set-icon set-icon-font"><AppIcon name="fontSize" :size="18" /></span>
+            <div>
+              <span class="set-label">字号大小</span>
+              <small class="set-sub">适老化大字阅读支持</small>
+            </div>
+          </div>
           <div class="seg" :style="{ '--seg-i': FONT_KEYS.indexOf(fontScale) }">
             <span class="seg-slider" aria-hidden="true"></span>
             <button v-for="k in FONT_KEYS" :key="k" class="seg-item"
@@ -387,21 +406,39 @@ function fmtDate(s) { return (s || '').slice(0, 16) }
           </div>
         </div>
         <div class="set-row">
-          <span class="set-label">暗色模式</span>
+          <div class="set-meta">
+            <span class="set-icon set-icon-dark"><AppIcon name="themeDark" :size="18" /></span>
+            <div>
+              <span class="set-label">暗色模式</span>
+              <small class="set-sub">夜间低照度护眼体验</small>
+            </div>
+          </div>
           <button class="switch-btn" :class="{ on: darkMode }" role="switch"
                   :aria-checked="darkMode" @click="toggleDark(!darkMode, $event)">
             <span class="knob"></span>
           </button>
         </div>
         <div class="set-row">
-          <span class="set-label">专业模式<small class="set-sub">显示入血成分预测、靶点网络等研究分析</small></span>
+          <div class="set-meta">
+            <span class="set-icon set-icon-pro"><AppIcon name="proLab" :size="18" /></span>
+            <div>
+              <span class="set-label">专业模式</span>
+              <small class="set-sub">显示入血成分预测、靶点网络等研究分析</small>
+            </div>
+          </div>
           <button class="switch-btn" :class="{ on: proMode }" role="switch"
                   :aria-checked="proMode" @click="proMode = !proMode">
             <span class="knob"></span>
           </button>
         </div>
         <div class="set-row">
-          <span class="set-label">本地数据</span>
+          <div class="set-meta">
+            <span class="set-icon set-icon-data"><AppIcon name="database" :size="18" /></span>
+            <div>
+              <span class="set-label">本地数据</span>
+              <small class="set-sub">管理本机作答缓存、浏览足迹与密钥</small>
+            </div>
+          </div>
           <button class="btn ghost danger" @click="clearLocalData">清空作答/历史/AI密钥</button>
         </div>
         <p class="set-note">字号、主题与专业模式保存在本机，免登录即生效；收藏与长期档案跟随账号。</p>
@@ -453,13 +490,36 @@ function fmtDate(s) { return (s || '').slice(0, 16) }
 .guest-empty-txt { font-size: 13px; color: var(--ink-600); line-height: 1.6; margin-bottom: 14px; }
 
 .cp-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
-@media (min-width: 540px) { .cp-grid { grid-template-columns: 1fr 1fr; } }
+@media (min-width: 540px) { .cp-grid { grid-template-columns: 1fr 1fr; gap: 12px; } }
 .cp-item {
-  padding: 10px 12px; border-radius: 10px;
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 12px 14px; border-radius: 12px;
   background: var(--green-50); border: 1px solid var(--green-100);
+  transition: transform var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
 }
-.cp-item b { display: block; font-size: 13.5px; color: var(--ink-900); margin-bottom: 3px; }
-.cp-item span { display: block; font-size: 11.5px; color: var(--ink-600); line-height: 1.5; }
+.cp-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(22, 56, 42, 0.05);
+}
+.cp-icon {
+  width: 38px; height: 38px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+.cp-icon-trend   { background: #e3f2ec; color: #237855; border: 1px solid rgba(35, 120, 85, 0.15); }
+.cp-icon-family  { background: #fbeee9; color: #b8543f; border: 1px solid rgba(184, 84, 63, 0.15); }
+.cp-icon-checkin { background: #edf5eb; color: #438237; border: 1px solid rgba(67, 130, 55, 0.15); }
+.cp-icon-report  { background: #fdf3e2; color: #a96f1d; border: 1px solid rgba(169, 111, 29, 0.15); }
+
+:root[data-theme="dark"] .cp-item { background: rgba(255, 255, 255, 0.03); border-color: rgba(255, 255, 255, 0.06); }
+:root[data-theme="dark"] .cp-icon-trend   { background: #183327; color: #6fc49e; border-color: rgba(111, 196, 158, 0.2); }
+:root[data-theme="dark"] .cp-icon-family  { background: #35211d; color: #e58774; border-color: rgba(229, 135, 116, 0.2); }
+:root[data-theme="dark"] .cp-icon-checkin { background: #1e331b; color: #82cb75; border-color: rgba(130, 203, 117, 0.2); }
+:root[data-theme="dark"] .cp-icon-report  { background: #332717; color: #e5b367; border-color: rgba(229, 179, 103, 0.2); }
+
+.cp-info { flex: 1; min-width: 0; }
+.cp-info b { display: block; font-size: 14px; font-weight: 700; color: var(--ink-900); margin-bottom: 3px; }
+.cp-info span { display: block; font-size: 11.5px; color: var(--ink-600); line-height: 1.5; }
 .cp-foot {
   margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--card-border);
   display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;
@@ -518,9 +578,25 @@ function fmtDate(s) { return (s || '').slice(0, 16) }
 .ck-empty { font-size: 12px; color: var(--ink-400); padding: 6px 0; }
 
 /* 设置卡片 */
-.set-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--green-50); }
+.set-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--green-50); }
 .set-row:last-of-type { border-bottom: none; }
-.set-label { font-size: 14px; color: var(--ink-900); }
+.set-meta { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.set-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; transition: transform var(--dur-fast) ease;
+}
+.set-icon-font { background: var(--green-50); color: var(--green-700); border: 1px solid var(--green-100); }
+.set-icon-dark { background: #eef2f7; color: #47688e; border: 1px solid rgba(71, 104, 142, 0.15); }
+.set-icon-pro  { background: var(--amber-50); color: var(--amber-600); border: 1px solid rgba(194, 131, 40, 0.2); }
+.set-icon-data { background: var(--red-50); color: var(--red-500); border: 1px solid rgba(190, 85, 70, 0.2); }
+
+:root[data-theme="dark"] .set-icon-font { background: var(--green-100); color: var(--tile-ink); border-color: rgba(255,255,255,0.06); }
+:root[data-theme="dark"] .set-icon-dark { background: #1c2836; color: #8cb5e5; border-color: rgba(140, 181, 229, 0.2); }
+:root[data-theme="dark"] .set-icon-pro  { background: #2f2618; color: #d89f53; border-color: rgba(216, 159, 83, 0.2); }
+:root[data-theme="dark"] .set-icon-data { background: #331f1d; color: #e07f71; border-color: rgba(224, 127, 113, 0.2); }
+
+.set-label { font-size: 14.5px; font-weight: 600; color: var(--ink-900); }
 /* 字号分段控件：三档等宽（1fr），滑块按 --seg-i 平移一格 */
 .seg { position: relative; display: grid; grid-template-columns: repeat(3, 1fr); background: var(--green-50); border-radius: 10px; padding: 3px; }
 .seg-slider {

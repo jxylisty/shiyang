@@ -1,8 +1,8 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import { ShoppingBasket, Sparkles, Search, Check } from '@lucide/vue'
+import { ShoppingBasket, Sparkles, Search, Check, Camera } from '@lucide/vue'
 import { showSuccessToast } from 'vant'
-import { getPantryMaterials, pantryMatch, matImg, analyzeCustomRecipe, parseCustomRecipeText, getCustomPlain, webLookupHerb } from '../api'
+import { getPantryMaterials, pantryMatch, matImg, analyzeCustomRecipe, parseCustomRecipeText, getCustomPlain, webLookupHerb, recognizeRecipeImage } from '../api'
 import DisclaimerBanner from '../components/DisclaimerBanner.vue'
 import PlainCard from '../components/PlainCard.vue'
 import ProModeToggle from '../components/ProModeToggle.vue'
@@ -142,6 +142,61 @@ function evidenceLevel(r) {
   return 'C'
 }
 const evidenceLabel = { A: '临床证据支持', B: '实验数据支持', C: '传统应用记载' }
+
+// ---- 拍照识药 ----
+const photoInput = ref(null)      // <input type=file> 引用
+const photoLoading = ref(false)
+const photoError = ref('')
+const photoInfo = ref(null)       // { image_kind, items:[], unverified:[] }
+const photoPreview = ref('')      // 本地预览 URL（objectURL，用完释放）
+
+function triggerPhoto() {
+  photoInput.value?.click()
+}
+
+async function onPhotoPicked(e) {
+  const file = e.target.files?.[0]
+  e.target.value = ''            // 允许重复选同一张
+  if (!file) return
+  // 前端先拦一道，省一次失败的请求
+  if (!/^image\/(jpeg|jpg|png|webp)$/i.test(file.type)) {
+    photoError.value = '请上传 JPG / PNG / WEBP 格式的图片'
+    return
+  }
+  if (file.size > 8 * 1024 * 1024) {
+    photoError.value = '图片超过 8MB，请在相册里压缩后再传'
+    return
+  }
+  if (photoPreview.value) URL.revokeObjectURL(photoPreview.value)
+  photoPreview.value = URL.createObjectURL(file)
+  photoLoading.value = true
+  photoError.value = ''
+  photoInfo.value = null
+  try {
+    photoInfo.value = (await recognizeRecipeImage(file)).data.data
+  } catch (err) {
+    photoError.value = err?.response?.data?.detail || '识别失败，请换个角度重拍或改用手动输入'
+  } finally { photoLoading.value = false }
+}
+
+// 点选某个候选 → 填入药材列表（同类药材多候选时让用户自己判断）
+function pickRecognized(item) {
+  const name = item.name_cn || item.name
+  const exist = customHerbs.value.find(x => x.name === name)
+  if (exist) {
+    if (item.grams != null && exist.grams == null) exist.grams = item.grams
+  } else {
+    customHerbs.value.push({ name, grams: item.grams ?? null })
+  }
+  // 已选的候选从建议里移除，避免重复点
+  photoInfo.value.items = photoInfo.value.items.filter(i => i !== item)
+}
+
+// 一键采纳所有已入库的候选
+function pickAllRecognized() {
+  const verified = (photoInfo.value?.items || []).filter(i => i.verified)
+  for (const it of [...verified]) pickRecognized(it)
+}
 
 // ---- 粘贴文案自动解析 ----
 const pasteText = ref('')
@@ -307,8 +362,56 @@ watch(() => customResult.value, r => {
         </div>
       </div>
 
+      <!-- 拍照识药 -->
+      <div class="section-title">拍照识药（最快）</div>
+      <div class="card">
+        <input ref="photoInput" type="file" accept="image/jpeg,image/jpg,image/png,image/webp"
+               capture="environment" class="photo-input" @change="onPhotoPicked" />
+        <div class="photo-row">
+          <button class="btn" :disabled="photoLoading" @click="triggerPhoto">
+            <Camera :size="15" />{{ photoLoading ? '识别中…' : '拍照 / 选图' }}
+          </button>
+          <span class="hint">拍药材实物，或拍药方纸条</span>
+        </div>
+
+        <div v-if="photoPreview" class="photo-preview-wrap">
+          <img :src="photoPreview" alt="待识别的图片" class="photo-preview" />
+        </div>
+
+        <p v-if="photoError" class="submit-error shake">{{ photoError }}</p>
+
+        <!-- 识别结果：候选项让用户点选，绝不自动填入 -->
+        <div v-if="photoInfo" class="photo-result">
+          <p v-if="!photoInfo.items.length" class="pf-none">
+            没认出可用的药材。粉末、切片、糊状物较难辨认，建议改用手动输入。
+          </p>
+          <template v-else>
+            <p class="pf-ok">
+              认出 <b>{{ photoInfo.items.length }}</b> 个可能的药材，点一下加入（可多选）：
+            </p>
+            <div class="cand-wrap">
+              <button v-for="(it, i) in photoInfo.items" :key="i" class="cand"
+                      :class="{ unverified: !it.verified }" @click="pickRecognized(it)">
+                <span class="cand-name">{{ it.name_cn || it.name }}</span>
+                <span v-if="it.grams != null" class="cand-g">{{ it.grams }}g</span>
+                <span class="cand-conf">{{ Math.round(it.confidence * 100) }}%</span>
+                <span v-if="!it.verified" class="cand-tag">库中无</span>
+              </button>
+            </div>
+            <button v-if="photoInfo.items.some(i => i.verified)" class="btn ghost"
+                    style="margin-top: 8px;" @click="pickAllRecognized">
+              全部加入（仅已入库的）
+            </button>
+          </template>
+          <div v-if="photoInfo.unverified?.length" class="pf-rej" style="margin-top: 8px;">
+            <b>数据库里没有的名字：</b>{{ photoInfo.unverified.join('、') }}
+            <div class="hint" style="margin-top: 4px;">可改名后手动输入，或后续查看联网说明</div>
+          </div>
+        </div>
+      </div>
+
       <!-- 粘贴文案自动解析 -->
-      <div class="section-title">或者直接粘贴方子文案</div>
+      <div class="section-title">或者粘贴方子文案</div>
       <div class="card">
         <textarea v-model="pasteText" class="paste-box" rows="4"
                   placeholder="把网上看到的方子整段粘进来，如：「金银花10g、菊花5g、枸杞8克，煮水代茶饮」"
@@ -565,9 +668,35 @@ watch(() => customResult.value, r => {
 .ci-text b { display: block; font-size: 14px; color: var(--ink-900); margin-bottom: 3px; }
 .ci-text span { font-size: 12px; color: var(--ink-600); line-height: 1.5; }
 
+/* 拍照识药 */
+.photo-input { display: none; }
+.photo-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.photo-preview-wrap { margin-top: 10px; }
+.photo-preview {
+  max-width: 100%; max-height: 200px; border-radius: 10px;
+  border: 1px solid var(--green-100); object-fit: cover;
+}
+.photo-result { margin-top: 10px; font-size: 12.5px; line-height: 1.6; }
+.cand-wrap { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 6px; }
+.cand {
+  display: inline-flex; align-items: center; gap: 5px; cursor: pointer;
+  padding: 6px 11px; border-radius: 999px; margin: 0;
+  background: var(--green-50); border: 1px solid rgba(58, 122, 94, 0.28);
+  font-size: 13px; color: var(--green-text); font-family: inherit;
+  transition: background var(--dur-fast) ease, border-color var(--dur-fast) ease;
+}
+.cand:hover { background: var(--green-100); border-color: var(--green-600); }
+.cand.unverified { background: var(--amber-50); border-color: var(--amber-200); color: var(--amber-text); }
+.cand-name { font-weight: 600; }
+.cand-g { font-size: 11.5px; opacity: .8; }
+.cand-conf { font-size: 10.5px; opacity: .7; }
+.cand-tag {
+  font-size: 9.5px; padding: 0 5px; border-radius: 5px;
+  background: var(--amber-500); color: #fff; line-height: 1.6;
+}
+
 /* 粘贴解析 */
-.paste-box {
-  width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 10px;
+.paste-box {  width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 10px;
   border: 1px solid var(--green-100); font-size: 13.5px; font-family: inherit;
   line-height: 1.6; color: var(--ink-900); background: var(--card);
   resize: vertical; outline: none; transition: border-color var(--dur-fast);

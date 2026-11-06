@@ -1242,3 +1242,148 @@ def web_lookup_herb(name: str, api_key: str | None = None) -> dict:
 
     _web_lookup_put(name, summary, sources)
     return {"status": "ok", "name": name, "summary_cn": summary, "sources": sources}
+
+
+# ---------- 拍照识药（多模态视觉模型；调研见 docs/拍照识药_方案调研.md） ----------
+# 选型结论：用 VLM 而非 OCR —— 一个接口同时解决「药材实物识别」和「药方文字识别」，
+# OCR 只能做后者。实测 glm-5v-turbo 在 8 味药材上 7/7 正确或诚实弃权。
+#
+# 关键设计约束（实测教训）：降质图（旋转+JPEG 低质量）会让模型高置信度答错
+# （黄芪→白芍 0.9 / 牡蛎 0.85）。因此：
+#   1. 永远返回 Top-N 候选，由用户点选确认，不做自动采纳
+#   2. 置信度只作展示排序，不用于任何自动判断
+#   3. 候选必须过本地知识库/SymMap 复核，库外名字标 unverified
+#   4. 图片只在内存处理，不落盘、不入库、不写日志
+
+VISION_MODEL = "glm-5v-turbo"     # 实测最准的可用视觉模型
+VISION_TIMEOUT = 60               # 秒；实测 2-4s，留足余量
+MAX_IMAGE_BYTES = 8 * 1024 * 1024  # 8MB
+ALLOWED_IMAGE_MIME = {"image/jpeg", "image/png", "image/webp", "image/jpg"}
+
+_RECOGNIZE_PROMPT = (
+    "你是中药房药剂师。识别图片里的内容，严格输出 JSON（不要 markdown 代码块、不要任何其他文字）：\n"
+    '{"image_kind":"herb|text|mixed|unknown","items":[{"name":"规范中药名","grams":数字或null,"confidence":0.0-1.0}]}\n'
+    "规则：\n"
+    "1. image_kind：herb=药材实物照，text=药方文字/截图，mixed=两者都有，unknown=都不是\n"
+    "2. items 最多 6 项，按可能性从高到低\n"
+    "3. name 用规范中药名（如「胎菊」写「菊花」），不要写异名、别名、拉丁名\n"
+    "4. grams 只在图片里明确印有克重时填数字，否则填 null，绝不要估算\n"
+    "5. 看不清、拿不准时把 confidence 压低到 0.4 以下，宁可少报也不要猜\n"
+    "6. 粉末、切片、制剂等无法辨认形态的，image_kind 填 herb 但 items 留空"
+)
+
+
+def recognize_herb_image(image_bytes: bytes, mime: str = "image/jpeg",
+                         api_key: str | None = None) -> dict:
+    """识别图片中的药材/药方，返回候选列表。
+
+    返回 {
+      "status": "ok" | "unknown" | "error",
+      "image_kind": "herb|text|mixed|unknown",
+      "items": [{name, name_cn, grams, confidence, verified, properties_cn,
+                 meridians_cn, functions_cn, functions_cn_source}],
+      "unverified": [str],        # 模型认出但本地库没有的名字
+      "model": str,
+      "error": str | None,
+    }
+    """
+    import base64
+
+    if not image_bytes:
+        return {"status": "error", "image_kind": "unknown", "items": [],
+                "unverified": [], "model": None, "error": "图片为空"}
+
+    b64 = base64.b64encode(image_bytes).decode("ascii")
+    key = (api_key or "").strip() or os.environ.get("SHIYANG_AI_KEY") or "zerogate"
+    try:
+        r = requests.post(
+            f"{AI_BASE_URL.rstrip('/')}/chat/completions",
+            headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+            json={
+                "model": VISION_MODEL,
+                "messages": [{"role": "user", "content": [
+                    {"type": "text", "text": _RECOGNIZE_PROMPT},
+                    {"type": "image_url",
+                     "image_url": {"url": f"data:{mime};base64,{b64}"}},
+                ]}],
+                "temperature": 0,
+                "stream": False,
+            },
+            timeout=VISION_TIMEOUT,
+        )
+        r.raise_for_status()
+        content = (r.json()["choices"][0]["message"].get("content") or "").strip()
+    except Exception as e:
+        return {"status": "error", "image_kind": "unknown", "items": [],
+                "unverified": [], "model": VISION_MODEL, "error": f"识别服务不可用：{e}"}
+
+    # 模型常带 ```json 包裹
+    if content.startswith("```"):
+        content = content.strip("`")
+        if "{" in content:
+            content = content[content.find("{"):]
+    try:
+        parsed = json.loads(content)
+    except Exception:
+        return {"status": "error", "image_kind": "unknown", "items": [],
+                "unverified": [], "model": VISION_MODEL,
+                "error": "模型输出格式异常，请重试"}
+
+    kind = parsed.get("image_kind") or "unknown"
+    # 模型偶尔违反契约吐中文（实测 image_kind 被写成「文本」），归一化到固定枚举
+    _kind_map = {"herb": "herb", "药材": "herb", "实物": "herb",
+                 "text": "text", "文本": "text", "文字": "text", "药方": "text",
+                 "mixed": "mixed", "混合": "mixed"}
+    kind = _kind_map.get(str(kind).strip().lower(), "unknown")
+    raw_items = parsed.get("items") or []
+    if not isinstance(raw_items, list) or not raw_items:
+        return {"status": "unknown", "image_kind": kind, "items": [],
+                "unverified": [], "model": VISION_MODEL, "error": None}
+
+    items, unverified = [], []
+    seen = set()
+    for it in raw_items[:6]:
+        if not isinstance(it, dict):
+            continue
+        name = (it.get("name") or "").strip()
+        if not name or name in seen:
+            continue
+        seen.add(name)
+        grams = it.get("grams")
+        if grams is not None:
+            try:
+                grams = float(grams)
+            except (TypeError, ValueError):
+                grams = None
+            # 克重合理性（同 parse_formula_text 的口径）
+            if grams is not None and not (0.5 <= grams <= 200):
+                grams = None
+        try:
+            conf = float(it.get("confidence") or 0)
+        except (TypeError, ValueError):
+            conf = 0.0
+        conf = max(0.0, min(1.0, conf))
+
+        rec = {"name": name, "name_cn": name, "grams": grams,
+               "confidence": round(conf, 2), "verified": False,
+               "properties_cn": None, "meridians_cn": None,
+               "functions_cn": None, "functions_cn_source": None}
+
+        if _name_exists_locally(name):
+            # 本地知识库 / SymMap 命中 → 回填标准名与中文性味功效
+            enriched = _enrich_with_symmap({"name_cn": name})
+            rec.update({
+                "verified": True,
+                "name_cn": name,
+                "properties_cn": enriched.get("properties_cn"),
+                "meridians_cn": enriched.get("meridians_cn"),
+                "functions_cn": enriched.get("functions_cn"),
+                "functions_cn_source": enriched.get("functions_cn_source"),
+            })
+        else:
+            unverified.append(name)
+        items.append(rec)
+
+    return {"status": "ok" if items else "unknown", "image_kind": kind,
+            "items": items, "unverified": unverified,
+            "model": VISION_MODEL, "error": None}

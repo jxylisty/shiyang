@@ -4,3 +4,5 @@ pydantic>=2.5
 httpx>=0.25
 bcrypt>=4.0
 python-jose[cryptography]>=3.3
+# 图片上传（拍照识药端点用 UploadFile）
+python-multipart>=0.0.6

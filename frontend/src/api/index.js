@@ -115,6 +115,11 @@ export const analyzeCustomRecipe = (herbs, claim) =>
   api.post('/custom-recipe/analyze', { herbs, claim })
 export const parseCustomRecipeText = (text) =>
   api.post('/custom-recipe/parse-text', { text })
+export const recognizeRecipeImage = (file) => {
+  const fd = new FormData()
+  fd.append('file', file)
+  return api.post('/custom-recipe/recognize-image', fd)
+}
 export const webLookupHerb = (name) =>
   api.post('/custom-recipe/web-lookup', { name })
 export const getCustomPlain = (herbs) =>

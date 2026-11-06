@@ -10,7 +10,7 @@ import sqlite3
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, Header, HTTPException, Query
+from fastapi import FastAPI, File, Header, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
@@ -258,6 +258,35 @@ def web_lookup_herb(body: WebLookupBody,
     result["disclaimer"] = (
         "以下说明由 AI 根据公开网页整理，仅供了解参考，不构成医疗建议；"
         "来源列表为真实搜索结果，内容以原网页为准。")
+    return ok(result)
+
+
+@app.post("/api/v1/custom-recipe/recognize-image")
+async def recognize_recipe_image(file: UploadFile = File(..., description="药材实物照或药方文字照"),
+                                 x_ai_key: str | None = Header(None, alias="X-AI-Key")):
+    """拍照识药：上传药材实物图或药方文字图，返回 Top-N 候选药材。
+
+    设计要点（见 docs/拍照识药_方案调研.md）：
+    - 返回多个候选由用户点选确认，绝不做自动采纳（实测降质图会高置信度答错）
+    - 候选名过本地知识库/SymMap 复核，库外名字进 unverified
+    - 图片仅在内存处理，不落盘、不入库、不写日志
+    """
+    mime = (file.content_type or "").lower()
+    if mime not in herb_svc.ALLOWED_IMAGE_MIME:
+        raise HTTPException(400, f"不支持的图片格式：{mime or '未知'}，请上传 JPG/PNG/WEBP")
+    data = await file.read()
+    if not data:
+        raise HTTPException(400, "图片为空")
+    if len(data) > herb_svc.MAX_IMAGE_BYTES:
+        raise HTTPException(413, "图片过大，请压缩到 8MB 以内")
+
+    result = herb_svc.recognize_herb_image(data, mime, api_key=x_ai_key)
+    if result["status"] == "error":
+        raise HTTPException(502, result.get("error") or "识别失败")
+
+    result["disclaimer"] = (
+        "识别结果由 AI 根据图片推测，仅供参考。药材形态相近者极易混淆，"
+        "请务必自行核对实物或咨询专业人士；平台不对识别结果负责。")
     return ok(result)
 
 
