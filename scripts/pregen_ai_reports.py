@@ -40,7 +40,10 @@ def load_recipe(rid: int):
     recipe = dict(r)
     for k in ("scenes", "constitutions_suitable", "constitutions_unsuitable"):
         recipe[k] = json.loads(recipe.get(k) or "[]")
-    mats = conn.execute("SELECT name, grams FROM rel_recipe_material WHERE recipe_id=?", (rid,)).fetchall()
+    mats = conn.execute(
+        "SELECT m.name, m.material_type, m.grams, h.nature, h.flavor, h.functions "
+        "FROM rel_recipe_material m LEFT JOIN herb h ON h.id=m.herb_id "
+        "WHERE m.recipe_id=?", (rid,)).fetchall()
     recipe["materials"] = [dict(m) for m in mats]
     a = conn.execute("SELECT * FROM recipe_analysis WHERE recipe_id=?", (rid,)).fetchone()
     analysis = None
@@ -52,17 +55,14 @@ def load_recipe(rid: int):
     return recipe, analysis
 
 
-import json  # noqa: E402
-
-
-async def main(limit=None):
+async def main(limit=None, force=False):
     import os
     base_url = os.environ.get("SHIYANG_AI_BASE_URL") or BASE_URL
     key = os.environ.get("SHIYANG_AI_KEY") or API_KEY
     model = os.environ.get("SHIYANG_AI_MODEL") or MODEL
     print(f"AI 端点: {base_url}  模型: {model}")
-    ids = ai.pregen_missing(limit)
-    print(f"待生成 {len(ids)} 个方子的 AI 解读")
+    ids = ai.pregen_missing(limit, force_all=force)
+    print(f"待生成 {len(ids)} 个方子的 AI 解读 (force={force})")
     ok = fail = 0
     for i, rid in enumerate(ids, 1):
         recipe, analysis = load_recipe(rid)
@@ -80,7 +80,7 @@ async def main(limit=None):
         except Exception as e:
             fail += 1
             print(f"[{i}/{len(ids)}] × #{rid} {recipe.get('name')}: {str(e)[:80]}")
-        await asyncio.sleep(1.0)  # 限速
+        await asyncio.sleep(0.5)  # 适度限速
     print(f"\n完成：成功 {ok}，失败 {fail}")
 
 
@@ -88,4 +88,6 @@ if __name__ == "__main__":
     lim = None
     if "--limit" in sys.argv:
         lim = int(sys.argv[sys.argv.index("--limit") + 1])
-    asyncio.run(main(lim))
+    force = "--force" in sys.argv or "--all" in sys.argv
+    asyncio.run(main(lim, force=force))
+

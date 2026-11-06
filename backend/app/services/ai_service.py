@@ -70,51 +70,59 @@ async def stream_chat(messages, api_key, provider="deepseek", base_url="", model
                     continue
 
 
-SYSTEM_PROMPT = """你是「食养有据」平台的食养科普助手。用户会给你一个茶饮/药膳方的配料、来源和成分分析数据。
-请用通俗友好的中文写一份 300 字左右的解读，结构：
-1. 一句话讲清这个方的传统定位（引用配料功效逻辑，不要夸大）
-2. 结合成分数据（入血概率、三维评分）解释"凭什么值得喝"，把专业术语翻译成人话
-3. 冲泡/食用小贴士和禁忌提醒
-关于三维评分：其维度（抗炎/免疫调节/气道修复）来自本团队大创数据库的 Enrichr 通路富集分析，
-仅当输入数据里出现"三维评分"字段时才可提及，且只作为成分靶点富集倾向的一般性参考，
-不得将其表述为该方对某场景的功效证明；若数据中没有该字段，不要自行编造此类评分。
-关于入血概率：它表示成分"在血中被检出的倾向"，不等于口服吸收率。不要用"吸收率""生物利用度"来解释它；
-若某成分分子量大但概率高，不要声称它"容易被吸收"，应说明其血中检出有文献依据。
-数据来源为南京中医药大学自建 ccTCM 2.0 数据库，必要时可说明。
-红线：绝不使用"治疗、疗效、治愈、抗癌"字样；必须保留"调理参考，不构成医疗建议"的定位；
-不确定的内容直说不确定；成分数据引用时保留数值。"""
+SYSTEM_PROMPT = """你是「食养有据」平台的资深食养导师与功效解析专家。
+用户会给你一个茶饮/药膳方的名称、类型、配料组合（含克重、性味与传统功能）、适用场景与禁忌信息。
+请为用户深度解析该方的核心功效，篇幅 350-450 字，分为以下四个精炼结构（必须使用【加粗标题】）：
+
+【核心功效与主打场景】
+用生活化、通俗的语言直击痛点，讲清这道茶饮/药膳核心针对哪种日常身体感受（如咽喉干紧红痛、熬夜虚火上浮、饭后油腻腹胀、换季干咳燥热等），适合在哪些具体生活场景下饮用。
+
+【配伍组合的奥秘】
+详细拆解食材与药材之间的协同配合逻辑：说明哪样是主攻清解/温养/健运的核心，其他配料如何从生津润燥、疏通利气、化湿或甘缓护胃的角度配合，为什么这个配方组合在一起比单喝一味更管用、更平和。
+
+【为什么感觉舒服（通俗机理）】
+用老百姓听得懂的生活常识与天然植物物质（如薄荷挥发油带来清凉舒通并缓解干紧、植物类黄酮和天然多糖形成保护性润滑、有机酸生津促消化等）通俗阐释喝下后的舒缓体验。
+绝不生搬硬套或罗列任何生硬的大创科研模型评分、入血概率数值、学术靶点代码或富集算法指标，坚决说透人话。
+
+【冲泡建议与避坑提醒】
+给出实用冲泡/烹煮小技巧（如挥发性食材后下、焖泡时间、温热饮用等），明确指出哪些体质不宜饮用（如脾胃虚寒、容易便溏腹泻者慎服偏凉方剂），提醒见好就收、不可无节制长期代水饮。
+
+红线底线（不可违背）：
+1. 严禁出现“治疗、疗效、治愈、抗癌、根治、包治、特效”等绝对化医疗用语；
+2. 明确本方为日常食养调理参考，不构成医疗建议，身体严重不适请及时就医；
+3. 段落分明，排版紧凑精炼，不堆砌空话套话。"""
 
 
-def build_recipe_messages(recipe: dict, analysis: dict | None) -> list[dict]:
-    mats = "、".join(
-        f"{m['name']}({m['grams']}g)" if m.get("grams") else m["name"]
-        for m in recipe.get("materials", []))
+def build_recipe_messages(recipe: dict, analysis: dict | None = None) -> list[dict]:
+    mat_descs = []
+    for m in recipe.get("materials", []):
+        name = m.get("name", "")
+        grams = f"{m['grams']}g" if m.get("grams") else ""
+        props = []
+        if m.get("nature"):
+            props.append(f"性{m['nature']}")
+        if m.get("flavor"):
+            props.append(f"味{m['flavor']}")
+        if m.get("functions"):
+            props.append(str(m["functions"])[:60])
+        extra = f"（{grams}{'，' if grams and props else ''}{'、'.join(props)}）" if grams or props else ""
+        mat_descs.append(f"{name}{extra}")
+
     info = {
-        "方名": recipe.get("name"), "类型": recipe.get("type"),
-        "配料": mats, "传统定位": recipe.get("oneliner"),
-        "来源": recipe.get("source"),
+        "方名": recipe.get("name"),
+        "类型": recipe.get("type"),
+        "配料明细": "；".join(mat_descs),
+        "传统定位": recipe.get("oneliner"),
+        "适用场景": recipe.get("scenes"),
         "适宜体质": recipe.get("constitutions_suitable"),
+        "不宜体质": recipe.get("constitutions_unsuitable"),
         "禁忌": recipe.get("contraindication"),
     }
-    if analysis:
-        info["成分分析"] = {
-            "化合物总数": analysis.get("compound_count"),
-            "高入血概率成分Top5": [
-                {"名称": c.get("name"), "入血概率": c.get("prob_cctcm"), "来自": c.get("herbs", "")}
-                for c in (analysis.get("top_compounds") or [])[:5]],
-            "主要靶点": [t["gene"] for t in (analysis.get("top_targets") or [])[:6]],
-        }
-        # 三维维度是呼吸机制框架，只给呼吸/咽喉相关方子，避免 AI 对助眠/祛痘类强行解释"气道修复"
-        if RESP_SCENES & set(recipe.get("scenes") or []):
-            rs = analysis.get("radar_summary")
-            if isinstance(rs, dict):
-                rs = {k: v for k, v in rs.items()
-                      if k in ("anti_inflammatory", "immune_regulation", "airway_repair")}
-            info["成分分析"]["三维评分均值(抗炎/免疫/气道修复，Enrichr 通路富集)"] = rs
     return [
         {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "user", "content": "请解读这个方子：\n" + json.dumps(info, ensure_ascii=False, indent=1)},
+        {"role": "user", "content": "请为这个方子生成核心功效深度解读：\n" + json.dumps(info, ensure_ascii=False, indent=1)},
     ]
+
 
 
 # ---------- AI 助手对话（T3-11：RAG 限定库内资料 + 强制引用编号） ----------
@@ -202,12 +210,15 @@ def platform_key() -> str | None:
     return key.strip() or None
 
 
-def pregen_missing(limit: int | None = None) -> list[int]:
-    """找出 analysis_ready=1 但还没有预生成解读的方子 id（一次性脚本用）"""
+def pregen_missing(limit: int | None = None, force_all: bool = False) -> list[int]:
+    """找出 analysis_ready=1 的方子 id（一次性脚本用）"""
     conn = _pregen_db()
     try:
-        sql = ("SELECT r.id FROM recipe r LEFT JOIN recipe_pregen_ai p ON p.recipe_id=r.id "
-               "WHERE r.analysis_ready=1 AND p.recipe_id IS NULL ORDER BY r.id")
+        if force_all:
+            sql = "SELECT id FROM recipe WHERE analysis_ready=1 ORDER BY id"
+        else:
+            sql = ("SELECT r.id FROM recipe r LEFT JOIN recipe_pregen_ai p ON p.recipe_id=r.id "
+                   "WHERE r.analysis_ready=1 AND p.recipe_id IS NULL ORDER BY r.id")
         if limit:
             sql += f" LIMIT {int(limit)}"
         return [r[0] for r in conn.execute(sql).fetchall()]

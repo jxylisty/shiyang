@@ -1,9 +1,10 @@
 <script setup>
-// AI 流式解读面板（P2 免门槛版）：
-// - 默认无 Key 直接生成 → 后端回放平台预生成的解读（SSE 节奏）
-// - 可选自带 DeepSeek/OpenAI Key → 实时个性化生成（Key 仅存本机浏览器，绝不提交后端存储）
-import { ref, computed } from 'vue'
-import { Sparkles } from '@lucide/vue'
+// AI 功效深度解读面板（食养 Agent 版）：
+// - 默认无 Key → 自动流畅回放平台预生成的深度功效解读
+// - 可选自带 Key → 实时个性化调用模型生成
+// - 结构化分块展示：【核心功效】【配伍奥秘】【通俗机理】【冲泡建议与避坑】
+import { ref, computed, onMounted } from 'vue'
+import { Sparkles, RotateCcw, SlidersHorizontal, AlertCircle } from '@lucide/vue'
 import DisclaimerBanner from './DisclaimerBanner.vue'
 import { streamAIReport } from '../api'
 
@@ -18,8 +19,77 @@ const errMsg = ref('')
 const source = ref('')      // pregen | live
 let abort = null
 
-// 轻量 Markdown 解析（纯组件渲染，不用 v-html 防注入）
-// 支持：#/##/### 标题、**加粗**、*斜体*、空行分段、行内换行
+// ---- 智能分节映射 ----
+const SECTION_META = [
+  { match: /核心功效|主打场景/, title: '核心功效与主打场景', icon: '🎯', badge: '核心主攻', cls: 'sec-efficacy' },
+  { match: /配伍组合|奥秘/, title: '配伍组合的奥秘', icon: '🌿', badge: '配方协同', cls: 'sec-synergy' },
+  { match: /感觉舒服|通俗机理|机理/, title: '为什么感觉舒服（通俗机理）', icon: '💡', badge: '食养机理', cls: 'sec-mechanism' },
+  { match: /冲泡建议|避坑提醒|注意事项|禁忌/, title: '冲泡建议与避坑提醒', icon: '🍵', badge: '实用指南', cls: 'sec-tips' },
+]
+
+function parseInline(str) {
+  const parts = []
+  const boldChunks = str.split('**')
+  const oddBold = (boldChunks.length - 1) % 2 === 1
+  boldChunks.forEach((chunk, bi) => {
+    const isBold = bi % 2 === 1 && !(oddBold && bi === boldChunks.length - 1)
+    const italicChunks = chunk.split('*')
+    const oddItalic = (italicChunks.length - 1) % 2 === 1
+    italicChunks.forEach((seg, si) => {
+      if (!seg) return
+      const isItalic = si % 2 === 1 && !(oddItalic && si === italicChunks.length - 1)
+      parts.push({ t: seg, b: isBold, i: isItalic })
+    })
+  })
+  return parts
+}
+
+// 结构化分块计算属性
+const structuredSections = computed(() => {
+  const raw = String(text.value || '').trim()
+  if (!raw || (!raw.includes('【') && !raw.includes('['))) return []
+
+  const lines = raw.split('\n')
+  const sections = []
+  let curr = null
+
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (!trimmed) continue
+    const m = trimmed.match(/^[【\[](.+?)[】\]]/)
+    if (m) {
+      if (curr) sections.push(curr)
+      const rawTitle = m[1].trim()
+      const meta = SECTION_META.find(s => s.match.test(rawTitle)) || {
+        title: rawTitle, icon: '✨', badge: '重点解读', cls: 'sec-custom'
+      }
+      const rest = trimmed.slice(m[0].length).trim()
+      curr = {
+        title: meta.title,
+        icon: meta.icon,
+        badge: meta.badge,
+        cls: meta.cls,
+        paras: rest ? [parseInline(rest)] : []
+      }
+    } else {
+      if (curr) {
+        curr.paras.push(parseInline(trimmed))
+      } else {
+        curr = {
+          title: '食养概述',
+          icon: '✨',
+          badge: '导读',
+          cls: 'sec-custom',
+          paras: [parseInline(trimmed)]
+        }
+      }
+    }
+  }
+  if (curr) sections.push(curr)
+  return sections
+})
+
+// 回退用轻量 Markdown 解析
 function parseMarkdown(md) {
   const lines = String(md || '').replace(/\r\n/g, '\n').split('\n')
   const blocks = []
@@ -46,25 +116,7 @@ function parseMarkdown(md) {
   return blocks
 }
 
-function parseInline(str) {
-  // 先按 ** 拆，再在每段里按 * 拆（避免 ** 被 * 吃掉）
-  const parts = []
-  const boldChunks = str.split('**')
-  const oddBold = (boldChunks.length - 1) % 2 === 1
-  boldChunks.forEach((chunk, bi) => {
-    const isBold = bi % 2 === 1 && !(oddBold && bi === boldChunks.length - 1)
-    const italicChunks = chunk.split('*')
-    const oddItalic = (italicChunks.length - 1) % 2 === 1
-    italicChunks.forEach((seg, si) => {
-      if (!seg) return
-      const isItalic = si % 2 === 1 && !(oddItalic && si === italicChunks.length - 1)
-      parts.push({ t: seg, b: isBold, i: isItalic })
-    })
-  })
-  return parts
-}
-
-const mdBlocks = computed(() => parseMarkdown(text.value))
+const fallbackBlocks = computed(() => parseMarkdown(text.value))
 
 function start() {
   phase.value = 'streaming'; text.value = ''; errMsg.value = ''
@@ -74,115 +126,434 @@ function start() {
     () => { phase.value = 'done' },
     (e) => { phase.value = 'error'; errMsg.value = typeof e === 'string' ? e : (e.message || 'AI 服务异常') })
 }
-function stop() { abort?.(); phase.value = 'idle'; text.value = '' }
+
+function stop() { abort?.(); phase.value = 'done' }
 function toggleKeyInput() { showKeyInput.value = !showKeyInput.value }
 function saveKey() {
   localStorage.setItem(KEY_STORE, apiKey.value.trim())
   showKeyInput.value = false
+  start()
 }
+
+onMounted(() => {
+  if (props.recipeId) {
+    start()
+  }
+})
 </script>
 
 <template>
   <div class="ai-panel">
-    <template v-if="phase === 'idle'">
-      <p class="ai-tip">让 AI 把这个方子的成分数据翻译成人话</p>
-      <button class="btn ai-start-btn" @click="start"><Sparkles :size="15" :stroke-width="2.2" /> 生成 AI 解读</button>
-      <div class="ai-key-row">
-        <button class="ai-key-toggle" @click="toggleKeyInput">{{ showKeyInput ? '收起' : '用自己的 Key（可选）' }}</button>
-        <!-- Key 输入行：高度过渡展开/收起；收起时按有无已存 Key 显示不同提示 -->
-        <Transition name="key-grow">
-          <div v-if="showKeyInput" class="key-wrap">
-            <input v-model="apiKey" type="password" placeholder="sk-...（DeepSeek 或 OpenAI Key，仅存本机）" class="ai-key" @keyup.enter="saveKey" />
-            <button class="btn ghost ai-key-save" @click="saveKey">保存</button>
-          </div>
-        </Transition>
-        <p v-if="!showKeyInput && apiKey" class="ai-key-note">将使用你保存的 Key 实时生成 · <a href="javascript:void(0)" @click="showKeyInput = true">更换</a></p>
-        <p v-if="!showKeyInput && !apiKey" class="ai-key-note">未填 Key 时展示平台预生成的通用解读</p>
+    <!-- 头部操作条：标题 + Agent标识 + 重新生成操作 -->
+    <div class="ai-head-bar">
+      <div class="ai-title-wrap">
+        <Sparkles :size="15" :stroke-width="2.2" class="ai-title-icon" />
+        <span class="ai-title">食养核心功效解读</span>
+        <span class="agent-tag">食养 Agent</span>
       </div>
-    </template>
-    <template v-else>
-      <Transition name="ai-fade" mode="out-in">
-        <div class="ai-stream" key="stream">
+      <div class="ai-head-ops">
+        <button v-if="phase === 'done' || phase === 'error'" class="btn-regen" @click="start" title="重新生成解读">
+          <RotateCcw :size="12" :stroke-width="2.2" /> 重新生成
+        </button>
+        <button v-else-if="phase === 'streaming'" class="btn-stop" @click="stop">
+          停止
+        </button>
+      </div>
+    </div>
+
+    <!-- 自定义 Key 折叠切换 -->
+    <div class="ai-key-bar">
+      <button class="ai-key-toggle" @click="toggleKeyInput">
+        <SlidersHorizontal :size="11" />
+        {{ showKeyInput ? '收起配置' : (apiKey ? '已配置自定义 Key' : '自定义 Key 生成（可选）') }}
+      </button>
+      <Transition name="key-grow">
+        <div v-if="showKeyInput" class="key-wrap">
+          <div class="key-input-box">
+            <input v-model="apiKey" type="password" placeholder="sk-...（支持 DeepSeek / OpenAI，仅存本机）" class="ai-key" @keyup.enter="saveKey" />
+            <button class="btn ghost ai-key-save" @click="saveKey">保存生效</button>
+          </div>
+          <p class="ai-key-hint">未填写 Key 时，系统将自动回放平台专家模型预生成的深度解读。</p>
+        </div>
+      </Transition>
+    </div>
+
+    <!-- 异常状态 -->
+    <div v-if="phase === 'error'" class="ai-err-box">
+      <AlertCircle :size="14" />
+      <span>{{ errMsg }}</span>
+      <button class="btn-err-retry" @click="start">重试</button>
+    </div>
+
+    <!-- 正文展示：优先结构化卡片，回退普通 Markdown -->
+    <div class="ai-content-wrap">
+      <template v-if="structuredSections.length">
+        <div v-for="(sec, sidx) in structuredSections" :key="sec.title + sidx"
+             class="ai-sec-card" :class="sec.cls">
+          <div class="sec-head">
+            <span class="sec-icon">{{ sec.icon }}</span>
+            <span class="sec-title">{{ sec.title }}</span>
+            <span class="sec-badge">{{ sec.badge }}</span>
+          </div>
+          <div class="sec-body">
+            <p v-for="(para, pidx) in sec.paras" :key="pidx" class="sec-p">
+              <template v-for="(s, sidx2) in para" :key="sidx2">
+                <b v-if="s.b">{{ s.t }}</b>
+                <i v-else-if="s.i">{{ s.t }}</i>
+                <template v-else>{{ s.t }}</template>
+              </template>
+              <span v-if="phase === 'streaming' && sidx === structuredSections.length - 1 && pidx === sec.paras.length - 1" class="cursor">▍</span>
+            </p>
+          </div>
+        </div>
+      </template>
+
+      <!-- 普通 Markdown 回退（或初始几字尚未出现【】时） -->
+      <template v-else-if="text">
+        <div class="ai-fallback-box">
           <div class="ai-md">
-            <template v-for="(blk, bi) in mdBlocks" :key="bi">
-              <h1 v-if="blk.type === 'h1'" class="md-h1">
-                <template v-for="(s, si) in blk.spans" :key="si"><i v-if="s.i"><b v-if="s.b">{{ s.t }}</b><template v-else>{{ s.t }}</template></i><b v-else-if="s.b">{{ s.t }}</b><template v-else>{{ s.t }}</template></template>
-              </h1>
-              <h2 v-else-if="blk.type === 'h2'" class="md-h2">
-                <template v-for="(s, si) in blk.spans" :key="si"><i v-if="s.i"><b v-if="s.b">{{ s.t }}</b><template v-else>{{ s.t }}</template></i><b v-else-if="s.b">{{ s.t }}</b><template v-else>{{ s.t }}</template></template>
-              </h2>
-              <h3 v-else-if="blk.type === 'h3'" class="md-h3">
-                <template v-for="(s, si) in blk.spans" :key="si"><i v-if="s.i"><b v-if="s.b">{{ s.t }}</b><template v-else>{{ s.t }}</template></i><b v-else-if="s.b">{{ s.t }}</b><template v-else>{{ s.t }}</template></template>
-              </h3>
-              <p v-else class="md-p">
-                <template v-for="(s, si) in blk.spans" :key="si"><i v-if="s.i"><b v-if="s.b">{{ s.t }}</b><template v-else>{{ s.t }}</template></i><b v-else-if="s.b">{{ s.t }}</b><template v-else>{{ s.t }}</template></template>
-                <span v-if="phase === 'streaming' && bi === mdBlocks.length - 1" class="cursor">▍</span>
+            <template v-for="(blk, bi) in fallbackBlocks" :key="bi">
+              <p class="md-p">
+                <template v-for="(s, si) in blk.spans" :key="si">
+                  <b v-if="s.b">{{ s.t }}</b>
+                  <i v-else-if="s.i">{{ s.t }}</i>
+                  <template v-else>{{ s.t }}</template>
+                </template>
+                <span v-if="phase === 'streaming' && bi === fallbackBlocks.length - 1" class="cursor">▍</span>
               </p>
             </template>
           </div>
-          <p v-if="phase === 'streaming'" class="ai-status"><span class="ai-dots"></span>{{ source === 'pregen' ? 'AI 解读（预生成）加载中' : 'AI 正在解读' }}</p>
-          <!-- AI 生成内容必须标注来源（AGENTS.md §2.6）：完成后常驻，不随流式状态消失 -->
-          <p v-if="phase === 'done'" class="ai-src">
-            <span class="ai-src-tag">AI 生成</span>{{ source === 'pregen' ? '平台预生成的通用解读' : '基于你的 Key 实时生成' }}，仅供参考
-          </p>
-          <p v-if="phase === 'error'" class="ai-err shake">{{ errMsg }}</p>
-          <div class="ai-ops">
-            <button v-if="phase !== 'streaming'" class="btn ghost" @click="phase = 'idle'">重新生成</button>
-            <button v-if="phase === 'streaming'" class="btn ghost" @click="stop">停止</button>
-          </div>
-          <DisclaimerBanner variant="ai" style="margin-top: 12px;" />
         </div>
-      </Transition>
-    </template>
+      </template>
+
+      <!-- 正在载入中动效（无文字阶段） -->
+      <div v-if="phase === 'streaming' && !text" class="ai-loading-box">
+        <div class="skl" style="height: 20px; width: 60%; margin-bottom: 8px;"></div>
+        <div class="skl" style="height: 14px; width: 90%; margin-bottom: 6px;"></div>
+        <div class="skl" style="height: 14px; width: 80%;"></div>
+        <p class="ai-loading-tip"><span class="ai-dots"></span>食养 Agent 正在拆解方剂功效…</p>
+      </div>
+    </div>
+
+    <!-- 底部来源说明与合规声明 -->
+    <div class="ai-footer">
+      <p class="ai-src">
+        <span class="ai-src-tag">AI 生成</span>
+        {{ source === 'pregen' ? '平台专家模型预生成的深度解读' : '基于自定义 Key 实时生成' }}，仅供食养调理参考
+      </p>
+      <DisclaimerBanner variant="ai" style="margin-top: 8px;" />
+    </div>
   </div>
 </template>
 
 <style scoped>
-.ai-tip { font-size: 12.5px; color: var(--ink-600); margin-bottom: 10px; line-height: 1.55; }
-.ai-start-btn { width: 100%; }
-@media (min-width: 540px) {
-  .ai-start-btn { width: auto; min-width: 176px; padding: 9px 22px; }
+.ai-panel {
+  display: flex;
+  flex-direction: column;
 }
-.ai-key-row { margin-top: 10px; }
-.ai-key-toggle { border: none; background: none; color: var(--green-text); font-size: 12px; cursor: pointer; padding: 0; }
-.key-wrap { overflow: hidden; }
+
+/* 顶部操作条 */
+.ai-head-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 10px;
+  border-bottom: 1px dashed var(--green-50);
+  margin-bottom: 8px;
+}
+.ai-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ai-title-icon {
+  color: var(--green-700);
+}
+.ai-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink-900);
+}
+.agent-tag {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--green-100);
+  color: var(--green-text);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.btn-regen {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  color: var(--green-text);
+  background: var(--green-50);
+  border: 1px solid var(--green-100);
+  border-radius: 12px;
+  padding: 3px 9px;
+  cursor: pointer;
+  transition: all var(--dur-fast) ease;
+}
+.btn-regen:hover {
+  background: var(--green-100);
+}
+.btn-stop {
+  font-size: 11.5px;
+  color: var(--red-text);
+  background: var(--red-50);
+  border: 1px solid rgba(225, 29, 72, 0.2);
+  border-radius: 12px;
+  padding: 3px 9px;
+  cursor: pointer;
+}
+
+/* 自定义 Key 配置条 */
+.ai-key-bar {
+  margin-bottom: 10px;
+}
+.ai-key-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: none;
+  background: none;
+  color: var(--ink-400);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 2px 0;
+  transition: color var(--dur-fast) ease;
+}
+.ai-key-toggle:hover {
+  color: var(--green-text);
+}
+.key-wrap {
+  margin-top: 6px;
+  padding: 8px 10px;
+  background: var(--green-50);
+  border-radius: 8px;
+}
+.key-input-box {
+  display: flex;
+  gap: 6px;
+}
 .ai-key {
-  width: 100%; padding: 10px 12px; border: 1px solid var(--green-100); border-radius: 10px;
-  font-size: 13px; margin-top: 8px; outline: none; background: var(--card); color: var(--ink-900); box-sizing: border-box;
-  transition: border-color var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
+  flex: 1;
+  padding: 6px 10px;
+  border: 1px solid var(--green-100);
+  border-radius: 6px;
+  font-size: 12px;
+  background: var(--card);
+  color: var(--ink-900);
 }
-.ai-key:focus { border-color: var(--green-600); box-shadow: 0 0 0 3px rgba(53, 144, 104, 0.08); }
-.ai-key-save { margin-top: 8px; font-size: 12px; padding: 7px 14px; }
-.ai-key-note { font-size: 11px; color: var(--ink-400); margin-top: 6px; }
-.ai-key-note a { color: var(--green-text); }
-/* Key 行高度过渡 */
-.key-grow-enter-active, .key-grow-leave-active { transition: opacity .25s ease, height .25s var(--ease-out-soft); }
-.key-grow-enter-from, .key-grow-leave-to { opacity: 0; height: 0; }
-/* idle → streaming 面板淡入 */
-.ai-fade-enter-active, .ai-fade-leave-active { transition: opacity .25s ease, transform .25s var(--ease-out-soft); }
-.ai-fade-enter-from, .ai-fade-leave-to { opacity: 0; transform: translateY(6px); }
-.ai-stream { line-height: 1.8; }
-.ai-md { font-size: 13.5px; color: var(--ink-900); }
-.md-h1 { font-size: 17px; font-weight: 600; margin: 4px 0 12px; color: var(--ink-900); line-height: 1.4; }
-.md-h2 { font-size: 15px; font-weight: 600; margin: 16px 0 8px; color: var(--ink-900); line-height: 1.5; }
-.md-h3 { font-size: 14px; font-weight: 600; margin: 14px 0 6px; color: var(--ink-900); line-height: 1.5; }
-.md-p { margin: 0 0 12px; }
-.md-p:last-child { margin-bottom: 0; }
-.ai-md b { font-weight: 600; color: var(--ink-900); }
-.ai-md i { font-style: italic; }
-.cursor { animation: blink 1s infinite; color: var(--green-600); margin-left: 1px; }
-@keyframes blink { 50% { opacity: 0; } }
-/* 生成中三点跳动 */
-.ai-status { font-size: 12px; color: var(--green-600); margin-top: 8px; }
-.ai-dots { display: inline-block; margin-right: 4px; }
+.ai-key:focus {
+  border-color: var(--green-600);
+  outline: none;
+}
+.ai-key-save {
+  padding: 4px 10px;
+  font-size: 11.5px;
+}
+.ai-key-hint {
+  font-size: 10.5px;
+  color: var(--ink-400);
+  margin-top: 4px;
+}
+.key-grow-enter-active, .key-grow-leave-active {
+  transition: opacity .2s ease, height .2s var(--ease-out-soft);
+}
+.key-grow-enter-from, .key-grow-leave-to {
+  opacity: 0;
+  height: 0;
+}
+
+/* 异常提示 */
+.ai-err-box {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: var(--red-50);
+  color: var(--red-text);
+  border-radius: 8px;
+  font-size: 12px;
+  margin-bottom: 10px;
+}
+.btn-err-retry {
+  margin-left: auto;
+  border: none;
+  background: none;
+  color: var(--red-text);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* 结构化分块卡片样式 */
+.ai-content-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ai-sec-card {
+  border-radius: 10px;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  transition: transform var(--dur-fast) ease;
+}
+.sec-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.sec-icon {
+  font-size: 14px;
+}
+.sec-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-900);
+}
+.sec-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 4px;
+  margin-left: auto;
+}
+.sec-body {
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--ink-800);
+}
+.sec-p {
+  margin: 0 0 6px;
+}
+.sec-p:last-child {
+  margin-bottom: 0;
+}
+.sec-p b {
+  font-weight: 700;
+  color: var(--ink-900);
+}
+
+/* 分块主题配色 */
+.sec-efficacy {
+  background: rgba(53, 144, 104, 0.06);
+  border-color: rgba(53, 144, 104, 0.16);
+}
+.sec-efficacy .sec-badge {
+  background: var(--green-100);
+  color: var(--green-text);
+}
+.sec-efficacy .sec-p b {
+  color: var(--green-800);
+}
+
+.sec-synergy {
+  background: rgba(16, 149, 193, 0.05);
+  border-color: rgba(16, 149, 193, 0.16);
+}
+.sec-synergy .sec-badge {
+  background: rgba(16, 149, 193, 0.12);
+  color: #0b7285;
+}
+
+.sec-mechanism {
+  background: rgba(217, 119, 6, 0.05);
+  border-color: rgba(217, 119, 6, 0.16);
+}
+.sec-mechanism .sec-badge {
+  background: rgba(217, 119, 6, 0.12);
+  color: var(--amber-text);
+}
+
+.sec-tips {
+  background: rgba(225, 29, 72, 0.04);
+  border-color: rgba(225, 29, 72, 0.16);
+}
+.sec-tips .sec-badge {
+  background: rgba(225, 29, 72, 0.1);
+  color: var(--red-text);
+}
+
+.sec-custom {
+  background: var(--green-50);
+  border-color: var(--green-100);
+}
+.sec-custom .sec-badge {
+  background: var(--green-100);
+  color: var(--green-text);
+}
+
+/* 回退普通样式 */
+.ai-fallback-box {
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--ink-800);
+}
+.md-p {
+  margin-bottom: 8px;
+}
+.md-p:last-child {
+  margin-bottom: 0;
+}
+.md-p b {
+  font-weight: 700;
+  color: var(--green-800);
+}
+
+/* 加载动画 */
+.ai-loading-box {
+  padding: 12px 0;
+}
+.ai-loading-tip {
+  font-size: 11.5px;
+  color: var(--green-600);
+  margin-top: 8px;
+}
 .ai-dots::after {
-  content: "…"; display: inline-block; overflow: hidden; vertical-align: bottom;
-  animation: dots 1.4s steps(4) infinite; width: 0;
+  content: "…";
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: bottom;
+  animation: dots 1.4s steps(4) infinite;
+  width: 0;
 }
-@keyframes dots { to { width: 1.2em; } }
-.ai-err { font-size: 12.5px; color: var(--red-text); margin-top: 8px; }
-/* 生成完成后的来源标注：小字灰调，不抢正文 */
-.ai-src { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--ink-400); margin-top: 10px; }
-.ai-src-tag { display: inline-block; padding: 1px 6px; border-radius: 4px; background: var(--green-50); border: 1px solid var(--green-100); color: var(--green-text); font-size: 10.5px; }
-.ai-ops { margin-top: 10px; }
+@keyframes dots {
+  to { width: 1.2em; }
+}
+
+.cursor {
+  animation: blink 1s infinite;
+  color: var(--green-600);
+  margin-left: 2px;
+}
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+/* 底部标注 */
+.ai-footer {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--green-50);
+}
+.ai-src {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--ink-400);
+}
+.ai-src-tag {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--green-50);
+  border: 1px solid var(--green-100);
+  color: var(--green-text);
+  font-size: 10px;
+}
 </style>

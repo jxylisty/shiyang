@@ -759,7 +759,9 @@ async def ai_report(rid: int, key: str | None = Query(None), provider: str = "de
     for k in ("scenes", "constitutions_suitable", "constitutions_unsuitable"):
         recipe[k] = json.loads(recipe.get(k) or "[]")
     mats = conn.execute(
-        "SELECT name, grams FROM rel_recipe_material WHERE recipe_id=?", (rid,)).fetchall()
+        "SELECT m.name, m.material_type, m.grams, h.nature, h.flavor, h.functions "
+        "FROM rel_recipe_material m LEFT JOIN herb h ON h.id=m.herb_id "
+        "WHERE m.recipe_id=?", (rid,)).fetchall()
     recipe["materials"] = [dict(m) for m in mats]
     a = conn.execute("SELECT * FROM recipe_analysis WHERE recipe_id=?", (rid,)).fetchone()
     analysis = None

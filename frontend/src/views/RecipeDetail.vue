@@ -328,10 +328,10 @@ async function toggleCheckin() {
             <van-empty image="search" description="该方配料以普通食材为主，暂无成分分析（营养素视角开发中）" />
           </div>
 
-          <!-- AI 解读 -->
+          <!-- AI 功效深度解读 -->
           <template v-if="recipe.analysis">
-            <div class="section-title">AI 通俗解读</div>
-            <div class="card">
+            <div class="section-title">AI 功效深度解读</div>
+            <div class="card ai-card">
               <AIReport :recipe-id="route.params.id" />
             </div>
           </template>
@@ -392,16 +392,16 @@ async function toggleCheckin() {
 <style scoped>
 .detail-grid { display: block; }
 @media (min-width: 900px) {
-  /* 默认 stretch：两列拉伸到同一行高，配合下方 flex:1 让最后一张卡吃掉高度差 */
-  .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 20px; }
+  /* 两列自然顶部对齐，取消强制拉伸与末尾卡片 flex:1，避免右侧卡片过度拉长留白 */
+  .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 20px; align-items: start; }
 }
 
-/* ===== 主网格两列的收尾对齐 =====
- * 列内 flex 纵向布局 + 最后一块 flex:1 吃掉两列高度差 → 底部对齐；
- * grid 默认 stretch 把两列拉到同一行高。窄屏单列 flex 无副作用。 */
 .col-main, .col-side { display: flex; flex-direction: column; }
 .col-main > *, .col-side > * { width: 100%; }
-.col-main > :last-child, .col-side > :last-child { flex: 1; }
+/* 右侧深度解读卡自适应内容，告别内部垂直虚长 */
+.ai-card {
+  padding: 16px;
+}
 
 /* 可视化专区：证据链 / 网络图 / 通路富集 三卡并排，避免全堆在右列造成左右失衡 */
 .viz-zone { margin-top: 4px; }
