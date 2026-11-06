@@ -54,6 +54,11 @@ cd ../frontend
 npm install
 ```
 
+> **只有做知识库重建（`scripts/rebuild_all.py`）才需要额外环境**：UMAP/rdkit/xgboost
+> 等库只有离线脚本用，后端运行时不依赖。用 `uv venv .venv-rebuild --python 3.12` +
+> `uv pip install --python .venv-rebuild/Scripts/python.exe -r scripts/requirements-rebuild.txt`
+> 单开一个，不要往主环境升级 sklearn（详见 docs/知识库重建链路_2026-11-06.md §6.3）。
+
 ## 3. 跑起来
 
 ```bash

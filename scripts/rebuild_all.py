@@ -116,27 +116,36 @@ class Skip(Exception):
     """环境不满足的可选步骤（例如 umap/sklearn 版本不兼容）——记录后继续。"""
 
 
-def preflight_chem_map() -> str | None:
-    """预检 compute_map_coords 的 umap/sklearn 兼容性。
+def preflight_chem_map(python_exe: str) -> str | None:
+    """预检 compute_map_coords 的 umap/sklearn 兼容性——**用目标解释器实测**。
 
-    实测：umap-learn 0.5.12 调用 sklearn 的 check_array(ensure_all_finite=...)，
-    该形参自 sklearn 1.5 起才有；sklearn 1.4.2 会抛
-    TypeError: check_array() got an unexpected keyword argument 'ensure_all_finite'。
-    这是环境问题，不是数据问题——降级跳过并在报告里如实标注，不掩盖。
+    关键点：本脚本自己可能跑在 base 环境（sklearn 1.4.2），但步骤子进程可以用
+    --python 指向专用环境（.venv-rebuild，sklearn>=1.6）。所以预检必须在目标
+    解释器里跑，不能用父进程的 import 结果下结论——否则会出现「明明装了好环境，
+    UMAP 步骤却被跳过」的假阴性。
+
+    已知失败模式（base 环境）：umap-learn 0.5.12 调用 sklearn 的
+    check_array(ensure_all_finite=...)，该形参自 sklearn 1.5 起才有，
+    1.4.2 会抛 TypeError。这是环境问题不是数据问题——降级跳过并如实标注，不掩盖。
     """
+    probe = "\n".join([
+        "import numpy as np, umap, sklearn",
+        "umap.UMAP(n_components=2, random_state=42, n_neighbors=5).fit_transform(",
+        "    np.random.RandomState(0).rand(12, 8).astype('float32'))",
+        "print('OK', sklearn.__version__)",
+        "",
+    ])
     try:
-        import sklearn  # noqa: F401
-        import umap  # noqa: F401
-    except Exception as e:  # 依赖缺失同样跳过
-        return f"依赖不可用（{type(e).__name__}: {e}）"
-    try:
-        import numpy as np
-        import umap as u
-        u.UMAP(n_components=2, random_state=42, n_neighbors=5).fit_transform(
-            np.random.RandomState(0).rand(12, 8).astype("float32"))
-        return None
+        r = subprocess.run([python_exe, "-X", "utf8", "-c", probe],
+                           capture_output=True, text=True, timeout=180,
+                           encoding="utf-8", errors="replace")
     except Exception as e:
-        return f"umap/sklearn 版本不兼容（{type(e).__name__}: {e}）"
+        return f"预检无法执行（{type(e).__name__}: {e}）"
+    if r.returncode == 0:
+        return None
+    err = (r.stderr or r.stdout or "").strip().splitlines()
+    tail = err[-1] if err else f"退出码 {r.returncode}"
+    return f"umap/sklearn 不兼容（{tail[:150]}）"
 
 
 def log(msg=""):
@@ -647,7 +656,7 @@ def step_runnable(step, args):
     return True, ""
 
 
-def run_step(root: Path, target: Path, step: dict, log_path: Path):
+def run_step(root: Path, target: Path, step: dict, log_path: Path, python_exe: str):
     if step.get("script") is None:  # 播种步骤
         seed = (target / "_seed" / "seed.db")
         db = root / "data" / "shiyang.db"
@@ -672,12 +681,12 @@ def run_step(root: Path, target: Path, step: dict, log_path: Path):
     elif step.get("pre") == "restore_repaired_source":
         restore_repaired_source(target)
 
-    cmd = [sys.executable, "-X", "utf8", str(script), *step.get("argv", [])]
+    cmd = [python_exe, "-X", "utf8", str(script), *step.get("argv", [])]
     env = os.environ.copy()
     env["PYTHONUTF8"] = "1"
     env["PYTHONIOENCODING"] = "utf-8"
     log(f"\n[{step['id']}] {step['title']}")
-    log(f"  $ python -X utf8 scripts/{step['script']} "
+    log(f"  $ {Path(python_exe).name} -X utf8 scripts/{step['script']} "
         f"{' '.join(step.get('argv', []))}".rstrip())
     t0 = time.time()
     tail = []
@@ -755,11 +764,28 @@ def main():
                     help="可选步骤失败时记录并继续（默认任何失败都停）")
     ap.add_argument("--chembl-limit", type=int, default=None,
                     help="传给 fetch_chembl_activity.py 的 --limit")
+    ap.add_argument("--python", default=None,
+                    help="跑各步骤子进程用的解释器路径。默认用当前解释器。"
+                         "建议指向专用环境 .venv-rebuild（见 docs/知识库重建链路_2026-11-06.md §6.3），"
+                         "否则 UMAP 步骤会因 base 环境 sklearn 版本过低被跳过")
     args = ap.parse_args()
     args.target_dir = Path(args.target_dir).resolve()
-    chem_map_bad = preflight_chem_map()
 
     try:
+        # 解释器：默认用仓库内专用环境 .venv-rebuild（若存在），否则当前解释器；
+        # --python 可显式覆盖。显式传了就要求真实存在，避免「写错路径 → 每步都
+        # FileNotFoundError」这种难查的失败。放在 try 内，让 Fail 走统一的退出码 2。
+        if args.python:
+            py = Path(args.python).expanduser()
+            if not py.exists():
+                raise Fail(f"--python 不存在：{py}")
+            python_exe = str(py.resolve())
+        else:
+            default_venv = REPO / ".venv-rebuild" / "Scripts" / "python.exe"
+            python_exe = str(default_venv) if default_venv.exists() else sys.executable
+
+        chem_map_bad = preflight_chem_map(python_exe)
+
         if args.target_dir == (REPO / "data").resolve():
             raise Fail("--target-dir 不能是 data/ 本身（生产库所在地）")
         if (args.target_dir / "root" / "data" / "shiyang.db").resolve() == PROD_DB:
@@ -776,6 +802,7 @@ def main():
         log(f"  沙箱    : {args.target_dir}")
         log(f"  最终库  : {args.target_dir / 'root' / 'data' / 'shiyang.db'}")
         log(f"  生产库  : {PROD_DB}（本脚本不会写入）")
+        log(f"  解释器  : {python_exe}")
         log(f"  口径    : profile={args.profile}  from_source={args.from_source}  "
             f"legacy10={'off' if args.skip_legacy10 else 'on'}  "
             f"seed={'yes' if args.seed_from else 'no'}")
@@ -844,7 +871,7 @@ def main():
                 report["steps"].append({"id": s["id"], "status": "skipped", "reason": why})
                 continue
             try:
-                dur, checks = run_step(root, target, s, log_path)
+                dur, checks = run_step(root, target, s, log_path, python_exe)
                 report["steps"].append({
                     "id": s["id"], "status": "ok", "seconds": round(dur, 1),
                     "checks": [{"label": a, "got": b, "expect": c} for a, b, c in checks]})

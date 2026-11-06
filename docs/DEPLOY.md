@@ -84,6 +84,8 @@ python -X utf8 scripts/rebuild_all.py --dry-run
 
 # 2) 在临时目录重建（推荐先这样验证；无 AI key 时加 --skip-ai）
 python -X utf8 scripts/rebuild_all.py --target-dir data/_rebuild_test/run1 --skip-ai
+#    注：若仓库内有 .venv-rebuild/（见 scripts/requirements-rebuild.txt），脚本会自动
+#    用它跑子进程，UMAP 步骤（compound_map）才能生成；也可 --python 显式指定。
 
 # 3) 校验通过后，部署时用新库替换生产库（先备份！）
 cp data/shiyang.db data/shiyang.db.bak-before-replace-$(date +%Y%m%d%H%M%S)

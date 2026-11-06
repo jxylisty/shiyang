@@ -1,0 +1,32 @@
+# 知识库重建专用环境依赖（2026-11-06）
+#
+# 为什么单开一个环境：这些库**只有离线脚本用**，后端运行时完全不需要
+# （backend/requirements.txt 只有 fastapi/uvicorn/pydantic/httpx/bcrypt/python-jose）。
+# 主体环境是 D:\anaconda（Anaconda 共享 base），不宜为其改 sklearn 大版本。
+#
+# 创建与使用：
+#   uv venv .venv-rebuild --python 3.12
+#   uv pip install --python .venv-rebuild/Scripts/python.exe \
+#       --index-url https://pypi.tuna.tsinghua.edu.cn/simple -r scripts/requirements-rebuild.txt
+#   # 之后 rebuild_all.py 会自动优先使用 .venv-rebuild（也可 --python 指定）
+#
+# 关键版本约束：
+#   scikit-learn>=1.6 —— umap-learn 0.5.12 硬要求（本机 base 的 1.4.2 会抛
+#     TypeError: check_array() got an unexpected keyword argument 'ensure_all_finite'）
+#   numpy<2.3        —— 留出与 rdkit/umap 的兼容余量（实测 2.2.6 正常）
+#
+# 实测（2026-11-06，Python 3.12.4 / Windows）：
+#   numpy 2.2.6 / scikit-learn 1.9.1 / umap-learn 0.5.12 / rdkit 2026.09.1
+#   xgboost 3.4.1 / pandas 3.1.1 / scipy 1.18.1
+#   => compute_map_coords 跑通 4,558 个成分（原 base 环境下被 SKIP）
+#   => cross_validate_independent / compute_applicability / fetch_chembl_activity 导入通过
+
+numpy>=1.26,<2.3
+scipy>=1.13
+pandas>=2.2
+scikit-learn>=1.6
+umap-learn>=0.5.6
+xgboost>=2.0
+rdkit>=2024.3
+openpyxl>=3.1
+requests>=2.31
