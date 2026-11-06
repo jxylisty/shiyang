@@ -3,6 +3,7 @@
 import { ref, onMounted } from 'vue'
 import { listCompounds } from '../api'
 import MiniChemMap from '../components/MiniChemMap.vue'
+import { proMode } from '../utils/proMode'
 import DisclaimerBanner from '../components/DisclaimerBanner.vue'
 
 const items = ref([])
@@ -108,10 +109,20 @@ const fmt = (p) => p == null ? '—' : Number(p).toFixed(3)
       <DisclaimerBanner variant="compound" style="margin-top: 10px;" />
     </template>
 
-    <!-- 化学空间地图放在页尾：它是整体结构视角，不是查成分的主路径，
-         放顶部会抢掉列表首屏；这里滚动到底才触发加载（组件内 IntersectionObserver） -->
+    <!-- 化学空间地图：专业模式下展开，普通模式展示轻量探索卡，避免生信图突兀打扰大众浏览 -->
     <div class="map-slot">
-      <MiniChemMap />
+      <template v-if="proMode">
+        <MiniChemMap />
+      </template>
+      <div v-else class="pro-promo-card card">
+        <div class="pp-info">
+          <b>探究全库高维化学空间与流形？</b>
+          <span>开启专业模式，查看基于 Morgan 指纹 (ECFP4) 与 UMAP 降维的 4,558 个中药成分拓扑空间分布</span>
+        </div>
+        <button class="btn ghost pp-btn" @click="proMode = true">
+          开启专业模式
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -176,4 +187,14 @@ const fmt = (p) => p == null ? '—' : Number(p).toFixed(3)
 .sk-line.w50 { width: 50%; }
 .sk-line.w90 { width: 90%; }
 .sk-line.w40 { width: 40%; margin-bottom: 0; }
+
+.pro-promo-card {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  padding: 16px; margin-top: 14px; background: linear-gradient(135deg, var(--green-50) 0%, #fff 100%);
+  border: 1px dashed var(--green-200); border-radius: 12px;
+}
+.pp-info b { font-size: 14px; color: var(--green-text); display: block; font-family: var(--font-serif); }
+.pp-info span { font-size: 11.5px; color: var(--ink-400); margin-top: 3px; display: block; line-height: 1.45; }
+.pp-btn { flex-shrink: 0; font-size: 12px; padding: 6px 14px; border-radius: 8px; }
+
 </style>
