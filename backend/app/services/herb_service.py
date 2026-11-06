@@ -1313,9 +1313,11 @@ def recognize_herb_image(image_bytes: bytes, mime: str = "image/jpeg",
         )
         r.raise_for_status()
         content = (r.json()["choices"][0]["message"].get("content") or "").strip()
-    except Exception as e:
+    except Exception:
+        # 不把底层服务地址与原始 HTTP 错误抛给用户（验收发现泄露 7863 内部地址）
         return {"status": "error", "image_kind": "unknown", "items": [],
-                "unverified": [], "model": VISION_MODEL, "error": f"识别服务不可用：{e}"}
+                "unverified": [], "model": VISION_MODEL,
+                "error": "识别服务暂时不可用，请稍后重试，或改用手动输入"}
 
     # 模型常带 ```json 包裹
     if content.startswith("```"):

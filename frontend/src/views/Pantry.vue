@@ -175,7 +175,14 @@ async function onPhotoPicked(e) {
   try {
     photoInfo.value = (await recognizeRecipeImage(file)).data.data
   } catch (err) {
-    photoError.value = err?.response?.data?.detail || '识别失败，请换个角度重拍或改用手动输入'
+    // 只透出后端给出的中文提示（4xx 校验类）；5xx/超时一律给人话，避免暴露内部错误
+    const status = err?.response?.status
+    const detail = err?.response?.data?.detail
+    photoError.value = (status && status < 500 && typeof detail === 'string' && detail)
+      ? detail
+      : (err?.code === 'ECONNABORTED'
+          ? '识别超时了，图片可能太大或服务繁忙，请稍后重试'
+          : '识别失败，请换个角度重拍或改用手动输入')
   } finally { photoLoading.value = false }
 }
 
@@ -197,6 +204,20 @@ function pickAllRecognized() {
   const verified = (photoInfo.value?.items || []).filter(i => i.verified)
   for (const it of [...verified]) pickRecognized(it)
 }
+
+// 识别不出时按图片类型给不同引导（验收反馈：原来一句话覆盖不了多种失败原因）
+const emptyPhotoHint = computed(() => {
+  const kind = photoInfo.value?.image_kind
+  if (kind === 'text') {
+    return '图片里的文字没看清。请让药方占满画面、光线均匀、别反光或手抖，再拍一次。'
+  }
+  if (kind === 'herb') {
+    return '认不出是什么。粉末、切片、碎末很难辨认；药材请平铺在一块干净的背景上、'
+      + '距离 20–30 厘米、光线充足后重拍。也可以改用手动输入。'
+  }
+  return '这张图里没发现能识别的药材或药方。请拍药材实物（散开平铺）或药方文字，'
+    + '确保画面清晰、不模糊、不逆光。'
+})
 
 // ---- 粘贴文案自动解析 ----
 const pasteText = ref('')
@@ -382,9 +403,7 @@ watch(() => customResult.value, r => {
 
         <!-- 识别结果：候选项让用户点选，绝不自动填入 -->
         <div v-if="photoInfo" class="photo-result">
-          <p v-if="!photoInfo.items.length" class="pf-none">
-            没认出可用的药材。粉末、切片、糊状物较难辨认，建议改用手动输入。
-          </p>
+          <p v-if="!photoInfo.items.length" class="pf-none">{{ emptyPhotoHint }}</p>
           <template v-else>
             <p class="pf-ok">
               认出 <b>{{ photoInfo.items.length }}</b> 个可能的药材，点一下加入（可多选）：
