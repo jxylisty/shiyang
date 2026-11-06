@@ -1,54 +1,242 @@
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
-import { ShoppingBasket, Sparkles, Search, Check, Camera } from '@lucide/vue'
-import { showSuccessToast } from 'vant'
-import { getPantryMaterials, pantryMatch, matImg, analyzeCustomRecipe, parseCustomRecipeText, getCustomPlain, webLookupHerb, recognizeRecipeImage } from '../api'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
+import {
+  ShoppingBasket, Sparkles, Search, Check, Camera,
+  X, Trash2, ChevronDown, ChevronUp, Plus, ArrowDown,
+} from '@lucide/vue'
+import {
+  getPantryMaterials, pantryMatch, matImg,
+  analyzeCustomRecipe, parseCustomRecipeText, getCustomPlain, webLookupHerb, recognizeRecipeImage,
+} from '../api'
 import DisclaimerBanner from '../components/DisclaimerBanner.vue'
 import PlainCard from '../components/PlainCard.vue'
 import ProModeToggle from '../components/ProModeToggle.vue'
 import { proMode } from '../utils/proMode'
 
 const activeTab = ref('own')  // 'own' = 我的茶罐 / 'custom' = 自定义鉴方
-const materials = ref([])       // 全部可选食材
+const materials = ref([])       // 全部可选食材 [{name, count}]
 const selected = ref(new Set()) // 勾选的食材名
 const search = ref('')
+const activeCat = ref('hot')    // 当前分类抽屉：hot | all | flower | root | grain | fresh | sweet
+const shelfExpanded = ref(false)
+const trayExpanded = ref(false)
+const imgFailed = ref({})
+
 const result = ref(null)
 const loading = ref(false)
 const error = ref('')
+const resultsAnchor = ref(null)
 
 const STORE_KEY = 'shiyang_pantry_v1'
+const MOBILE_PAGE_SIZE = 24
+const TRAY_COLLAPSE_LIMIT = 9
+
+// 家常异名检索映射（与后端 pantry_service._ALIAS 对齐，搜俗名也能命中库内标准名）
+const SEARCH_ALIASES = {
+  枣: ['红枣', '大枣', '干枣'],
+  龙眼肉: ['桂圆', '桂圆肉'],
+  薏苡仁: ['薏米', '米仁'],
+  山药: ['淮山', '怀山药'],
+  枸杞子: ['枸杞', '红枸杞'],
+  铁皮石斛: ['石斛', '枫斗'],
+  菊花: ['杭白菊', '胎菊', '贡菊'],
+  猪瘦肉: ['猪肉', '瘦肉'],
+  猪骨: ['筒骨', '大骨'],
+  粳米: ['大米', '白米'],
+  赤小豆: ['红小豆'],
+  马蹄: ['荸荠'],
+  余甘子: ['油柑'],
+}
+
+// 精确语义归类词表 + 词根兜底（后续继续扩充百味药材也能自动归入对应抽屉，不丢项）
+const EXACT_CAT = {
+  // 花叶果茶
+  陈皮: 'flower', 菊花: 'flower', 决明子: 'flower', 乌梅: 'flower', 荷叶: 'flower',
+  金银花: 'flower', 胖大海: 'flower', 桑椹: 'flower', 薄荷: 'flower', 玫瑰花: 'flower',
+  覆盆子: 'flower', 桑叶: 'flower', 佛手: 'flower', 山楂: 'flower', 罗汉果: 'flower',
+  栀子: 'flower', 淡竹叶: 'flower', 紫苏: 'flower', 槐花: 'flower', 槐米: 'flower',
+  代代花: 'flower', 白扁豆花: 'flower', 橘红: 'flower', 化橘红: 'flower', 香橼: 'flower',
+  // 根茎本草
+  百合: 'root', 麦冬: 'root', 茯苓: 'root', 黄芪: 'root', 铁皮石斛: 'root',
+  西洋参: 'root', 甘草: 'root', 桔梗: 'root', 山药: 'root', 鲜芦根: 'root',
+  当归: 'root', 黄精: 'root', 肉桂: 'root', 玉竹: 'root', 天冬: 'root',
+  地黄: 'root', 党参: 'root', 天麻: 'root', 白芷: 'root', 葛根: 'root',
+  灵芝: 'root', 姜黄: 'root', 杜仲叶: 'root', 肉苁蓉: 'root', 昆布: 'root',
+  // 谷豆果仁
+  枣: 'grain', 莲子: 'grain', 枸杞子: 'grain', 龙眼肉: 'grain', 薏苡仁: 'grain',
+  芡实: 'grain', 蜜枣: 'grain', 粳米: 'grain', 酸枣仁: 'grain', 赤小豆: 'grain',
+  花生: 'grain', 绿豆: 'grain', 黑芝麻: 'grain', 麦芽: 'grain', 红豆: 'grain',
+  眉豆: 'grain', 核桃: 'grain', 板栗: 'grain', 小米: 'grain', 白扁豆: 'grain',
+  杏仁: 'grain', 桃仁: 'grain', 火麻仁: 'grain', 砂仁: 'grain', 莱菔子: 'grain',
+  紫苏籽: 'grain', 淡豆豉: 'grain', 白果: 'grain', 刀豆: 'grain',
+  // 生鲜煲汤
+  生姜: 'fresh', 冬瓜: 'fresh', 鸭肉: 'fresh', 猪瘦肉: 'fresh', 鸡肉: 'fresh',
+  银耳: 'fresh', 莲藕: 'fresh', 鸡蛋: 'fresh', 鲫鱼: 'fresh', 鲢鱼头: 'fresh',
+  马蹄: 'fresh', 雪梨: 'fresh', 菠菜: 'fresh', 羊肉: 'fresh', 白萝卜: 'fresh',
+  玉米须: 'fresh', 猪骨: 'fresh', 猪脊骨: 'fresh', 猪肝: 'fresh', 猪肚: 'fresh',
+  海棠果: 'fresh', 椰子: 'fresh', 柚子: 'fresh', 木瓜: 'fresh', 排骨: 'fresh',
+  乌鸡: 'fresh', 牡蛎: 'fresh',
+  // 糖蜜茶奶
+  冰糖: 'sweet', 蜂蜜: 'sweet', 绿茶: 'sweet', 红糖: 'sweet', 白糖: 'sweet', 牛奶: 'sweet',
+}
+
+function classifyMaterial(name) {
+  if (EXACT_CAT[name]) return EXACT_CAT[name]
+  if (/糖|蜜|牛乳|牛奶|红茶|绿茶|乌龙|普洱/.test(name)) return 'sweet'
+  if (/肉|鸡|鸭|鹅|鱼|骨|排|肝|肚|蹄|蛋|羊|牛|虾|瓜|梨|藕|萝卜|菜|菇|银耳|木耳|姜|马蹄|椰|柚/.test(name)) return 'fresh'
+  if (/花|叶|菊|荷|薄荷|紫苏|梅|楂|椹|罗汉果|胖大海|佛手|皮|橘|柑|桑|茶/.test(name)) return 'flower'
+  if (/仁|豆|米|麦|芝麻|核桃|栗|花生|芡|莲|枸杞|枣|桂圆|龙眼|籽|子/.test(name)) return 'grain'
+  return 'root'
+}
+
+const CAT_DEFS = [
+  { key: 'hot', label: '常用高频' },
+  { key: 'all', label: '全部' },
+  { key: 'flower', label: '花叶果茶' },
+  { key: 'root', label: '根茎本草' },
+  { key: 'grain', label: '谷豆果仁' },
+  { key: 'fresh', label: '生鲜煲汤' },
+  { key: 'sweet', label: '糖蜜茶奶' },
+]
+
+// 空罐一键体验预设（仅保留库内真实存在的食材）
+const QUICK_PRESETS = [
+  { label: '润燥护嗓常备', items: ['麦冬', '百合', '菊花', '金银花', '冰糖'] },
+  { label: '气血温养茶桌', items: ['陈皮', '枸杞子', '枣', '黄芪', '龙眼肉'] },
+  { label: '家常祛湿煲汤', items: ['山药', '茯苓', '薏苡仁', '莲子', '猪瘦肉'] },
+]
+
+let matchTimer = null
+
+function clearMatchTimer() {
+  if (matchTimer) {
+    clearTimeout(matchTimer)
+    matchTimer = null
+  }
+}
+
+function scheduleMatch() {
+  clearMatchTimer()
+  persist()
+  if (!selected.value.size) {
+    result.value = null
+    return
+  }
+  matchTimer = setTimeout(() => {
+    runMatch()
+  }, 240)
+}
 
 onMounted(async () => {
-  // 本地记忆：上次勾选的茶罐
   try {
     const saved = JSON.parse(localStorage.getItem(STORE_KEY) || '[]')
     saved.forEach(n => selected.value.add(n))
   } catch { /* ignore */ }
   try {
-    materials.value = (await getPantryMaterials()).data.data.items
+    materials.value = (await getPantryMaterials()).data.data.items || []
   } catch { error.value = '食材清单加载失败' }
   if (selected.value.size) runMatch()
 })
 
-const shown = computed(() => {
-  const kw = search.value.trim()
-  const sel = [...selected.value]
-  const rest = materials.value.filter(m => !selected.value.has(m.name))
-  const pool = kw ? rest.filter(m => m.name.includes(kw)) : rest
-  return { sel, pool: pool.slice(0, kw ? 50 : 40) }
+onBeforeUnmount(() => {
+  clearMatchTimer()
+  if (photoPreview.value) URL.revokeObjectURL(photoPreview.value)
+})
+
+// 带分类属性的完整食材列表
+const enrichedMaterials = computed(() =>
+  materials.value.map((m, idx) => ({
+    ...m,
+    cat: classifyMaterial(m.name),
+    isHot: m.count >= 3 || idx < 28,
+    aliases: SEARCH_ALIASES[m.name] || [],
+  }))
+)
+
+// 每个分类的总数与已选角标数
+const categoryTabs = computed(() => {
+  const all = enrichedMaterials.value
+  return CAT_DEFS.map((c) => {
+    const list = c.key === 'all'
+      ? all
+      : c.key === 'hot'
+        ? all.filter(m => m.isHot)
+        : all.filter(m => m.cat === c.key)
+    const selCount = list.reduce((acc, m) => acc + (selected.value.has(m.name) ? 1 : 0), 0)
+    return { ...c, total: list.length, selCount }
+  }).filter(c => c.key === 'all' || c.key === 'hot' || c.total > 0)
+})
+
+// 搜索词或分类切换时重置折叠态
+watch([activeCat, search], () => {
+  shelfExpanded.value = false
+})
+
+// 当前筛选出的食材池（原位勾选：不把已选食材从列表挖走，彻底消除手机连点跳位）
+const filteredPool = computed(() => {
+  const kw = search.value.trim().toLowerCase()
+  const all = enrichedMaterials.value
+  if (kw) {
+    return all.filter((m) =>
+      m.name.toLowerCase().includes(kw) ||
+      m.aliases.some(a => a.toLowerCase().includes(kw))
+    )
+  }
+  if (activeCat.value === 'all') return all
+  if (activeCat.value === 'hot') return all.filter(m => m.isHot)
+  return all.filter(m => m.cat === activeCat.value)
+})
+
+const visiblePool = computed(() => {
+  if (search.value.trim() || shelfExpanded.value) return filteredPool.value
+  return filteredPool.value.slice(0, MOBILE_PAGE_SIZE)
+})
+
+const hiddenCount = computed(() =>
+  Math.max(0, filteredPool.value.length - visiblePool.value.length)
+)
+
+const selectedList = computed(() => [...selected.value])
+const visibleSelected = computed(() =>
+  trayExpanded.value ? selectedList.value : selectedList.value.slice(0, TRAY_COLLAPSE_LIMIT)
+)
+
+const availablePresets = computed(() => {
+  const validSet = new Set(materials.value.map(m => m.name))
+  return QUICK_PRESETS
+    .map(p => ({ ...p, items: p.items.filter(x => validSet.has(x)) }))
+    .filter(p => p.items.length >= 2)
 })
 
 function toggle(name) {
   const s = new Set(selected.value)
   s.has(name) ? s.delete(name) : s.add(name)
   selected.value = s
+  scheduleMatch()
+}
+
+function applyPreset(items) {
+  const s = new Set(selected.value)
+  items.forEach(n => s.add(n))
+  selected.value = s
+  scheduleMatch()
+}
+
+function clearSelected() {
+  selected.value = new Set()
+  trayExpanded.value = false
+  result.value = null
+  persist()
 }
 
 function persist() {
-  localStorage.setItem(STORE_KEY, JSON.stringify([...selected.value]))
+  try {
+    localStorage.setItem(STORE_KEY, JSON.stringify([...selected.value]))
+  } catch { /* ignore */ }
 }
 
 async function runMatch() {
+  clearMatchTimer()
   if (!selected.value.size) { result.value = null; return }
   loading.value = true
   error.value = ''
@@ -56,6 +244,22 @@ async function runMatch() {
   try {
     result.value = (await pantryMatch([...selected.value])).data.data
   } catch { error.value = '匹配失败，请重试' } finally { loading.value = false }
+}
+
+function scrollToResults() {
+  if (!selected.value.size) return
+  if (!result.value && !loading.value) runMatch()
+  resultsAnchor.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
+function onImgError(name) {
+  imgFailed.value[name] = true
+}
+
+function matchedAliasHint(m) {
+  const kw = search.value.trim().toLowerCase()
+  if (!kw || m.name.toLowerCase().includes(kw)) return ''
+  return m.aliases.find(a => a.toLowerCase().includes(kw)) || ''
 }
 
 function coverBar(c) { return Math.round(c * 100) }
@@ -278,7 +482,7 @@ watch(() => customResult.value, r => {
 </script>
 
 <template>
-  <div class="page">
+  <div class="page pantry-page">
     <div class="card head-card">
       <h2 class="p-title"><ShoppingBasket :size="18" /> 我的茶罐</h2>
       <p class="p-sub">勾选手边有的食材，看看今晚就能煮什么——反向配伍，附成分证据</p>
@@ -294,86 +498,257 @@ watch(() => customResult.value, r => {
       </button>
     </div>
 
-    <!-- Tab 1：我的茶罐（原有功能） -->
+    <!-- ==================== Tab 1：我的茶罐 ==================== -->
     <template v-if="activeTab === 'own'">
       <van-empty v-if="error && !materials.length" image="error" :description="error" />
 
-      <!-- 已选 -->
-      <div class="section-title">已选 {{ selected.size }} 味</div>
-      <div class="card">
-        <div v-if="selected.size" class="chip-wrap">
-          <button v-for="n in shown.sel" :key="n" class="tag sel-tag" @click="toggle(n)">
-            {{ n }} <span class="x">✕</span>
+      <!-- 顶部茶罐托盘：空罐给一键组合示例，入罐后紧凑展示并实时汇总可煮数 -->
+      <div class="card tray-card">
+        <div class="tray-head">
+          <div class="tray-title">
+            <span class="tray-dot" :class="{ on: selected.size > 0 }" />
+            <b>已入罐 {{ selected.size }} 味</b>
+            <span v-if="loading" class="tray-status">正在配伍…</span>
+            <button
+              v-else-if="result && selected.size"
+              type="button"
+              class="tray-jump pressable"
+              @click="scrollToResults"
+            >
+              直接能煮 {{ result.suggestions.length }} · 差一味 {{ result.partial.length }}
+              <ArrowDown :size="11" />
+            </button>
+          </div>
+          <button v-if="selected.size" type="button" class="tray-clear pressable" @click="clearSelected">
+            <Trash2 :size="12" /> 清空
           </button>
         </div>
-        <p v-else class="hint">从下面勾选你手边有的食材（会记住你的茶罐）</p>
-        <div class="cta-bar">
-          <button class="btn cta-btn" :disabled="!selected.size || loading" @click="runMatch">
-            <Search :size="15" :stroke-width="2.2" />
-            {{ loading ? '配伍中…' : '找能煮的方子' }}
-          </button>
+
+        <!-- 已选食材胶囊（超出阈值自动折叠，避免手机端把下方货架顶出屏幕） -->
+        <template v-if="selected.size">
+          <div class="chip-wrap tray-chips">
+            <button
+              v-for="n in visibleSelected"
+              :key="n"
+              type="button"
+              class="tag sel-tag pressable"
+              @click="toggle(n)"
+            >
+              <span>{{ n }}</span>
+              <X :size="12" :stroke-width="2.2" class="sel-x" />
+            </button>
+            <button
+              v-if="selectedList.length > TRAY_COLLAPSE_LIMIT"
+              type="button"
+              class="tag more-sel-btn pressable"
+              @click="trayExpanded = !trayExpanded"
+            >
+              {{ trayExpanded ? '收起' : `全部 ${selectedList.length} 味` }}
+            </button>
+          </div>
+        </template>
+
+        <!-- 空罐引导：省掉原来的大块无效灰按钮，改为一键填入常备茶桌示例 -->
+        <div v-else class="tray-empty">
+          <p class="hint">点选下方任意药材/食材即可自动配伍（自动记住你的茶罐），或一键试试常备组合：</p>
+          <div v-if="availablePresets.length" class="preset-row">
+            <button
+              v-for="p in availablePresets"
+              :key="p.label"
+              type="button"
+              class="preset-pill pressable"
+              @click="applyPreset(p.items)"
+            >
+              <Plus :size="12" :stroke-width="2.2" />
+              <span>{{ p.label }}</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      <!-- 食材选择 -->
-      <div class="section-title">勾选食材</div>
-      <div class="card">
-        <van-search v-model="search" placeholder="搜食材，如：陈皮" class="search-box" />
-        <div class="chip-wrap">
-          <button v-for="m in shown.pool" :key="m.name" class="tag opt-tag" @click="toggle(m.name)">
-            <img :src="matImg(m.name)" alt="" loading="lazy" @error="e => e.target.style.display = 'none'" />
-            {{ m.name }}
-          </button>
-        </div>
-        <p v-if="!shown.pool.length" class="hint">没有更多可选食材了</p>
+      <!-- 分类本草货架：搜索 + 横向滑动分屉 + 原位三列点选网格 -->
+      <div class="section-head-row">
+        <div class="section-title" style="margin: 0;">勾选食材</div>
+        <span v-if="materials.length" class="shelf-meta">
+          共收录 {{ materials.length }} 味配料
+        </span>
       </div>
 
-      <template v-if="result">
-        <!-- 直接能煮 -->
-        <div class="section-title">直接能煮（{{ result.suggestions.length }}）</div>
-        <div v-if="result.suggestions.length" class="pantry-list">
-          <router-link v-for="r in result.suggestions" :key="r.id" :to="`/recipes/${r.id}`"
-                       class="card p-item pressable">
-            <div class="pi-left">
-              <img :src="matImg(r.hit[0] || '')" alt="" loading="lazy" @error="e => e.target.style.visibility = 'hidden'" />
-              <Check :size="16" class="pi-check" />
-            </div>
-            <div class="pi-main">
-              <b>{{ r.name }}</b>
-              <p class="pi-one">{{ r.oneliner }}</p>
-              <div class="pi-tags">
-                <span v-for="s in r.scenes.slice(0, 2)" :key="s" class="tag">{{ s }}</span>
-                <span v-if="r.hi_blood_count" class="tag lab">高入血成分 ×{{ r.hi_blood_count }}</span>
+      <div class="card shelf-card">
+        <!-- 搜索框：支持红枣/桂圆/薏米/淮山等家常俗名自动匹配 -->
+        <div class="shelf-search">
+          <Search :size="15" class="shelf-search-ico" />
+          <input
+            v-model="search"
+            type="search"
+            class="shelf-search-input"
+            placeholder="搜药材或家常名，如：陈皮 / 红枣 / 桂圆 / 薏米"
+          />
+          <button v-if="search" type="button" class="shelf-search-clear" @click="search = ''" aria-label="清空搜索">
+            <X :size="14" />
+          </button>
+        </div>
+
+        <!-- 横向滑动分类抽屉（搜索时提示跨全库检索，平时按分屉快速定位） -->
+        <div v-if="!search.trim()" class="cat-rail" role="tablist" aria-label="食材分类">
+          <button
+            v-for="c in categoryTabs"
+            :key="c.key"
+            type="button"
+            role="tab"
+            :aria-selected="activeCat === c.key"
+            class="cat-pill pressable"
+            :class="{ active: activeCat === c.key }"
+            @click="activeCat = c.key"
+          >
+            <span>{{ c.label }}</span>
+            <span v-if="c.selCount" class="cat-sel-badge">{{ c.selCount }}</span>
+            <span v-else class="cat-total">{{ c.total }}</span>
+          </button>
+        </div>
+        <div v-else class="search-stat-bar">
+          <span>全库检索到 <b>{{ filteredPool.length }}</b> 味相关食材</span>
+          <button type="button" class="link-reset" @click="search = ''">返回分类浏览</button>
+        </div>
+
+        <!-- 原位三列紧凑卡片网格：点击不跳位、大触控热区、带入方频次参考 -->
+        <div v-if="visiblePool.length" class="mat-grid">
+          <button
+            v-for="m in visiblePool"
+            :key="m.name"
+            type="button"
+            class="mat-tile pressable"
+            :class="{ checked: selected.has(m.name) }"
+            :aria-pressed="selected.has(m.name)"
+            @click="toggle(m.name)"
+          >
+            <span class="mt-thumb">
+              <img
+                v-if="!imgFailed[m.name]"
+                :src="matImg(m.name)"
+                alt=""
+                loading="lazy"
+                @error="onImgError(m.name)"
+              />
+              <span v-else class="mt-fallback">{{ m.name.slice(0, 1) }}</span>
+            </span>
+            <span class="mt-body">
+              <span class="mt-name">{{ m.name }}</span>
+              <span class="mt-sub">
+                <template v-if="matchedAliasHint(m)">俗称{{ matchedAliasHint(m) }}</template>
+                <template v-else>入 {{ m.count }} 方</template>
+              </span>
+            </span>
+            <span v-if="selected.has(m.name)" class="mt-check" aria-hidden="true">
+              <Check :size="11" :stroke-width="2.8" />
+            </span>
+          </button>
+        </div>
+
+        <p v-else class="hint empty-pool-hint">
+          没在配料架里找到「{{ search.trim() }}」，可换个常见别名，或切到上方「自定义鉴方」直接查单味本草。
+        </p>
+
+        <!-- 移动端友好的折叠/展开控制：避免一次铺开上百味食材淹没下方结果 -->
+        <button
+          v-if="!search.trim() && (hiddenCount > 0 || (shelfExpanded && filteredPool.length > MOBILE_PAGE_SIZE))"
+          type="button"
+          class="shelf-more-btn pressable"
+          @click="shelfExpanded = !shelfExpanded"
+        >
+          <template v-if="!shelfExpanded">
+            <span>展开其余 {{ hiddenCount }} 味食材（本组共 {{ filteredPool.length }} 味）</span>
+            <ChevronDown :size="14" />
+          </template>
+          <template v-else>
+            <span>收起部分食材，方便浏览下方结果</span>
+            <ChevronUp :size="14" />
+          </template>
+        </button>
+      </div>
+
+      <!-- 配伍结果锚点区 -->
+      <div ref="resultsAnchor" class="results-anchor">
+        <template v-if="result && selected.size">
+          <!-- 直接能煮 -->
+          <div class="section-title">直接能煮（{{ result.suggestions.length }}）</div>
+          <div v-if="result.suggestions.length" class="pantry-list">
+            <router-link v-for="r in result.suggestions" :key="r.id" :to="`/recipes/${r.id}`"
+                         class="card p-item pressable">
+              <div class="pi-left">
+                <img :src="matImg(r.hit[0] || '')" alt="" loading="lazy" @error="e => e.target.style.visibility = 'hidden'" />
+                <Check :size="16" class="pi-check" />
               </div>
-            </div>
-          </router-link>
-        </div>
-        <van-empty v-else image="search" description="现有食材还不能完整煮任何方子，看看下面「差一点」的" />
-
-        <!-- 差一点 -->
-        <div v-if="result.partial.length" class="section-title">差一味就齐（{{ result.partial.length }}）</div>
-        <div v-if="result.partial.length" class="pantry-list">
-          <router-link v-for="r in result.partial" :key="r.id" :to="`/recipes/${r.id}`"
-                       class="card p-item partial pressable">
-            <div class="pi-left">
-              <img :src="matImg(r.hit[0] || '')" alt="" loading="lazy" @error="e => e.target.style.visibility = 'hidden'" />
-            </div>
-            <div class="pi-main">
-              <div class="pi-top">
+              <div class="pi-main">
                 <b>{{ r.name }}</b>
-                <span class="cov">{{ coverBar(r.coverage) }}%</span>
+                <p class="pi-one">{{ r.oneliner }}</p>
+                <div class="pi-tags">
+                  <span v-for="s in r.scenes.slice(0, 2)" :key="s" class="tag">{{ s }}</span>
+                  <span v-if="r.hi_blood_count" class="tag lab">高入血成分 ×{{ r.hi_blood_count }}</span>
+                </div>
               </div>
-              <p class="pi-miss">还差：<b>{{ r.missing.join('、') }}</b></p>
-              <div class="pi-tags">
-                <span v-for="s in r.scenes.slice(0, 2)" :key="s" class="tag">{{ s }}</span>
+            </router-link>
+          </div>
+          <van-empty v-else image="search" description="现有食材还不能凑齐整道方子，看看下面「差一味就齐」的" />
+
+          <!-- 差一点：支持在卡片上直接补勾手边其实也有的那味配料 -->
+          <div v-if="result.partial.length" class="section-title">差一味就齐（{{ result.partial.length }}）</div>
+          <div v-if="result.partial.length" class="pantry-list">
+            <router-link v-for="r in result.partial" :key="r.id" :to="`/recipes/${r.id}`"
+                         class="card p-item partial pressable">
+              <div class="pi-left">
+                <img :src="matImg(r.hit[0] || '')" alt="" loading="lazy" @error="e => e.target.style.visibility = 'hidden'" />
               </div>
+              <div class="pi-main">
+                <div class="pi-top">
+                  <b>{{ r.name }}</b>
+                  <span class="cov">{{ coverBar(r.coverage) }}%</span>
+                </div>
+                <div class="pi-miss-row">
+                  <span class="pi-miss-label">还差：</span>
+                  <button
+                    v-for="ms in r.missing"
+                    :key="ms"
+                    type="button"
+                    class="miss-add-chip pressable"
+                    title="手边也有这味？点一下直接补入茶罐"
+                    @click.stop.prevent="toggle(ms)"
+                  >
+                    <Plus :size="10" :stroke-width="2.4" />
+                    <span>{{ ms }}</span>
+                  </button>
+                </div>
+                <div class="pi-tags">
+                  <span v-for="s in r.scenes.slice(0, 2)" :key="s" class="tag">{{ s }}</span>
+                </div>
+              </div>
+            </router-link>
+          </div>
+        </template>
+      </div>
+
+      <!-- 手机端悬浮茶罐底栏：浏览长列表勾选时随时感知匹配进度并一键直达结果 -->
+      <Transition name="dock-pop">
+        <div v-if="selected.size > 0" class="pantry-dock">
+          <div class="pd-info">
+            <span class="pd-badge">{{ selected.size }}</span>
+            <div class="pd-text">
+              <b>已选 {{ selected.size }} 味食材</b>
+              <span v-if="loading">正在计算可煮方子…</span>
+              <span v-else-if="result">
+                直接能煮 <em>{{ result.suggestions.length }}</em> 道 · 差一点 <em>{{ result.partial.length }}</em> 道
+              </span>
             </div>
-          </router-link>
+          </div>
+          <button type="button" class="btn pd-btn pressable" :disabled="loading" @click="scrollToResults">
+            <span>看可煮方子</span>
+            <ArrowDown :size="14" :stroke-width="2.2" />
+          </button>
         </div>
-      </template>
+      </Transition>
     </template>
 
-    <!-- Tab 2：自定义鉴方 -->
+    <!-- ==================== Tab 2：自定义鉴方 ==================== -->
     <template v-else>
       <div class="card custom-intro">
         <div class="ci-icon"><Sparkles :size="18" /></div>
@@ -481,7 +856,9 @@ watch(() => customResult.value, r => {
                      :value="h.grams ?? ''" @input="e => updateGrams(i, e.target.value)" />
               <span class="cr-unit">g</span>
             </div>
-            <button class="cr-del" @click="removeCustomHerb(i)">✕</button>
+            <button type="button" class="cr-del" aria-label="移除该药材" @click="removeCustomHerb(i)">
+              <X :size="14" :stroke-width="2" />
+            </button>
           </div>
         </div>
 
@@ -624,27 +1001,12 @@ watch(() => customResult.value, r => {
 </template>
 
 <style scoped>
-.head-card { text-align: center; padding: 20px 16px; }
+.pantry-page { padding-bottom: 24px; }
+.head-card { text-align: center; padding: 18px 16px; }
 .p-title { font-size: 18px; display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--green-text); }
-.p-sub { font-size: 12px; color: var(--ink-400); margin-top: 6px; }
-.search-box { padding: 0 0 10px; background: transparent; }
+.p-sub { font-size: 12px; color: var(--ink-400); margin-top: 5px; line-height: 1.5; }
 .chip-wrap { display: flex; flex-wrap: wrap; gap: 7px; }
-.sel-tag {
-  background: var(--green-50); color: var(--green-text);
-  border: 1px solid rgba(58, 122, 94, 0.28); border-radius: 999px;
-  padding: 4px 11px; font-size: 12.5px; font-weight: 500;
-  cursor: pointer; display: inline-flex; align-items: center; gap: 5px; margin: 0;
-}
-.sel-tag:hover { background: var(--green-100); border-color: var(--green-600); }
-.sel-tag .x { opacity: .65; font-size: 10px; line-height: 1; transition: opacity var(--dur-fast) ease, color var(--dur-fast) ease; }
-.sel-tag:hover .x { opacity: 1; color: var(--red-text); }
-.opt-tag {
-  cursor: pointer; display: inline-flex; align-items: center; gap: 5px;
-  border-radius: 999px; padding: 4px 11px 4px 5px; font-size: 12.5px; margin: 0;
-}
-.opt-tag:hover { border-color: rgba(58, 122, 94, 0.36); background: var(--green-100); }
-.opt-tag img { width: 18px; height: 18px; border-radius: 50%; object-fit: cover; }
-.hint { font-size: 12px; color: var(--ink-400); }
+.hint { font-size: 12px; color: var(--ink-400); line-height: 1.55; }
 .cta-bar { margin-top: 14px; display: flex; justify-content: center; }
 .cta-btn { width: 100%; }
 @media (min-width: 540px) {
@@ -652,7 +1014,7 @@ watch(() => customResult.value, r => {
   .cta-btn { width: auto; min-width: 196px; padding: 10px 26px; }
 }
 
-/* Tab 切换：暖凹槽 + 纸白浮卡，避免与下方主操作按钮撞成两块深绿大长条 */
+/* Tab 切换：暖凹槽 + 纸白浮卡 */
 .tab-bar {
   display: flex; gap: 4px; margin: 0 0 14px;
   background: rgba(120, 95, 60, 0.075);
@@ -674,6 +1036,521 @@ watch(() => customResult.value, r => {
 .tab-new {
   display: inline-block; font-size: 10px; font-weight: 600; padding: 1px 5px;
   background: var(--cinnabar); color: #fbf3e4; border-radius: 6px; line-height: 1.35;
+}
+
+/* ============ 顶部「已入罐」紧凑托盘 ============ */
+.tray-card {
+  padding: 12px 14px;
+  margin-bottom: 14px;
+}
+.tray-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.tray-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  font-size: 13.5px;
+  color: var(--ink-900);
+}
+.tray-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(120, 95, 60, 0.25);
+  transition: background var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
+}
+.tray-dot.on {
+  background: var(--green-600);
+  box-shadow: 0 0 0 3px rgba(58, 122, 94, 0.14);
+}
+.tray-status {
+  font-size: 11.5px;
+  color: var(--ink-400);
+}
+.tray-jump {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--green-100);
+  background: var(--green-50);
+  color: var(--green-text);
+  font-size: 11.5px;
+  font-weight: 600;
+  font-family: inherit;
+  padding: 2px 9px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.tray-jump:hover {
+  border-color: var(--green-600);
+  background: var(--green-100);
+}
+.tray-clear {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: none;
+  background: transparent;
+  color: var(--ink-400);
+  font-size: 12px;
+  font-family: inherit;
+  padding: 3px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: color var(--dur-fast) ease, background var(--dur-fast) ease;
+}
+.tray-clear:hover {
+  color: var(--red-text);
+  background: var(--red-50);
+}
+
+.tray-chips {
+  margin-top: 10px;
+}
+.sel-tag {
+  background: var(--green-50); color: var(--green-text);
+  border: 1px solid rgba(58, 122, 94, 0.28); border-radius: 999px;
+  padding: 4px 9px 4px 11px; font-size: 12.5px; font-weight: 500;
+  cursor: pointer; display: inline-flex; align-items: center; gap: 4px; margin: 0;
+  font-family: inherit;
+}
+.sel-tag:hover { background: var(--green-100); border-color: var(--green-600); }
+.sel-x { opacity: .65; transition: opacity var(--dur-fast) ease, color var(--dur-fast) ease; }
+.sel-tag:hover .sel-x { opacity: 1; color: var(--red-text); }
+.more-sel-btn {
+  background: transparent;
+  border: 1px dashed var(--card-border);
+  color: var(--ink-600);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.tray-empty {
+  margin-top: 8px;
+}
+.preset-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 8px;
+}
+.preset-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  border: 1px dashed rgba(58, 122, 94, 0.34);
+  background: var(--green-50);
+  color: var(--green-text);
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color var(--dur-fast) ease, background var(--dur-fast) ease;
+}
+.preset-pill:hover {
+  border-style: solid;
+  border-color: var(--green-600);
+  background: var(--green-100);
+}
+
+/* ============ 分类食材货架（移动端优先） ============ */
+.section-head-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 4px 0 8px;
+}
+.shelf-meta {
+  font-size: 11.5px;
+  color: var(--ink-400);
+}
+.shelf-card {
+  padding: 12px;
+}
+
+/* 自研轻量搜索条：比 Vant 默认灰框更贴合宣纸卡片且零多余边距 */
+.shelf-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 11px;
+  border-radius: 10px;
+  background: rgba(120, 95, 60, 0.055);
+  border: 1px solid rgba(120, 95, 60, 0.12);
+  transition: border-color var(--dur-fast) ease, background var(--dur-fast) ease;
+}
+.shelf-search:focus-within {
+  border-color: var(--green-600);
+  background: var(--card);
+}
+.shelf-search-ico {
+  flex-shrink: 0;
+  color: var(--ink-400);
+}
+.shelf-search-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 13.5px;
+  font-family: inherit;
+  color: var(--ink-900);
+}
+.shelf-search-input::placeholder {
+  color: var(--ink-400);
+}
+.shelf-search-clear {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(120, 95, 60, 0.12);
+  color: var(--ink-600);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+/* 横向滑动分屉栏：手机单手左右滑，隐藏滚动条 */
+.cat-rail {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  margin: 10px -2px 11px;
+  padding: 2px 2px 3px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.cat-rail::-webkit-scrollbar { display: none; }
+.cat-pill {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  border: 1px solid var(--card-border);
+  background: transparent;
+  color: var(--ink-600);
+  font-size: 12.5px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all var(--dur-fast) ease;
+}
+.cat-pill:hover:not(.active) {
+  border-color: rgba(58, 122, 94, 0.35);
+  color: var(--ink-900);
+}
+.cat-pill.active {
+  background: var(--green-700);
+  border-color: var(--green-700);
+  color: #fdfaf1;
+  font-weight: 600;
+}
+.cat-total {
+  font-size: 10.5px;
+  opacity: 0.65;
+  font-variant-numeric: tabular-nums;
+}
+.cat-sel-badge {
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--green-600);
+  color: #fdfaf1;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.cat-pill.active .cat-sel-badge {
+  background: #fdfaf1;
+  color: var(--green-700);
+}
+
+.search-stat-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 9px 2px 10px;
+  font-size: 12px;
+  color: var(--ink-600);
+}
+.link-reset {
+  border: none;
+  background: none;
+  color: var(--green-text);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* 原位紧凑三列网格（手机 3 列整齐对位，平板/桌面自适应 4~6 列） */
+.mat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+@media (max-width: 350px) {
+  .mat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 560px) {
+  .mat-grid { grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 8px; }
+}
+
+.mat-tile {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 44px;
+  padding: 6px 8px 6px 6px;
+  border-radius: 10px;
+  border: 1px solid var(--card-border);
+  background: rgba(120, 95, 60, 0.025);
+  color: var(--ink-900);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--dur-fast) ease, background var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
+}
+.mat-tile:hover {
+  border-color: rgba(58, 122, 94, 0.38);
+  background: var(--green-50);
+}
+.mat-tile.checked {
+  border-color: var(--green-600);
+  background: var(--green-50);
+  box-shadow: inset 0 0 0 1px rgba(58, 122, 94, 0.18);
+}
+
+.mt-thumb {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: var(--green-100);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.mt-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.mt-fallback {
+  font-size: 12px;
+  font-weight: 700;
+  font-family: var(--font-serif);
+  color: var(--green-text);
+}
+
+.mt-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.mt-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--ink-900);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mat-tile.checked .mt-name {
+  color: var(--green-text);
+}
+.mt-sub {
+  font-size: 10px;
+  line-height: 1.2;
+  color: var(--ink-400);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mt-check {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  background: var(--green-700);
+  color: #fdfaf1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 4px rgba(20, 51, 42, 0.25);
+}
+
+.empty-pool-hint {
+  padding: 18px 8px;
+  text-align: center;
+}
+
+.shelf-more-btn {
+  width: 100%;
+  margin-top: 10px;
+  padding: 8px 12px;
+  border-radius: 9px;
+  border: 1px dashed var(--card-border);
+  background: rgba(120, 95, 60, 0.035);
+  color: var(--ink-600);
+  font-size: 12.5px;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  cursor: pointer;
+  transition: border-color var(--dur-fast) ease, color var(--dur-fast) ease, background var(--dur-fast) ease;
+}
+.shelf-more-btn:hover {
+  border-color: var(--green-600);
+  color: var(--green-text);
+  background: var(--green-50);
+}
+
+.results-anchor {
+  scroll-margin-top: 68px;
+  margin-top: 14px;
+}
+
+/* 差一味卡片上的快捷补入胶囊 */
+.pi-miss-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 4px 0 6px;
+}
+.pi-miss-label {
+  font-size: 12px;
+  color: var(--ink-600);
+}
+.miss-add-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px dashed rgba(176, 124, 46, 0.45);
+  background: var(--amber-50);
+  color: var(--amber-text);
+  font-size: 11.5px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color var(--dur-fast) ease, background var(--dur-fast) ease;
+}
+.miss-add-chip:hover {
+  border-style: solid;
+  border-color: var(--green-600);
+  background: var(--green-50);
+  color: var(--green-text);
+}
+
+/* ============ 手机端悬浮茶罐结果底栏 ============ */
+.pantry-dock {
+  position: sticky;
+  bottom: 12px;
+  z-index: 18;
+  margin-top: 14px;
+  padding: 9px 11px 9px 13px;
+  border-radius: 999px;
+  background: var(--card);
+  border: 1px solid rgba(58, 122, 94, 0.30);
+  box-shadow: var(--shadow-hover);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.pd-info {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+.pd-badge {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--green-700);
+  color: #fdfaf1;
+  font-size: 12.5px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-variant-numeric: tabular-nums;
+}
+.pd-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.pd-text b {
+  font-size: 12.5px;
+  color: var(--ink-900);
+  line-height: 1.25;
+}
+.pd-text span {
+  font-size: 11px;
+  color: var(--ink-600);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pd-text em {
+  font-style: normal;
+  font-weight: 700;
+  color: var(--green-text);
+}
+.pd-btn {
+  flex-shrink: 0;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.dock-pop-enter-active,
+.dock-pop-leave-active {
+  transition: opacity 0.22s ease, transform 0.22s var(--ease-out-soft);
+}
+.dock-pop-enter-from,
+.dock-pop-leave-to {
+  opacity: 0;
+  transform: translateY(10px);
 }
 
 /* 自定义鉴方介绍卡 */
@@ -705,17 +1582,18 @@ watch(() => customResult.value, r => {
   transition: background var(--dur-fast) ease, border-color var(--dur-fast) ease;
 }
 .cand:hover { background: var(--green-100); border-color: var(--green-600); }
-.cand.unverified { background: var(--amber-50); border-color: var(--amber-200); color: var(--amber-text); }
+.cand.unverified { background: var(--amber-50); border-color: rgba(176, 124, 46, 0.35); color: var(--amber-text); }
 .cand-name { font-weight: 600; }
 .cand-g { font-size: 11.5px; opacity: .8; }
 .cand-conf { font-size: 10.5px; opacity: .7; }
 .cand-tag {
   font-size: 9.5px; padding: 0 5px; border-radius: 5px;
-  background: var(--amber-500); color: #fff; line-height: 1.6;
+  background: var(--amber-600); color: #fff; line-height: 1.6;
 }
 
 /* 粘贴解析 */
-.paste-box {  width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 10px;
+.paste-box {
+  width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 10px;
   border: 1px solid var(--green-100); font-size: 13.5px; font-family: inherit;
   line-height: 1.6; color: var(--ink-900); background: var(--card);
   resize: vertical; outline: none; transition: border-color var(--dur-fast);
@@ -731,7 +1609,8 @@ watch(() => customResult.value, r => {
 .pf-rej li { margin-bottom: 2px; }
 
 /* 添加行 */
-.add-row { display: flex; gap: 8px; }.add-input {
+.add-row { display: flex; gap: 8px; }
+.add-input {
   flex: 1; padding: 10px 12px; border: 1px solid var(--green-100); border-radius: 10px;
   font-size: 14px; font-family: inherit; background: var(--card); color: var(--ink-900);
   outline: none; transition: border-color var(--dur-fast);
@@ -753,7 +1632,7 @@ watch(() => customResult.value, r => {
 .cr-unit { font-size: 12px; color: var(--ink-400); }
 .cr-del {
   width: 24px; height: 24px; border-radius: 50%; border: none; background: transparent;
-  color: var(--ink-400); cursor: pointer; font-size: 14px; line-height: 1;
+  color: var(--ink-400); cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
 }
 .cr-del:hover { color: var(--red-text); background: var(--red-50); }
 
@@ -797,7 +1676,7 @@ watch(() => customResult.value, r => {
 /* 成分靶点折叠区 */
 .cr-extra { padding: 14px; }
 .cr-section { margin-top: 12px; }
-.cr-section > b { display: block; font-size: 13px; color: var(--ink-700); margin-bottom: 8px; }
+.cr-section > b { display: block; font-size: 13px; color: var(--ink-900); margin-bottom: 8px; }
 .ing-tag, .tgt-tag {
   font-size: 11.5px; background: var(--green-50); border-color: var(--green-100);
 }
@@ -813,27 +1692,25 @@ watch(() => customResult.value, r => {
 .pi-left img { width: 100%; height: 100%; object-fit: cover; }
 .pi-check { position: absolute; right: 2px; bottom: 2px; color: #fff; background: var(--green-600);
             border-radius: 50%; padding: 2px; }
-.p-item.partial { opacity: .92; }
+.p-item.partial { opacity: .95; }
 .pi-main { flex: 1; min-width: 0; }
 .pi-main b { font-size: 15px; }
 .pi-top { display: flex; justify-content: space-between; align-items: center; }
 .cov { font-size: 12px; font-weight: 700; color: var(--amber-text); }
 .pi-one { font-size: 12px; color: var(--ink-600); margin: 3px 0 6px; }
-.pi-miss { font-size: 12px; color: var(--ink-600); margin: 3px 0 6px; }
-.pi-miss b { color: var(--amber-text); font-weight: 600; }
 .pi-tags { display: flex; flex-wrap: wrap; gap: 4px; }
 .tag.lab { background: var(--green-700); color: #fff; border-color: var(--green-700); }
 
 /* 联网搜索兜底卡片 */
 .wl-spin { font-size: 11.5px; font-weight: 400; color: var(--ink-400); margin-left: 6px; }
 .wl-list { display: flex; flex-direction: column; gap: 10px; }
-.wl-card { padding: 13px 14px; border-left: 3px solid var(--amber-500); }
-.wl-head { display: flex; align-items: center; gap: 7px; margin-bottom: 7px; color: var(--ink-700); }
+.wl-card { padding: 13px 14px; border-left: 3px solid var(--amber-600); }
+.wl-head { display: flex; align-items: center; gap: 7px; margin-bottom: 7px; color: var(--ink-900); }
 .wl-badge {
   font-size: 9.5px; padding: 1px 6px; border-radius: 6px; line-height: 1.6;
-  background: var(--amber-500); color: #fff; font-weight: 500;
+  background: var(--amber-600); color: #fff; font-weight: 500;
 }
-.wl-summary { font-size: 13px; color: var(--ink-700); line-height: 1.7; margin: 0 0 8px; }
+.wl-summary { font-size: 13px; color: var(--ink-600); line-height: 1.7; margin: 0 0 8px; }
 .wl-none { font-size: 12.5px; color: var(--ink-400); margin: 0 0 6px; }
 .wl-sources { display: flex; flex-direction: column; gap: 3px; }
 .wl-src-label { font-size: 11px; color: var(--ink-400); font-weight: 600; }
