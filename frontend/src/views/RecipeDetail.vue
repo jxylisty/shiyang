@@ -145,7 +145,7 @@ async function toggleFav() {
       // 收藏成功：star pop + 轻触觉 + toast（与打卡反馈对称）
       favJustPop.value = true
       buzz(10)
-      showSuccessToast('已加入收藏 ★')
+      showSuccessToast('已加入收藏')
       setTimeout(() => { favJustPop.value = false }, 500)
     }
   } catch (e) {
@@ -160,7 +160,7 @@ async function toggleCheckin() {
   try {
     const id = Number(route.params.id)
     if (checkedToday.value) { await undoCheckin(id); checkedToday.value = false }
-    else { await doCheckin(id); checkedToday.value = true; buzz(10); showSuccessToast('今日已打卡 ✓') }
+    else { await doCheckin(id); checkedToday.value = true; buzz(10); showSuccessToast('今日已打卡') }
   } catch (e) {
     if (e?.response?.status === 401) gotoLogin()
   } finally { checkinBusy.value = false }

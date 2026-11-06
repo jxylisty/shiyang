@@ -4,7 +4,7 @@
 // - 可选自带 Key → 实时个性化调用模型生成
 // - 结构化分块展示：【核心功效】【配伍奥秘】【通俗机理】【冲泡建议与避坑】
 import { ref, computed, onMounted } from 'vue'
-import { Sparkles, RotateCcw, SlidersHorizontal, AlertCircle } from '@lucide/vue'
+import { Sparkles, RotateCcw, SlidersHorizontal, AlertCircle, Target, Leaf, Lightbulb, Coffee } from '@lucide/vue'
 import DisclaimerBanner from './DisclaimerBanner.vue'
 import { streamAIReport } from '../api'
 
@@ -19,12 +19,12 @@ const errMsg = ref('')
 const source = ref('')      // pregen | live
 let abort = null
 
-// ---- 智能分节映射 ----
+// ---- 智能分节映射（专业线性 SVG 图标，杜绝 Emoji） ----
 const SECTION_META = [
-  { match: /核心功效|主打场景/, title: '核心功效与主打场景', icon: '🎯', badge: '核心主攻', cls: 'sec-efficacy' },
-  { match: /配伍组合|奥秘/, title: '配伍组合的奥秘', icon: '🌿', badge: '配方协同', cls: 'sec-synergy' },
-  { match: /感觉舒服|通俗机理|机理/, title: '为什么感觉舒服（通俗机理）', icon: '💡', badge: '食养机理', cls: 'sec-mechanism' },
-  { match: /冲泡建议|避坑提醒|注意事项|禁忌/, title: '冲泡建议与避坑提醒', icon: '🍵', badge: '实用指南', cls: 'sec-tips' },
+  { match: /核心功效|主打场景/, title: '核心功效与主打场景', icon: Target, badge: '核心主攻', cls: 'sec-efficacy' },
+  { match: /配伍组合|奥秘/, title: '配伍组合的奥秘', icon: Leaf, badge: '配方协同', cls: 'sec-synergy' },
+  { match: /感觉舒服|通俗机理|机理/, title: '为什么感觉舒服（通俗机理）', icon: Lightbulb, badge: '食养机理', cls: 'sec-mechanism' },
+  { match: /冲泡建议|避坑提醒|注意事项|禁忌/, title: '冲泡建议与避坑提醒', icon: Coffee, badge: '实用指南', cls: 'sec-tips' },
 ]
 
 function parseInline(str) {
@@ -61,7 +61,7 @@ const structuredSections = computed(() => {
       if (curr) sections.push(curr)
       const rawTitle = m[1].trim()
       const meta = SECTION_META.find(s => s.match.test(rawTitle)) || {
-        title: rawTitle, icon: '✨', badge: '重点解读', cls: 'sec-custom'
+        title: rawTitle, icon: Sparkles, badge: '重点解读', cls: 'sec-custom'
       }
       const rest = trimmed.slice(m[0].length).trim()
       curr = {
@@ -77,7 +77,7 @@ const structuredSections = computed(() => {
       } else {
         curr = {
           title: '食养概述',
-          icon: '✨',
+          icon: Sparkles,
           badge: '导读',
           cls: 'sec-custom',
           paras: [parseInline(trimmed)]
@@ -191,7 +191,9 @@ onMounted(() => {
         <div v-for="(sec, sidx) in structuredSections" :key="sec.title + sidx"
              class="ai-sec-card" :class="sec.cls">
           <div class="sec-head">
-            <span class="sec-icon">{{ sec.icon }}</span>
+            <span class="sec-icon-wrap">
+              <component :is="sec.icon" :size="13" :stroke-width="2.3" class="sec-icon-svg" />
+            </span>
             <span class="sec-title">{{ sec.title }}</span>
             <span class="sec-badge">{{ sec.badge }}</span>
           </div>
@@ -404,11 +406,20 @@ onMounted(() => {
 .sec-head {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-bottom: 6px;
+  gap: 7px;
+  margin-bottom: 7px;
 }
-.sec-icon {
-  font-size: 14px;
+.sec-icon-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+.sec-icon-svg {
+  display: block;
 }
 .sec-title {
   font-size: 13px;
@@ -443,6 +454,10 @@ onMounted(() => {
   background: rgba(53, 144, 104, 0.06);
   border-color: rgba(53, 144, 104, 0.16);
 }
+.sec-efficacy .sec-icon-wrap {
+  background: rgba(53, 144, 104, 0.14);
+  color: var(--green-700);
+}
 .sec-efficacy .sec-badge {
   background: var(--green-100);
   color: var(--green-text);
@@ -455,6 +470,10 @@ onMounted(() => {
   background: rgba(16, 149, 193, 0.05);
   border-color: rgba(16, 149, 193, 0.16);
 }
+.sec-synergy .sec-icon-wrap {
+  background: rgba(16, 149, 193, 0.14);
+  color: #0b7285;
+}
 .sec-synergy .sec-badge {
   background: rgba(16, 149, 193, 0.12);
   color: #0b7285;
@@ -463,6 +482,10 @@ onMounted(() => {
 .sec-mechanism {
   background: rgba(217, 119, 6, 0.05);
   border-color: rgba(217, 119, 6, 0.16);
+}
+.sec-mechanism .sec-icon-wrap {
+  background: rgba(217, 119, 6, 0.14);
+  color: var(--amber-700);
 }
 .sec-mechanism .sec-badge {
   background: rgba(217, 119, 6, 0.12);
@@ -473,6 +496,10 @@ onMounted(() => {
   background: rgba(225, 29, 72, 0.04);
   border-color: rgba(225, 29, 72, 0.16);
 }
+.sec-tips .sec-icon-wrap {
+  background: rgba(225, 29, 72, 0.12);
+  color: var(--red-text);
+}
 .sec-tips .sec-badge {
   background: rgba(225, 29, 72, 0.1);
   color: var(--red-text);
@@ -481,6 +508,10 @@ onMounted(() => {
 .sec-custom {
   background: var(--green-50);
   border-color: var(--green-100);
+}
+.sec-custom .sec-icon-wrap {
+  background: var(--green-100);
+  color: var(--green-700);
 }
 .sec-custom .sec-badge {
   background: var(--green-100);

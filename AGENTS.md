@@ -14,12 +14,18 @@
 | 知识库 | `data/shiyang.db`（方子/药材/成分/靶点，**运行时只读** `mode=ro`） | `main.py` 的 `get_db()` |
 | 用户库 | `data/user.db`（账号/档案/收藏/打卡/家庭成员，运行时可写，WAL） | `backend/app/services/user_service.py` |
 | 数据库是否入库 | **否**。`*.db` 在 .gitignore；`scripts/build_db.py` 可重建；重建前的备份 `data/shiyang.db.bak-before-rebuild` 已提交 | `git ls-files data/` |
-| 端点规模 | 2026-11-06 实测 55 路径 / 59 端点（v0.2.0 旧文档写 24 个、2026-10-26 为 46/50，均过时，对照见 docs/API扩展记录.md） | 见 §6 自检命令 |
+| 端点规模 | 2026-11-06 实测 56 路径 / 60 端点（v0.2.0 旧文档写 24 个、2026-10-26 为 46/50，均过时，对照见 docs/API扩展记录.md） | 见 §6 自检命令 |
 | 运行环境 | Python 3.12 / Node 20（Windows + Git Bash） | `python --version; node --version` |
 
 **红线（每页、每个接口响应都要在）**：
 `本平台内容为健康参考信息，不构成医疗建议，不用于诊断或治疗。`
 代码里对应 `main.py` 的 `DISCLAIMER` 常量，新增接口凡涉及健康内容必须带上。
+
+**前端视觉红线（严禁颜文字与 Emoji，太掉价）**：
+**全站前端界面严禁使用 Emoji 表情符号（如 🎯🌿💡🍵✨★ 等）或字符颜文字（如 `^_^`、`orz`）**。
+本项目定位为严肃、学术、精致的药食同源科学分析平台，使用颜文字会显得极度廉价与业余。
+- 图标统一采用 `@lucide/vue` 矢量线性 SVG 图标（如 `<Target />`, `<Leaf />`, `<Lightbulb />`, `<Coffee />`）或规范内联 SVG；
+- Toast / Alert / 按钮提示语保持纯文本精炼，严禁带特殊字符尾巴（写「已加入收藏」而非「已加入收藏 ★」）。
 
 ## 2. 数据真实铁律（最高优先级）
 
@@ -73,6 +79,7 @@
 9. **`scripts/build_db.py` 会删库**（开头 `OUT.unlink()`），且只建 11 表。它是重建链路的**第一步**，
    不是「重建知识库」的命令；单独跑会丢 71 味药材 + 5,478 成分。完整链路见
    `docs/知识库重建链路_2026-11-06.md` / `scripts/rebuild_all.py`。
+10. **前端绝不使用颜文字与 Emoji**：分块标题、按钮、标签、弹窗禁止手塞 Emoji 表情或符号字符（极其掉价）；图标一律走 `@lucide/vue` 矢量 SVG。
 
 ## 6. 自检命令（改完提交前跑一遍）
 
@@ -81,7 +88,7 @@
 cd backend && python -X utf8 -c "import sys; sys.path.insert(0,'app'); import main; \
   s=main.app.openapi(); print('paths', len(s['paths']), 'endpoints', sum(len(v) for v in s['paths'].values()))"
 
-# 单测（2026-11-06 实测 84 passed；数量随测试线补用例增长，以实际运行为准，别抄文档）
+# 单测（2026-11-06 实测 94 passed；数量随测试线补用例增长，以实际运行为准，别抄文档）
 cd backend && python -X utf8 -m pytest tests/ -v
 
 # 冒烟（TestClient，不占端口；注意测试数据清理规则见 §2.7）
