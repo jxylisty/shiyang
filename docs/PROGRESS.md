@@ -13,7 +13,7 @@
 | 测试 | 有，有缺口 | `backend/tests/` 9 个文件 84 用例；**web-lookup 零用例**（`grep -rn "web_lookup" backend/tests/` 无命中）；Pantry 前端改动无自动化验证 |
 | 最近活动 | 高频 | `af61495` 2026-11-06 04:47；近 3 日 **31 次提交**（11-03 8 / 11-05 17 / 11-06 6） |
 | 工作区 | **干净** | `git status` 空；`master` 与 `origin/master` 为 0 ahead / 0 behind；无 stash、无额外 worktree |
-| 数据实测（只读连接） | 见右 | herb **105** / compound **5,643**（其中带 `prob_cctcm` 仅 165）/ target **10,091** / rel_herb_compound **9,106** / rel_compound_target **59,437** / recipe 73 / recipe_analysis 69 / recipe_pathway 61 / compound_map 165 / compound_chembl_activity 465 |
+| 数据实测（只读连接，2026-11-06 复核） | 见右 | herb **105** / compound **6,205**（其中带 `prob_cctcm` 仅 165）/ target **10,154** / rel_herb_compound **9,348** / rel_compound_target **62,617** / recipe 73 / recipe_analysis 69 / recipe_pathway 61 / compound_map **4,558** / compound_chembl_activity 465 |
 | 数据溯源完整性 | 达标 | `herb.source` 为空的行 **0**；`added_batch=20261105` 覆盖 105 行；HBIN 新成分预测列非空行 **0** |
 | 部署 | **无实例证据** | 仓库内无 vercel/render 配置、无线上地址；`docs/DEPLOY.md` 只有清单，6 项检查全为未勾选状态 |
 | 真实用户 | **0** | `docs/用户验证方案.md` 五个执行项全部未勾选；全仓 `grep "SUS\|N="` 除该方案外无任何结果；`user.db` 仅 1 个 2026-10-27 创建的账号（`myasw_520`，带 3 条家庭成员 `11/321/231`） |

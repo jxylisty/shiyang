@@ -333,9 +333,9 @@ def build_steps(args):
                  script="compute_map_coords.py", argv=[], optional=True,
                  checks=[at_least("compound_map",
                                   "SELECT COUNT(*) FROM compound_map", 160)],
-                 note="已知环境坑：umap 0.5.12 需 sklearn>=1.5；当前 sklearn 1.4.2 会抛 "
-                      "TypeError: check_array() got an unexpected keyword argument "
-                      "'ensure_all_finite'（现库 compound_map 为旧环境产物）"),
+                 note="已知环境坑：umap 0.5.12 需 sklearn>=1.5，用 scripts/requirements-rebuild.txt "
+                      "的版本（.venv-rebuild 实测 sklearn 1.9.1 / umap 0.5.12 可跑）；"
+                      "全库 4,558 个可解析 SMILES 的成分约 40s"),
             dict(id="09-chembl", title="ChEMBL 实验活性（465 条）",
                  script="fetch_chembl_activity.py",
                  argv=(["--limit", str(args.chembl_limit)] if args.chembl_limit else []),
@@ -414,6 +414,17 @@ def build_steps(args):
                           0)],
             expect_exit=0,
             note="import_herbs 按 v1 重算会覆盖旧药计数；此处按当前 schema 口径归一并校验")
+
+    # 9c) 药典字段补全：HERB 源数据本身缺列（香橼/橘红 summary 几乎全空、沙棘无 Function、
+    #     代代花/白扁豆花无 Meridians、花椒/铁皮石斛无 Therapeutic class），
+    #     前端有药典表兜底但接口层仍是 NULL。这里把药典文字写进库（只填空、不覆盖）。
+    add(id="12c-pharm", title="药典字段补全（源数据缺列的行）",
+        script="backfill_pharmacopoeia_herb.py", argv=["--apply"], hard=True,
+        checks=[exact("functions 为空行数",
+                      "SELECT COUNT(*) FROM herb WHERE functions IS NULL OR TRIM(functions)=''", 0),
+                exact("category 为空行数",
+                      "SELECT COUNT(*) FROM herb WHERE category IS NULL OR TRIM(category)=''", 0)],
+        note="编辑性典籍整理，非实验数据；归经缺失（代代花/白扁豆花）不猜，允许为空")
 
     # 10) 研究类（full 口径：扩容后、覆盖全库）
     if args.profile == "full":

@@ -52,8 +52,6 @@ const probColor = (p) => p >= 0.9 ? 'var(--green-700)' : p >= 0.7 ? 'var(--amber
       <p class="intro-note">提示：入血概率表示成分<b>在血中被检出的倾向</b>，不是口服吸收率。大分子皂苷吸收率低但血中可检出，模型仍可能给高分。</p>
     </div>
 
-    <MiniChemMap />
-
     <div class="f-row">
       <button v-for="l in LEVELS" :key="l.v" class="tag level" :class="{ active: minProb === l.v }" @click="pickLevel(l.v)">{{ l.label }}</button>
     </div>
@@ -103,6 +101,12 @@ const probColor = (p) => p >= 0.9 ? 'var(--green-700)' : p >= 0.7 ? 'var(--amber
       <p class="disclaimer-note">入血概率为 PU-Learning 模型预测值；三维评分为 Enrichr 通路富集结果（0-100），非临床结论。</p>
       <DisclaimerBanner variant="compound" style="margin-top: 10px;" />
     </template>
+
+    <!-- 化学空间地图放在页尾：它是整体结构视角，不是查成分的主路径，
+         放顶部会抢掉列表首屏；这里滚动到底才触发加载（组件内 IntersectionObserver） -->
+    <div class="map-slot">
+      <MiniChemMap />
+    </div>
   </div>
 </template>
 
@@ -156,6 +160,7 @@ const probColor = (p) => p >= 0.9 ? 'var(--green-700)' : p >= 0.7 ? 'var(--amber
 .cp-mw { margin-left: auto; color: var(--ink-400); font-variant-numeric: tabular-nums; font-size: 11px; }
 
 .disclaimer-note { font-size: 11.5px; color: var(--ink-400); margin: 16px 4px; line-height: 1.6; }
+.map-slot { margin-top: 18px; }
 
 .sk-line { height: 13px; border-radius: 6px; margin-bottom: 10px; }
 .sk-line.w50 { width: 50%; }

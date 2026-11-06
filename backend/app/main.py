@@ -12,6 +12,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, File, Header, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
@@ -56,6 +57,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="食养有据 API", version=VERSION, lifespan=lifespan)
+# 压缩放在 CORS 内层（CMS 最后加 → 最外层），SSE 由默认 exclude_content_types 排除
+app.add_middleware(GZipMiddleware, minimum_size=1024, compresslevel=6)
 app.add_middleware(
     CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 # 开放数据子路由（T1-6）：/api/v1/open/*
@@ -370,16 +373,49 @@ def explain_compound(name: str):
 
 
 @app.get("/api/v1/explain/map")
-def explain_map():
+def explain_map(max_points: int = Query(0, ge=0, le=10000)):
     """成分化学空间地图（UMAP 预计算坐标）。
     坐标由 scripts/compute_map_coords.py 离线生成（random_state=42 可复现），
-    本接口只读表，不做在线降维。"""
+    本接口只读表，不做在线降维。
+
+    max_points>0 时做**确定性抽样**：先保留全部有入血概率预测的成分，剩余无预测成分
+    按固定步长等距抽取，保证同一份库每次返回同一批点（预览卡用，避免整页 4,500+ 点）。
+    返回的 total / sampled / stats 始终是**全库真实计数**，抽样不影响统计口径。
+    """
     conn = get_db()
     rows = conn.execute(
         "SELECT name, x, y, prob_cctcm, prob_indep, ad_level, cv_level "
         "FROM compound_map ORDER BY name").fetchall()
     conn.close()
-    return ok({"items": [dict(r) for r in rows], "count": len(rows),
+    total = len(rows)
+    stats = {
+        "total": total,
+        "with_prob": sum(1 for r in rows if r["prob_cctcm"] is not None),
+        "no_prob": sum(1 for r in rows if r["prob_cctcm"] is None),
+        "ad_in": sum(1 for r in rows if r["ad_level"] == "in"),
+        "ad_edge": sum(1 for r in rows if r["ad_level"] == "edge"),
+        "ad_out": sum(1 for r in rows if r["ad_level"] == "out"),
+        "cv_both_high": sum(1 for r in rows if r["cv_level"] == "both_high"),
+        "cv_both_low": sum(1 for r in rows if r["cv_level"] == "both_low"),
+        "cv_diverge": sum(1 for r in rows
+                          if r["cv_level"] in ("main_only", "indep_only")),
+    }
+
+    picked = rows
+    if max_points and total > max_points:
+        scored = [r for r in rows if r["prob_cctcm"] is not None]
+        rest = [r for r in rows if r["prob_cctcm"] is None]
+        room = max(max_points - len(scored), 0)
+        if room and rest:
+            # 等距抽取（确定性，无随机数）：同一份库每次得到同一批点
+            step = len(rest) / room
+            sampled = [rest[min(int(i * step), len(rest) - 1)] for i in range(room)]
+        else:
+            sampled = []
+        picked = sorted(scored + sampled, key=lambda r: r["name"])
+
+    return ok({"items": [dict(r) for r in picked], "count": len(picked),
+               "total": total, "sampled": len(picked) < total, "stats": stats,
                "note": "坐标为 UMAP 降维（Morgan 指纹 1024 位 → 2 维），相对位置有意义、"
                        "坐标轴数值无物理含义；着色维度见图例。"})
 

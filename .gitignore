@@ -28,6 +28,12 @@ frontend/.app_api_base
 # 运行时缓存（后端 embedding/chembl 等，随用随建，不入库）
 data/cache/
 
+# 例外：HERB 采集缓存以 gzip 形式入库（data/herb_ingest_*.json.gz，共约 2.6MB）。
+# 理由：HERB 接口格式会变（2026-11-06 实测 form-urlencoded 全返回 null，必须 JSON body），
+# 一旦外站变动 + 缓存丢失，新克隆就再也重建不出扩容数据。脚本侧由
+# scripts/_cache_seed.py 在 data/cache/ 缺文件时自动解压还原。
+!data/herb_ingest_*.json.gz
+
 # SymMap 下载数据（scripts/fetch_symmap.py 可重建，第三方数据不入库）
 data/symmap_smhb_v2.xlsx
 data/symmap_smhb_v2.json

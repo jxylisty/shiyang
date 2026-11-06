@@ -98,7 +98,15 @@ export function normalizeHerbView(h) {
   const isEn = HAS_LATIN.test(rawFn)
 
   let cnFn = !isEn && rawFn ? rawFn : (sup.fn || '')
-  let cnSrc = !isEn && rawFn ? '' : (sup.src || '')
+  // 出处标注：库内若是英文/空，用的必然是本文档的 sup.fn；库内若已是中文，
+  // 还要再分两种情况——文本与 sup.fn 完全相同（说明就是本表回填进库的，
+  // 见 scripts/backfill_pharmacopoeia_herb.py）仍要标典籍；否则是原始整理的中文功效，不标。
+  let cnSrc = ''
+  if (!isEn && rawFn) {
+    cnSrc = (sup.fn && rawFn === sup.fn) ? (sup.src || '') : ''
+  } else {
+    cnSrc = sup.src || ''
+  }
 
   let enFunc = ''
   let enIndic = ''

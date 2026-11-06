@@ -230,3 +230,37 @@
 - 后端单测：`backend/tests/test_eval_service.py` 补充 3 个用例，全套测试 **87 passed**；
 - 前端构建：`npx vite build` 1.42s 顺利编译；
 - 提交：`0ac98e4` (plain-pro), `7fecc18` (ai-report), `2f32871` (eval-system)。
+
+## 化学空间图扩到全库 + 药典字段补全 + 采集缓存入库（2026-11-06 晚）
+
+**背景**：扩容后 `compound_map` 仍只有 165 行（旧 ccTCM 成分），而库里有 4,558 个可解析结构的成分；
+同时发现 7 味药的「功能主治/类别」在 HERB 源数据里就缺列，接口层返回 NULL；更关键的是
+`data/cache/herb_ingest_*.json` 被 gitignore，**新克隆仓库无法重建扩容数据**。
+
+**核心改动**：
+1. **`compound_map` 165 → 4,558 行**：用 `.venv-rebuild`（sklearn 1.9.1 / umap 0.5.12）重跑
+   `compute_map_coords.py`，`random_state=42` 确定性。其中 165 个带入血概率，4,393 个三列为 NULL。
+2. **后端 `/api/v1/explain/map`**：新增 `stats`（total/with_prob/no_prob/ad_*/cv_*）与
+   `?max_points=N` **确定性等距抽样**（保留全部有预测成分，无随机数，同库同结果）；
+   并挂 `GZipMiddleware`（默认排除 `text/event-stream`，SSE 不受影响）。实测全量 596 KB → 76 KB。
+3. **前端**：`ChemMap.vue` 从 SVG 改 **canvas**（4,558 个 circle 会拖死手机），无预测成分统一
+   **中性灰 `#c9c1b4`**（不再落入「<0.5 偏低」红色档——那是把「没测」显示成「测了但很低」），
+   图例计数改为后端真值；`MiniChemMap.vue` 改为**进视口才请求** + `max_points=700` 抽样，
+   并从成分库页顶部**移到页尾**（普通用户主路径是查成分，不是看整体分布）。
+4. **药典字段补全** `scripts/backfill_pharmacopoeia_herb.py`：HERB 源头缺列的 5 行（橘红/香橼/沙棘/
+   花椒/铁皮石斛的 functions 或 category）按《中国药典》2020 年版补全，出处写入 `herb.source`。
+   与 `frontend/src/utils/pharmacopoeiaFunctions.js` **逐字一致**，并修好该表「库内已是中文就丢出处
+   标注」的判定（改为文本与药典表相同即仍标出处）。归经缺失（代代花/白扁豆花）**不猜**。
+5. **采集缓存入库** `scripts/_cache_seed.py` + `data/herb_ingest_*.json.gz`（2.6 MB）：
+   三个 import 脚本在 `data/cache/` 缺文件时自动从 gz 还原，`ensure_cache()` 幂等、绝不覆盖现场新数据。
+   实测 gz 与原始 JSON **sha256 逐字节一致**。
+
+**验证指标**：
+- 数据实测：herb 105 / compound 6,205 / target 10,154 / rel_compound_target 62,617 /
+  rel_herb_compound 9,348 / compound_map 4,558（带 prob 165）/ recipe 73；
+  `functions` 空 0 行、`category` 空 0 行（归经空 2 行，源数据本身没有）。
+- 真实 HTTP：全量地图 76 KB / 0.41s；预览卡 15 KB / 0.15s。
+- 浏览器目检：地图页 4,558 点 canvas 正常绘制（27,793 个不透明像素、灰/彩分层正确）；
+  成分库页尾卡片进视口后加载 700 点；香橼详情弹层显示「据《中国药典》2020年版」。
+- 后端单测 **94 passed**；`npx vite build` 通过；openapi **57 路径 / 61 端点**。
+- `user.db` 清理：删除测试账号 `myasw_520` + 3 条家庭成员（0 打卡/0 收藏/0 体质记录），备份保留。

@@ -64,8 +64,11 @@ import requests
 sys.stdout.reconfigure(encoding="utf-8")
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _cache_seed import ensure_cache  # noqa: E402
+
 DEFAULT_DB = ROOT / "data" / "shiyang.db"
-DEFAULT_CACHE = ROOT / "data" / "cache" / "herb_ingest_20261105.json"
+DEFAULT_CACHE = ensure_cache(ROOT, "herb_ingest_20261105")
 CATALOG_PATH = ROOT / "data" / "food_homology_catalog.json"
 SYMMAP_PATH = ROOT / "data" / "symmap_smhb_v2.json"
 
