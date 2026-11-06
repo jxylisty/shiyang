@@ -4,6 +4,7 @@
 运行：python -m pytest backend/tests/test_search_and_compound.py -q
 （与 test_p0_evidence_chain.py 同风格：直接调 service/用 TestClient，不依赖网络）
 """
+import uuid
 import sys
 from pathlib import Path
 
@@ -138,9 +139,9 @@ def test_guest_recommend_with_local_judged():
 
 def test_me_recommend_requires_auth_and_full_flow():
     # 注册→登录→存体质记录→收藏/打卡→推荐，测完按 §2.7 顺序清理
-    import time
     from services import user_service as us
-    uname = f"t_reco_{int(time.time())}"
+    # 同上：秒级时间戳在高频重跑/并行时会撞名。
+    uname = f"t_reco_{uuid.uuid4().hex[:12]}"
     reg = client.post("/api/v1/auth/register", json={"username": uname, "password": "test1234"})
     assert reg.status_code == 200, reg.text
     token = client.post("/api/v1/auth/login", json={"username": uname, "password": "test1234"}).json()["data"]["token"]

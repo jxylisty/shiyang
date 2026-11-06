@@ -5,6 +5,7 @@
 （与既有测试同风格：TestClient 直调，不依赖网络；涉及登录态的用例
  依赖 tests/conftest.py 的兜底清理，测完即删）
 """
+import uuid
 import sys
 from pathlib import Path
 
@@ -125,8 +126,9 @@ def test_report_cycle_requires_auth():
 
 
 def test_report_cycle_empty_user_zero_counts():
-    import time
-    uname = f"t_rep_{int(time.time())}"
+    # 用 uuid 后缀而非秒级时间戳：同一秒内重复注册会返回 409/400，
+    # 导致「单独跑过、全量跑挂」的偶发失败（2026-11-06 实际踩到）。
+    uname = f"t_rep_{uuid.uuid4().hex[:12]}"
     assert client.post("/api/v1/auth/register",
                        json={"username": uname, "password": "test1234"}).status_code == 200
     token = client.post("/api/v1/auth/login",
