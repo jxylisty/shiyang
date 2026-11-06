@@ -310,6 +310,7 @@ const hideImg = (name) => { imgFailed.value[name] = true }
   padding: 10px 9px 11px; text-align: center; cursor: pointer;
   border: 1px solid var(--card-border); font: inherit;
   display: flex; flex-direction: column; align-items: center; gap: 4px; margin-bottom: 0;
+  min-width: 0;
   animation: rise .4s var(--ease-out-soft) backwards; animation-delay: var(--d, 0ms);
 }
 @media (hover: hover) {

@@ -12,6 +12,7 @@ const data = ref(null)
 const loading = ref(true)
 const loadError = ref(false)
 const notFound = ref(false)
+const lipOpen = ref(false)   // Lipinski 参数细节默认收起（科研下放 P0）
 
 async function load() {
   loading.value = true
@@ -86,20 +87,26 @@ function goRecipe(id) { router.push(`/recipes/${id}`) }
         </p>
       </div>
 
-      <!-- 3. Lipinski 特征解读（为什么是这个概率） -->
+      <!-- 3. Lipinski 特征解读（为什么是这个概率）
+           科研下放 P0：规则细节默认收起，大众先看结论一句话，点开再看参数逐条 -->
       <div class="card">
-        <b class="cd-sec">为什么是这个概率 · Lipinski 特征解读</b>
+        <button type="button" class="cd-lip-toggle" @click="lipOpen = !lipOpen">
+          <b class="cd-sec">为什么是这个概率 · Lipinski 特征解读</b>
+          <span class="cd-lip-arrow">{{ lipOpen ? '收起' : '展开' }}</span>
+        </button>
         <p class="cd-rule">{{ data.rule_summary }}</p>
-        <div v-for="f in data.features" :key="f.key" class="cd-feat" :class="{ pass: f.pass, fail: !f.pass }">
-          <div class="cd-feat-head">
-            <span class="cd-feat-check">{{ f.pass ? '✓' : '✗' }}</span>
-            <b>{{ f.label }}</b>
-            <span class="cd-feat-val">实际 {{ f.value }} / 门槛 &lt; {{ f.limit }}</span>
+        <template v-if="lipOpen">
+          <div v-for="f in data.features" :key="f.key" class="cd-feat" :class="{ pass: f.pass, fail: !f.pass }">
+            <div class="cd-feat-head">
+              <span class="cd-feat-check">{{ f.pass ? '✓' : '✗' }}</span>
+              <b>{{ f.label }}</b>
+              <span class="cd-feat-val">实际 {{ f.value }} / 门槛 &lt; {{ f.limit }}</span>
+            </div>
+            <p class="cd-feat-say">{{ f.say }}</p>
+            <p class="cd-feat-why">{{ f.why }}</p>
           </div>
-          <p class="cd-feat-say">{{ f.say }}</p>
-          <p class="cd-feat-why">{{ f.why }}</p>
-        </div>
-        <p class="cd-note">{{ data.note }}</p>
+          <p class="cd-note">{{ data.note }}</p>
+        </template>
       </div>
 
       <!-- 3. 模型可信度 · 应用域 -->
@@ -210,6 +217,14 @@ function goRecipe(id) { router.push(`/recipes/${id}`) }
 
 .cd-sec { font-size: 14.5px; display: block; }
 .cd-sec-sub { font-size: 11px; color: var(--ink-400); font-weight: 400; margin-left: 4px; }
+
+/* Lipinski 折叠开关（科研下放 P0）：整行可点，箭头文案提示展开/收起 */
+.cd-lip-toggle {
+  display: flex; justify-content: space-between; align-items: baseline;
+  width: 100%; background: none; border: none; padding: 0; margin: 0;
+  font: inherit; cursor: pointer; text-align: left;
+}
+.cd-lip-arrow { font-size: 11.5px; color: var(--green-text); flex-shrink: 0; }
 
 .cd-bars { margin-top: 12px; display: flex; flex-direction: column; gap: 7px; }
 .cd-bar-row { display: flex; align-items: center; gap: 8px; }

@@ -125,6 +125,25 @@ const radarSummary = computed(() => {
   }
 })
 
+// 成分一句话（大众层，科研功能下放 P0）：从既有 analysis 字段聚合，
+// 不新增接口。数字口径：高入血 = top_compounds 内 prob_cctcm ≥ 0.7；
+// top_compounds 是全库关联成分按概率排序的头部，其「高概率个数」如实标注「前列成分中」。
+const plainSummary = computed(() => {
+  const a = recipe.value?.analysis
+  if (!a?.compound_count) return ''
+  const tc = a.top_compounds || []
+  const high = tc.filter(c => (c.prob_cctcm ?? 0) >= 0.7)
+  const herbs = [...new Set(high.map(c => c.herb).filter(Boolean))]
+  let s = `这个方子关联 ${a.compound_count} 个活性成分`
+  if (high.length) {
+    s += `，排名前列的 ${tc.length} 个里有 ${high.length} 个被模型预测「喝后容易在血中检出」`
+    if (herbs.length) s += `，主要来自 ${herbs.slice(0, 3).join('、')}`
+  } else {
+    s += `，排名前列的成分入血检出倾向都不高`
+  }
+  return s + '。'
+})
+
 function gotoLogin() {
   router.push({ path: '/login', query: { redirect: route.fullPath } })
 }
@@ -232,6 +251,17 @@ async function toggleCheckin() {
 
           <!-- 大众层：白话解读（AI 生成，组件内带来源标注） -->
           <PlainCard :plain="plain" :loading="plainLoading" />
+
+          <!-- 大众层：成分一句话摘要（科研下放 P0，科研功能下放规划 2026-11-07 点子2）
+               数据全部来自既有 analysis 字段，纯前端聚合，不新增接口；
+               只讲结论与人话，详细数据留在下方专业模式层 -->
+          <template v-if="plainSummary">
+            <div class="section-title">成分一句话</div>
+            <div class="card plain-comp-sum">
+              <p class="pcs-line">{{ plainSummary }}</p>
+              <p class="pcs-note">「入血概率」是模型预测的成分在血中被检出的倾向，不是口服吸收率，更不是疗效结论。</p>
+            </div>
+          </template>
 
           <!-- 配方 -->
           <div class="section-title">配方</div>
@@ -521,6 +551,11 @@ async function toggleCheckin() {
 .a-targets { font-size: 12px; color: var(--ink-600); margin-top: 12px; }
 .a-disclaimer { font-size: 11px; color: var(--ink-400); margin-top: 10px; line-height: 1.5; }
 .chain-intro { font-size: 12.5px; color: var(--ink-600); margin-bottom: 8px; line-height: 1.55; }
+
+/* 成分一句话（大众层）：说人话，不排数据表 */
+.plain-comp-sum { line-height: 1.7; }
+.pcs-line { font-size: 14px; color: var(--ink-900); font-family: var(--font-serif); font-weight: 600; }
+.pcs-note { font-size: 11.5px; color: var(--ink-400); margin-top: 8px; line-height: 1.55; }
 
 /* 暴露量行：成分 / 来源 / 摄入量 / 吸收期望 */
 .exp-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; padding: 7px 0; border-bottom: 1px dashed var(--green-50); font-size: 12.5px; }

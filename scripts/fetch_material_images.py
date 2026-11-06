@@ -29,33 +29,33 @@ MATERIALS = {
     "枸杞子": "goji berries dried", "菊花": "chrysanthemum tea dried flowers",
     "金银花": "Lonicera japonica flowers", "陈皮": "dried tangerine peel",
     "山楂": "Crataegus pinnatifida fruit",
-    "乌梅": ["dried smoked plum umeboshi", "Prunus mume dried", "umeboshi"],
+    "乌梅": ["umeboshi dried plums", "smoked dried plums"],
     "大枣": "jujube fruit dried", "生姜": "ginger root", "干姜": "dried ginger slices",
-    "甘草": "Glycyrrhiza glabra root", "薄荷": "mentha leaves", "麦冬": "Ophiopogon japonicus",
-    "桔梗": "Platycodon grandiflorus root", "胖大海": "Sterculia lychnophora seed",
+    "甘草": ["Glycyrrhiza glabra", "licorice root dried"], "薄荷": "mentha leaves", "麦冬": "Ophiopogon japonicus",
+    "桔梗": ["Platycodon grandiflorus roots dried", "Platycodon radix dried"], "胖大海": "Sterculia lychnophora seed",
     "百合": "lilium bulbs dried", "茯苓": "Poria cocos sclerotium",
-    "薏苡仁": "coix seeds Job's tears",
+    "薏苡仁": ["Coix lacryma-jobi seeds", "Job's tears seeds"],
     "黄芪": ["Astragalus membranaceus", "Astragalus membranaceus root"],
-    "党参": "Codonopsis pilosula root",
-    "桑叶": "mulberry leaves", "桑椹": "mulberries fruit", "酸枣仁": "Ziziphus jujuba seeds",
+    "党参": ["Codonopsis pilosula", "Codonopsis root dried"],
+    "桑叶": "mulberry leaves", "桑椹": "mulberries fruit", "酸枣仁": ["Ziziphus jujuba var. spinosa seeds", "sour jujube seeds"],
     "莲子": "lotus seeds dried", "龙眼肉": "dried longan", "玉竹": "Polygonatum odoratum",
     "石斛": "Dendrobium officinale", "西洋参": "Panax quinquefolius root",
-    "葛根": "kudzu root", "决明子": "Cassia tora seeds", "荷叶": "lotus leaf dried",
+    "葛根": ["Pueraria lobata root", "kudzu root starch"], "决明子": ["Senna obtusifolia seeds", "Cassia obtusifolia seeds"], "荷叶": "lotus leaf dried",
     "玫瑰花": "dried rose buds tea", "山药": "Chinese yam", "黄精": "Polygonatum sibiricum",
     "肉桂": "cinnamon sticks",
     "蒲公英": ["Taraxacum officinale flower", "dried dandelion root tea"],
-    "麦芽": "barley malt dried",
+    "麦芽": ["barley malt grains", "malted barley"],
     # 常用普通食材（药膳）
-    "雪梨": "Asian pear fruit", "莲藕": "lotus root", "银耳": "Tremella fuciformis",
-    "冬瓜": "winter melon", "白萝卜": "daikon radish", "绿豆": "mung beans",
+    "雪梨": "Asian pear fruit", "莲藕": ["lotus root cross section", "renkon lotus root"], "银耳": "Tremella fuciformis",
+    "冬瓜": "winter melon", "白萝卜": ["daikon radish vegetable", "white radish fresh"], "绿豆": ["mung bean seeds", "Vigna radiata seeds"],
     "赤小豆": "adzuki beans", "粳米": "white rice grains", "小米": "foxtail millet grains",
-    "红糖": "brown sugar block", "蜂蜜": "honey jar", "牛奶": "milk glass",
-    "鸡蛋": "chicken eggs", "羊肉": "raw lamb meat", "鸡肉": "raw chicken meat",
-    "鸭肉": "raw duck meat", "鲫鱼": "crucian carp fish", "猪骨": "pork bones raw",
+    "红糖": "brown sugar block", "蜂蜜": "honey jar", "牛奶": ["milk carton on table", "glass of fresh milk breakfast"],
+    "鸡蛋": "chicken eggs", "羊肉": ["raw lamb leg", "lamb shoulder raw meat"], "鸡肉": ["raw chicken breast", "raw chicken meat white"],
+    "鸭肉": ["raw duck breast", "duck meat raw"], "鲫鱼": ["crucian carp Prussian carassius gibelio", "Carassius gibelio fish"], "猪骨": ["pork leg bones raw", "pork femur bone"],
     "核桃": "walnuts", "黑芝麻": "black sesame seeds", "板栗": "chestnuts",
     # 2026-10 补齐：方子库高频缺图配料（冰糖/枣/猪瘦肉等无药用图，用食材通用图）
     "冰糖": "rock sugar crystals", "枣": "jujube fruit dried",
-    "铁皮石斛": "Dendrobium officinale stems", "芡实": "Euryale ferox seeds",
+    "铁皮石斛": "Dendrobium officinale stems", "芡实": ["Euryale ferox", "fox nuts dried"],
     "蜜枣": "candied jujube", "猪瘦肉": "raw pork tenderloin",
     "绿茶": "dried green tea leaves", "鲜芦根": "reed rhizome Phragmites",
     "花生": "raw peanuts shelled",
@@ -63,10 +63,10 @@ MATERIALS = {
     "玉米须": "corn silk", "柚子": "pomelo fruit", "覆盆子": "raspberries",
     "海棠果": "crabapples fruit", "马蹄": "water chestnuts", "眉豆": "black-eyed peas",
     "椰子": "coconut", "木瓜": "papaya fruit",
-    "乌鸡": "silkie chicken raw",
-    "排骨": "raw pork ribs", "猪肝": "raw pork liver", "菠菜": "spinach leaves",
-    "红豆": "red beans adzuki", "猪肚": "raw pork stomach", "鲢鱼头": "fish head raw",
-    "白糖": "white sugar", "猪肉": "raw pork meat",
+    "乌鸡": ["silkie chicken", "Silkie bantam live"],
+    "排骨": "raw pork ribs", "猪肝": ["pork liver", "pork liver sliced raw"], "菠菜": "spinach leaves",
+    "红豆": ["adzuki beans Vigna angularis pile", "red haricot beans"], "猪肚": "raw pork stomach", "鲢鱼头": ["silver carp Hypophthalmichthys", "bighead carp head fresh"],
+    "白糖": ["white sugar crystals pile", "refined white sugar"], "猪肉": ["pork loin", "pork meat slices"],
     # 补搜词：首轮无命中/429 的品种
     "天冬2": "Asparagus cochinchinensis dried",
     # 药材图鉴缺图 2 味（2026-10）
@@ -93,7 +93,7 @@ MATERIALS = {
     "牡蛎": "oyster shell dried",
     "昆布": "Saccharina japonica dried kelp",
     "罗汉果": "Siraitia grosvenorii monk fruit dried",
-    "青果": "Canarium album Chinese olive fruit",
+    "青果": ["Canarium album", "Chinese white olive"],
     "鱼腥草": "Houttuynia cordata herb",
     "香橼": "Citrus medica citron fruit",
     "桃仁": "Prunus persica peach kernels",
@@ -101,10 +101,10 @@ MATERIALS = {
     "莱菔子": ["Raphanus sativus seeds", "radish seed"],
     "菊苣": "Cichorium intybus chicory root",
     "黄芥子": "Brassica juncea mustard seeds",
-    "紫苏": "Perilla frutescens leaves",
+    "紫苏": ["Perilla frutescens var. crispa", "shiso leaves green"],
     "紫苏籽": "Perilla frutescens seeds",
     "黑胡椒": "Piper nigrum black peppercorns",
-    "槐花": "Sophora japonica flowers",
+    "槐花": ["Sophora japonicapagoda tree flowers", "Chinese scholar tree bloom"],
     "榧子": "Torreya grandis seeds",
     "藿香": "Agastache rugosa herb",
     "山柰": "Kaempferia galanga rhizome",
@@ -132,7 +132,7 @@ MATERIALS = {
     "肉苁蓉": ["Cistanche deserticola", "Cistanche deserticola dried stem"],
     "化橘红": ["Citrus maxima peel", "Citrus grandis peel"],
     "鸡内金": ["chicken gizzard", "chicken gizzard lining dried"],
-    "郁李仁": ["Prunus japonica", "Prunus japonica seeds"],
+    "郁李仁": ["Prunus humilis seeds", "Prunus japonica seed kernel"],
     "枳椇子": ["Hovenia dulcis", "Hovenia dulcis seeds"],
     "香薷": ["Elsholtzia ciliata", "Elsholtzia ciliata herb"],
     "小蓟": ["Cirsium setosum", "Cirsium setosum thistle herb"],
@@ -158,6 +158,8 @@ OK_LICENSES = ["CC0", "Public domain", "PD", "CC BY-SA", "CC BY"]
 BAD_EXT = re.compile(r"\.(svg|pdf|djvu|ogv|webm|gif)$", re.I)
 # 搜索命中里混着大量扫描书页/文献插图/地图——许可虽是 PD，但图不可用（是书页不是实物照）。
 # 2026-11-06 实测：当归/地黄/猪瘦肉等「无图」正是这一类把候选位占满了。
+# 2026-11-07 视觉检测后扩充：博物馆标本、版画插页（Pl. / Tab. / tiff）、
+# 档案库编号（LCCN）、街市/餐厅/店铺场景、人像、化学结构图——六类错配图的共性标题特征。
 BAD_TITLE = re.compile(
     r"(\(IA |hand-?book|catalogue|catalog of|treatise|journal|"
     r"bulletin|florist|illustrat|plate|map of|cookery|a complete guide|"
@@ -166,7 +168,18 @@ BAD_TITLE = re.compile(
     r"stamp|seed packet|print\.jpg|drawing|water colour|watercolor|"
     r"painting|engraving|lithograph|Naturalis Biodiversity|RMNH\.ART|"
     r"MET DP|herbaria|BHL|NARA|"
-    r"\.pdf|\.djvu|^File:IA )", re.I)
+    r"\.pdf|\.djvu|^File:IA |"
+    # —— 2026-11-07 增补（视觉检测报告 P0-1 的六类错配）——
+    r"museum|LCCN|\.tiff|\.tif\)|Tab\. ?\d|Pl\. ?\d+|"
+    r"disaccharid|molecule|structural formula|skeletal formula|"
+    r"shop |store |restaurant|street |pedestrian|market stall|"
+    r"portrait|necklace|jewellery|jewelry|glass creamer|"
+    # —— 2026-11-07 二轮复核增补：浮世绘/大英博物馆版画/油画/分布图/成品菜 ——
+    r"BM \d{4}|BM 18|uƙiyo|ukiyo|Utagawa|Kuniyoshi|Hiroshige|Hokusai|"
+    r"dist-map|distribution map|range map|"
+    r"Aertsen|Cruikshank|Cultural Institute|"
+    r"noodle soup|in Asia Bowl|bacon and chips|fish displayed for sale|"
+    r"flavored|Koshian|Sugar Bowl MET|goblets)", re.I)
 
 
 def api(params, retries=4):

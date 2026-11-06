@@ -348,6 +348,9 @@ const lrDate = computed(() => {
 .lr-txt span { font-size: 11.5px; color: var(--ink-400); }
 
 /* 题目卡过渡视觉由 qEnter/qLeave JS 钩子内联驱动 */
+/* 卡片滑入/滑出的 translate(±28px) 会让 scrollWidth 瞬时涨到 388px（375 视口下横向抖动，
+   实测 2026-11-07）。overflow-x: clip 裁掉瞬时溢出且不产生滚动容器，静止态零差异 */
+.page { overflow-x: clip; }
 
 .q-text { font-size: 17px; font-weight: 600; min-height: 76px; }
 .opts { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 10px; }
