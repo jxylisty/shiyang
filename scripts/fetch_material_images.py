@@ -89,7 +89,7 @@ MATERIALS = {
     "肉豆蔻": "Myristica fragrans nutmeg",
     "余甘子": "Phyllanthus emblica Indian gooseberry",
     "杏仁": "Prunus armeniaca apricot kernels",
-    "沙棘": "Hippophae rhamnoides sea buckthorn berries",
+    "沙棘": ["sea buckthorn fruit", "Hippophae rhamnoides berries"],
     "牡蛎": "oyster shell dried",
     "昆布": "Saccharina japonica dried kelp",
     "罗汉果": "Siraitia grosvenorii monk fruit dried",
@@ -98,7 +98,7 @@ MATERIALS = {
     "香橼": "Citrus medica citron fruit",
     "桃仁": "Prunus persica peach kernels",
     "益智仁": "Alpinia oxyphylla dried fruit",
-    "莱菔子": "Raphanus sativus radish seeds",
+    "莱菔子": ["Raphanus sativus seeds", "radish seed"],
     "菊苣": "Cichorium intybus chicory root",
     "黄芥子": "Brassica juncea mustard seeds",
     "紫苏": "Perilla frutescens leaves",
@@ -110,7 +110,7 @@ MATERIALS = {
     "山柰": "Kaempferia galanga rhizome",
     "西红花": "Crocus sativus saffron threads",
     "姜黄": "Curcuma longa turmeric rhizome",
-    "荜茇": "Piper longum long pepper",
+    "荜茇": ["Piper longum dried", "long pepper spice"],
     "灵芝": "Ganoderma lucidum Lingzhi mushroom",
     "山茱萸": "Cornus officinalis dried fruit",
     "杜仲叶": "Eucommia ulmoides leaves",
@@ -141,7 +141,7 @@ MATERIALS = {
     "鲜白茅根": ["Imperata cylindrica", "Imperata cylindrica root"],
     "蒲公英根": ["Taraxacum root", "dandelion root dried"],
     "当归": ["Angelica sinensis", "Dried angelica slices"],
-    "地黄": ["Rehmannia glutinosa", "Rehmannia glutinosa dried root"],
+    "地黄": ["Rehmannia glutinosa plant", "Rehmannia glutinosa"],
     "天冬": ["Asparagus cochinchinensis", "Asparagus cochinchinensis root dried"],
 
     # ===== 第三轮：词表漏收的 3 味（2026-11-06 覆盖率核查发现）=====
@@ -163,6 +163,9 @@ BAD_TITLE = re.compile(
     r"bulletin|florist|illustrat|plate|map of|cookery|a complete guide|"
     r"OJ L |EUR \d{4}|regulation|directive|specification|"
     r"phrenolog|almanac|encyclop|dictionar|annual report|"
+    r"stamp|seed packet|print\.jpg|drawing|water colour|watercolor|"
+    r"painting|engraving|lithograph|Naturalis Biodiversity|RMNH\.ART|"
+    r"MET DP|herbaria|BHL|NARA|"
     r"\.pdf|\.djvu|^File:IA )", re.I)
 
 
