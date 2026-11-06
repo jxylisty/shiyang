@@ -6,7 +6,7 @@ import {
 } from '@lucide/vue'
 import {
   getPantryMaterials, pantryMatch, matImg,
-  analyzeCustomRecipe, parseCustomRecipeText, getCustomPlain, webLookupHerb, recognizeRecipeImage,
+  analyzeCustomRecipe, parseCustomRecipeText, getCustomPlain, webLookupHerb, parseRecipeImage,
 } from '../api'
 import DisclaimerBanner from '../components/DisclaimerBanner.vue'
 import PlainCard from '../components/PlainCard.vue'
@@ -351,7 +351,7 @@ const evidenceLabel = { A: '临床证据支持', B: '实验数据支持', C: '�
 const photoInput = ref(null)      // <input type=file> 引用
 const photoLoading = ref(false)
 const photoError = ref('')
-const photoInfo = ref(null)       // { image_kind, items:[], unverified:[] }
+const photoInfo = ref(null)       // { status, text, herbs:[], rejected:[] }
 const photoPreview = ref('')      // 本地预览 URL（objectURL，用完释放）
 
 function triggerPhoto() {
@@ -377,7 +377,9 @@ async function onPhotoPicked(e) {
   photoError.value = ''
   photoInfo.value = null
   try {
-    photoInfo.value = (await recognizeRecipeImage(file)).data.data
+    photoInfo.value = (await parseRecipeImage(file)).data.data
+    // 识别成功就直接把药材填进去（用户看到原文，可自行删改）
+    if (photoInfo.value?.status === 'ok') adoptParsedHerbs(photoInfo.value.herbs)
   } catch (err) {
     // 只透出后端给出的中文提示（4xx 校验类）；5xx/超时一律给人话，避免暴露内部错误
     const status = err?.response?.status
@@ -386,41 +388,34 @@ async function onPhotoPicked(e) {
       ? detail
       : (err?.code === 'ECONNABORTED'
           ? '识别超时了，图片可能太大或服务繁忙，请稍后重试'
-          : '识别失败，请换个角度重拍或改用手动输入')
+          : '识别失败，请换个角度重拍，或直接把文字粘贴到下面')
   } finally { photoLoading.value = false }
 }
 
-// 点选某个候选 → 填入药材列表（同类药材多候选时让用户自己判断）
-function pickRecognized(item) {
-  const name = item.name_cn || item.name
-  const exist = customHerbs.value.find(x => x.name === name)
-  if (exist) {
-    if (item.grams != null && exist.grams == null) exist.grams = item.grams
-  } else {
-    customHerbs.value.push({ name, grams: item.grams ?? null })
+// 把识别出的药材并进输入列表（同名只补克重，不重复添加）
+function adoptParsedHerbs(herbs) {
+  for (const h of herbs || []) {
+    const exist = customHerbs.value.find(x => x.name === h.name)
+    if (exist) {
+      if (h.grams != null && exist.grams == null) exist.grams = h.grams
+    } else {
+      customHerbs.value.push({ name: h.name, grams: h.grams ?? null })
+    }
   }
-  // 已选的候选从建议里移除，避免重复点
-  photoInfo.value.items = photoInfo.value.items.filter(i => i !== item)
 }
 
-// 一键采纳所有已入库的候选
-function pickAllRecognized() {
-  const verified = (photoInfo.value?.items || []).filter(i => i.verified)
-  for (const it of [...verified]) pickRecognized(it)
-}
-
-// 识别不出时按图片类型给不同引导（验收反馈：原来一句话覆盖不了多种失败原因）
+// 识别结果为空时给针对性引导
 const emptyPhotoHint = computed(() => {
-  const kind = photoInfo.value?.image_kind
-  if (kind === 'text') {
-    return '图片里的文字没看清。请让药方占满画面、光线均匀、别反光或手抖，再拍一次。'
+  const st = photoInfo.value?.status
+  if (st === 'no_text') {
+    return '这张图里没找到文字。请让方子占满画面、光线均匀、别反光或手抖，再拍一次；'
+      + '也可以直接把文字粘贴到下面的输入框。'
   }
-  if (kind === 'herb') {
-    return '认不出是什么。粉末、切片、碎末很难辨认；药材请平铺在一块干净的背景上、'
-      + '距离 20–30 厘米、光线充足后重拍。也可以改用手动输入。'
+  if (st === 'no_herbs') {
+    return '认到了文字，但里面没有能核实的药材名。请对照上面的原文看看是不是识别错了，'
+      + '或把正确的写法粘贴到下面的输入框。'
   }
-  return '这张图里没发现能识别的药材或药方。请拍药材实物（散开平铺）或药方文字，'
-    + '确保画面清晰、不模糊、不逆光。'
+  return ''
 })
 
 // ---- 粘贴文案自动解析 ----
@@ -759,7 +754,7 @@ watch(() => customResult.value, r => {
       </div>
 
       <!-- 拍照识药 -->
-      <div class="section-title">拍照识药（最快）</div>
+      <div class="section-title">拍到一个方子？直接传图（最快）</div>
       <div class="card">
         <input ref="photoInput" type="file" accept="image/jpeg,image/jpg,image/png,image/webp"
                capture="environment" class="photo-input" @change="onPhotoPicked" />
@@ -767,7 +762,7 @@ watch(() => customResult.value, r => {
           <button class="btn" :disabled="photoLoading" @click="triggerPhoto">
             <Camera :size="15" />{{ photoLoading ? '识别中…' : '拍照 / 选图' }}
           </button>
-          <span class="hint">拍药材实物，或拍药方纸条</span>
+          <span class="hint">拍药方、处方笺，或手机上看到的方子截图</span>
         </div>
 
         <div v-if="photoPreview" class="photo-preview-wrap">
@@ -776,31 +771,32 @@ watch(() => customResult.value, r => {
 
         <p v-if="photoError" class="submit-error shake">{{ photoError }}</p>
 
-        <!-- 识别结果：候选项让用户点选，绝不自动填入 -->
+        <!-- 识别结果：先给原文供核对，再说明抽到了几味药 -->
         <div v-if="photoInfo" class="photo-result">
-          <p v-if="!photoInfo.items.length" class="pf-none">{{ emptyPhotoHint }}</p>
-          <template v-else>
+          <template v-if="photoInfo.status === 'ok'">
             <p class="pf-ok">
-              认出 <b>{{ photoInfo.items.length }}</b> 个可能的药材，点一下加入（可多选）：
+              识别出 <b>{{ photoInfo.herbs.length }}</b> 味药，已填入下方列表（可删改）
             </p>
-            <div class="cand-wrap">
-              <button v-for="(it, i) in photoInfo.items" :key="i" class="cand"
-                      :class="{ unverified: !it.verified }" @click="pickRecognized(it)">
-                <span class="cand-name">{{ it.name_cn || it.name }}</span>
-                <span v-if="it.grams != null" class="cand-g">{{ it.grams }}g</span>
-                <span class="cand-conf">{{ Math.round(it.confidence * 100) }}%</span>
-                <span v-if="!it.verified" class="cand-tag">库中无</span>
-              </button>
+            <div class="ocr-box">
+              <span class="ocr-label">图片原文（请核对）</span>
+              <pre class="ocr-text">{{ photoInfo.text }}</pre>
             </div>
-            <button v-if="photoInfo.items.some(i => i.verified)" class="btn ghost"
-                    style="margin-top: 8px;" @click="pickAllRecognized">
-              全部加入（仅已入库的）
-            </button>
+            <div v-if="photoInfo.rejected?.length" class="pf-rej" style="margin-top: 8px;">
+              <b>未采用的条目：</b>
+              <ul>
+                <li v-for="(r, i) in photoInfo.rejected" :key="i">
+                  {{ r.name }} —— {{ r.reason }}
+                </li>
+              </ul>
+            </div>
           </template>
-          <div v-if="photoInfo.unverified?.length" class="pf-rej" style="margin-top: 8px;">
-            <b>数据库里没有的名字：</b>{{ photoInfo.unverified.join('、') }}
-            <div class="hint" style="margin-top: 4px;">可改名后手动输入，或后续查看联网说明</div>
-          </div>
+          <template v-else>
+            <p class="pf-none">{{ emptyPhotoHint }}</p>
+            <div v-if="photoInfo.text" class="ocr-box">
+              <span class="ocr-label">图片原文（供你参考）</span>
+              <pre class="ocr-text">{{ photoInfo.text }}</pre>
+            </div>
+          </template>
         </div>
       </div>
 
@@ -1573,22 +1569,20 @@ watch(() => customResult.value, r => {
   border: 1px solid var(--green-100); object-fit: cover;
 }
 .photo-result { margin-top: 10px; font-size: 12.5px; line-height: 1.6; }
-.cand-wrap { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 6px; }
-.cand {
-  display: inline-flex; align-items: center; gap: 5px; cursor: pointer;
-  padding: 6px 11px; border-radius: 999px; margin: 0;
-  background: var(--green-50); border: 1px solid rgba(58, 122, 94, 0.28);
-  font-size: 13px; color: var(--green-text); font-family: inherit;
-  transition: background var(--dur-fast) ease, border-color var(--dur-fast) ease;
+/* 识别出的原文：等宽、可复制、限高滚动，方便用户对照核对 */
+.ocr-box {
+  margin-top: 8px; padding: 10px 12px; border-radius: 9px;
+  background: var(--green-50); border: 1px solid rgba(58, 122, 94, 0.18);
 }
-.cand:hover { background: var(--green-100); border-color: var(--green-600); }
-.cand.unverified { background: var(--amber-50); border-color: rgba(176, 124, 46, 0.35); color: var(--amber-text); }
-.cand-name { font-weight: 600; }
-.cand-g { font-size: 11.5px; opacity: .8; }
-.cand-conf { font-size: 10.5px; opacity: .7; }
-.cand-tag {
-  font-size: 9.5px; padding: 0 5px; border-radius: 5px;
-  background: var(--amber-600); color: #fff; line-height: 1.6;
+.ocr-label {
+  display: block; font-size: 10.5px; font-weight: 600;
+  color: var(--green-text); margin-bottom: 5px;
+}
+.ocr-text {
+  margin: 0; font-size: 12.5px; line-height: 1.75; color: var(--ink-700);
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+  white-space: pre-wrap; word-break: break-word;
+  max-height: 190px; overflow-y: auto;
 }
 
 /* 粘贴解析 */

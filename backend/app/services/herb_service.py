@@ -1244,45 +1244,39 @@ def web_lookup_herb(name: str, api_key: str | None = None) -> dict:
     return {"status": "ok", "name": name, "summary_cn": summary, "sources": sources}
 
 
-# ---------- 拍照识药（多模态视觉模型；调研见 docs/拍照识药_方案调研.md） ----------
-# 选型结论：用 VLM 而非 OCR —— 一个接口同时解决「药材实物识别」和「药方文字识别」，
-# OCR 只能做后者。实测 glm-5v-turbo 在 8 味药材上 7/7 正确或诚实弃权。
+# ---------- 拍照/截图 → 抽取方子文字（OCR 路线，非识药） ----------
+# 场景（用户原话）：在外面看到一个方子，拍下来；本质就是「上传截图」。
+# 因此这里只做一件事：把图片里的文字抠出来，然后**复用 parse_formula_text**
+# 做药材+克重抽取（那套已有防幻觉复核）。不做药材实物识别。
 #
-# 关键设计约束（实测教训）：降质图（旋转+JPEG 低质量）会让模型高置信度答错
-# （黄芪→白芍 0.9 / 牡蛎 0.85）。因此：
-#   1. 永远返回 Top-N 候选，由用户点选确认，不做自动采纳
-#   2. 置信度只作展示排序，不用于任何自动判断
-#   3. 候选必须过本地知识库/SymMap 复核，库外名字标 unverified
-#   4. 图片只在内存处理，不落盘、不入库、不写日志
+# 为什么用多模态模型而不是 PaddleOCR/Tesseract（实测对比见 docs/拍照识药_方案调研.md）：
+#   手写体、竖排、图文混排的药方，通用 VLM 的容错远好于传统 OCR；
+#   且同一个网关调用即可，不必新增依赖与部署成本。
+#
+# 隐私：图片只在内存处理，不落盘、不入库、不写日志。
 
-VISION_MODEL = "glm-5v-turbo"     # 实测最准的可用视觉模型
-VISION_TIMEOUT = 60               # 秒；实测 2-4s，留足余量
+VISION_MODEL = "glm-5v-turbo"     # 实测可用的视觉模型（2-4s 出结果）
+VISION_TIMEOUT = 60               # 秒
 MAX_IMAGE_BYTES = 8 * 1024 * 1024  # 8MB
 ALLOWED_IMAGE_MIME = {"image/jpeg", "image/png", "image/webp", "image/jpg"}
 
-_RECOGNIZE_PROMPT = (
-    "你是中药房药剂师。识别图片里的内容，严格输出 JSON（不要 markdown 代码块、不要任何其他文字）：\n"
-    '{"image_kind":"herb|text|mixed|unknown","items":[{"name":"规范中药名","grams":数字或null,"confidence":0.0-1.0}]}\n'
-    "规则：\n"
-    "1. image_kind：herb=药材实物照，text=药方文字/截图，mixed=两者都有，unknown=都不是\n"
-    "2. items 最多 6 项，按可能性从高到低\n"
-    "3. name 用规范中药名（如「胎菊」写「菊花」），不要写异名、别名、拉丁名\n"
-    "4. grams 只在图片里明确印有克重时填数字，否则填 null，绝不要估算\n"
-    "5. 看不清、拿不准时把 confidence 压低到 0.4 以下，宁可少报也不要猜\n"
-    "6. 粉末、切片、制剂等无法辨认形态的，image_kind 填 herb 但 items 留空"
+_OCR_PROMPT = (
+    "你是文字识别器。把图片里所有可见文字**原样**抄出来（OCR），规则：\n"
+    "1. 逐行抄，保留换行；数字与单位（g/克/钱/两）照抄，不要换算\n"
+    "2. 处方里的药名、克重、用法一个都不要漏\n"
+    "3. 手写体认不准的字用「?」占位，不要猜、不要编\n"
+    "4. 只输出识别到的文字本身，不要任何解释、标题、标点补充或总结\n"
+    "5. 图片里没有文字就输出空字符串"
 )
 
 
-def recognize_herb_image(image_bytes: bytes, mime: str = "image/jpeg",
-                         api_key: str | None = None) -> dict:
-    """识别图片中的药材/药方，返回候选列表。
+def extract_text_from_image(image_bytes: bytes, mime: str = "image/jpeg",
+                            api_key: str | None = None) -> dict:
+    """把图片里的文字抽出来（OCR）。
 
     返回 {
-      "status": "ok" | "unknown" | "error",
-      "image_kind": "herb|text|mixed|unknown",
-      "items": [{name, name_cn, grams, confidence, verified, properties_cn,
-                 meridians_cn, functions_cn, functions_cn_source}],
-      "unverified": [str],        # 模型认出但本地库没有的名字
+      "status": "ok" | "no_text" | "error",
+      "text": str | None,       # 识别到的原文
       "model": str,
       "error": str | None,
     }
@@ -1290,8 +1284,7 @@ def recognize_herb_image(image_bytes: bytes, mime: str = "image/jpeg",
     import base64
 
     if not image_bytes:
-        return {"status": "error", "image_kind": "unknown", "items": [],
-                "unverified": [], "model": None, "error": "图片为空"}
+        return {"status": "error", "text": None, "model": None, "error": "图片为空"}
 
     b64 = base64.b64encode(image_bytes).decode("ascii")
     key = (api_key or "").strip() or os.environ.get("SHIYANG_AI_KEY") or "zerogate"
@@ -1302,7 +1295,7 @@ def recognize_herb_image(image_bytes: bytes, mime: str = "image/jpeg",
             json={
                 "model": VISION_MODEL,
                 "messages": [{"role": "user", "content": [
-                    {"type": "text", "text": _RECOGNIZE_PROMPT},
+                    {"type": "text", "text": _OCR_PROMPT},
                     {"type": "image_url",
                      "image_url": {"url": f"data:{mime};base64,{b64}"}},
                 ]}],
@@ -1312,80 +1305,53 @@ def recognize_herb_image(image_bytes: bytes, mime: str = "image/jpeg",
             timeout=VISION_TIMEOUT,
         )
         r.raise_for_status()
-        content = (r.json()["choices"][0]["message"].get("content") or "").strip()
-    except Exception:
-        # 不把底层服务地址与原始 HTTP 错误抛给用户（验收发现泄露 7863 内部地址）
-        return {"status": "error", "image_kind": "unknown", "items": [],
-                "unverified": [], "model": VISION_MODEL,
-                "error": "识别服务暂时不可用，请稍后重试，或改用手动输入"}
+        text = (r.json()["choices"][0]["message"].get("content") or "").strip()
+    except Exception as e:
+        # 不把底层服务地址与原始 HTTP 错误抛给用户，但区分限流与其它故障
+        if "429" in str(e):
+            return {"status": "error", "text": None, "model": VISION_MODEL,
+                    "error": "识别请求太多了，请等十几秒再试"}
+        return {"status": "error", "text": None, "model": VISION_MODEL,
+                "error": "图片识别服务暂时不可用，请稍后重试，或直接手动输入"}
 
-    # 模型常带 ```json 包裹
-    if content.startswith("```"):
-        content = content.strip("`")
-        if "{" in content:
-            content = content[content.find("{"):]
-    try:
-        parsed = json.loads(content)
-    except Exception:
-        return {"status": "error", "image_kind": "unknown", "items": [],
-                "unverified": [], "model": VISION_MODEL,
-                "error": "模型输出格式异常，请重试"}
+    # 模型偶尔会用 ``` 包裹
+    if text.startswith("```"):
+        text = text.strip("`").strip()
 
-    kind = parsed.get("image_kind") or "unknown"
-    # 模型偶尔违反契约吐中文（实测 image_kind 被写成「文本」），归一化到固定枚举
-    _kind_map = {"herb": "herb", "药材": "herb", "实物": "herb",
-                 "text": "text", "文本": "text", "文字": "text", "药方": "text",
-                 "mixed": "mixed", "混合": "mixed"}
-    kind = _kind_map.get(str(kind).strip().lower(), "unknown")
-    raw_items = parsed.get("items") or []
-    if not isinstance(raw_items, list) or not raw_items:
-        return {"status": "unknown", "image_kind": kind, "items": [],
-                "unverified": [], "model": VISION_MODEL, "error": None}
+    if not text:
+        return {"status": "no_text", "text": None, "model": VISION_MODEL, "error": None}
+    return {"status": "ok", "text": text[:3000], "model": VISION_MODEL, "error": None}
 
-    items, unverified = [], []
-    seen = set()
-    for it in raw_items[:6]:
-        if not isinstance(it, dict):
-            continue
-        name = (it.get("name") or "").strip()
-        if not name or name in seen:
-            continue
-        seen.add(name)
-        grams = it.get("grams")
-        if grams is not None:
-            try:
-                grams = float(grams)
-            except (TypeError, ValueError):
-                grams = None
-            # 克重合理性（同 parse_formula_text 的口径）
-            if grams is not None and not (0.5 <= grams <= 200):
-                grams = None
-        try:
-            conf = float(it.get("confidence") or 0)
-        except (TypeError, ValueError):
-            conf = 0.0
-        conf = max(0.0, min(1.0, conf))
 
-        rec = {"name": name, "name_cn": name, "grams": grams,
-               "confidence": round(conf, 2), "verified": False,
-               "properties_cn": None, "meridians_cn": None,
-               "functions_cn": None, "functions_cn_source": None}
+def parse_recipe_image(image_bytes: bytes, mime: str = "image/jpeg",
+                       api_key: str | None = None) -> dict:
+    """拍照/截图识别方子：OCR 取文字 → 复用 parse_formula_text 抽药材+克重。
 
-        if _name_exists_locally(name):
-            # 本地知识库 / SymMap 命中 → 回填标准名与中文性味功效
-            enriched = _enrich_with_symmap({"name_cn": name})
-            rec.update({
-                "verified": True,
-                "name_cn": name,
-                "properties_cn": enriched.get("properties_cn"),
-                "meridians_cn": enriched.get("meridians_cn"),
-                "functions_cn": enriched.get("functions_cn"),
-                "functions_cn_source": enriched.get("functions_cn_source"),
-            })
-        else:
-            unverified.append(name)
-        items.append(rec)
+    返回 {
+      "status": "ok" | "no_text" | "no_herbs" | "error",
+      "text": str | None,                        # 识别出的原文（供用户核对）
+      "herbs": [{name, grams, verified}],        # 已核对数据源的药材
+      "rejected": [{name, reason}],
+      "model": str,
+      "error": str | None,
+    }
+    """
+    ocr = extract_text_from_image(image_bytes, mime, api_key)
+    if ocr["status"] != "ok":
+        return {"status": ocr["status"], "text": None, "herbs": [], "rejected": [],
+                "model": ocr["model"], "error": ocr["error"]}
 
-    return {"status": "ok" if items else "unknown", "image_kind": kind,
-            "items": items, "unverified": unverified,
-            "model": VISION_MODEL, "error": None}
+    text = ocr["text"]
+    parsed = parse_formula_text(text, api_key)
+    if not parsed["ok"]:
+        return {"status": "error", "text": text, "herbs": [], "rejected": [],
+                "model": ocr["model"], "error": parsed.get("error")}
+
+    # 抽到文字但一味药都没验证通过 → 明确区分「没认到字」和「有字但没药」
+    if not parsed["herbs"]:
+        return {"status": "no_herbs", "text": text, "herbs": [],
+                "rejected": parsed["rejected"],
+                "model": ocr["model"], "error": None}
+
+    return {"status": "ok", "text": text, "herbs": parsed["herbs"],
+            "rejected": parsed["rejected"], "model": ocr["model"], "error": None}

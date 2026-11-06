@@ -103,7 +103,7 @@ def test_analyze_endpoint_requires_herbs():
 # ---------- 拍照识药（离线：模型调用用 monkeypatch 注入） ----------
 
 def _fake_vision(monkeypatch, model_output):
-    """替换模型的 HTTP 调用，返回给定的 JSON 字符串"""
+    """替换模型的 HTTP 调用，返回给定的输出（OCR 场景是纯文本，不是 JSON）"""
     class _Resp:
         def __init__(self, text):
             self._text = text
@@ -114,65 +114,114 @@ def _fake_vision(monkeypatch, model_output):
     monkeypatch.setattr(hs.requests, "post", lambda *a, **k: _Resp(model_output))
 
 
-def test_recognize_filters_unverified_names(monkeypatch):
-    """模型给的库外名字必须进 unverified，不能标成 verified"""
-    _fake_vision(monkeypatch, '{"image_kind":"herb","items":['
-                              '{"name":"金银花","grams":null,"confidence":0.9},'
-                              '{"name":"龙须凤尾草","grams":null,"confidence":0.8}]}')
-    r = hs.recognize_herb_image(b"fake-bytes")
+def test_ocr_returns_raw_text(monkeypatch):
+    """OCR 只负责把文字抄出来，原样返回"""
+    raw = "代茶饮方\n金银花 10g 菊花 5g\n枸杞 8g 陈皮 6g\n甘草 3g"
+    _fake_vision(monkeypatch, raw)
+    r = hs.extract_text_from_image(b"fake-bytes")
     assert r["status"] == "ok"
-    assert [i["name"] for i in r["items"] if i["verified"]] == ["金银花"]
-    assert r["unverified"] == ["龙须凤尾草"]
+    assert "金银花" in r["text"] and "10g" in r["text"]
 
 
-def test_recognize_enriches_verified_items(monkeypatch):
-    """入库的药材要回填中文性味与功效"""
-    _fake_vision(monkeypatch, '{"image_kind":"herb","items":['
-                              '{"name":"金银花","grams":null,"confidence":0.9}]}')
-    r = hs.recognize_herb_image(b"fake-bytes")
-    it = r["items"][0]
-    assert it["verified"] is True
-    assert it["properties_cn"] == "甘,寒"
-    assert it["functions_cn"]
+def test_ocr_strips_code_fence(monkeypatch):
+    _fake_vision(monkeypatch, "```\n金银花 10g\n```")
+    r = hs.extract_text_from_image(b"fake-bytes")
+    assert r["status"] == "ok"
+    assert r["text"].startswith("金银花")
 
 
-def test_recognize_normalizes_chinese_kind(monkeypatch):
-    """模型偶尔吐中文 image_kind，要归一化成固定枚举"""
-    _fake_vision(monkeypatch, '{"image_kind":"文本","items":['
-                              '{"name":"菊花","grams":5,"confidence":1.0}]}')
-    r = hs.recognize_herb_image(b"fake-bytes")
-    assert r["image_kind"] == "text"
+def test_ocr_empty_text_returns_no_text(monkeypatch):
+    """图里没字（如药材实物照）→ no_text，不瞎猜"""
+    _fake_vision(monkeypatch, "")
+    r = hs.extract_text_from_image(b"fake-bytes")
+    assert r["status"] == "no_text"
+    assert r["text"] is None
 
 
-def test_recognize_drops_absurd_grams(monkeypatch):
-    _fake_vision(monkeypatch, '{"image_kind":"text","items":['
-                              '{"name":"甘草","grams":999,"confidence":0.9}]}')
-    r = hs.recognize_herb_image(b"fake-bytes")
-    assert r["items"][0]["grams"] is None
-
-
-def test_recognize_bad_json_returns_error(monkeypatch):
-    _fake_vision(monkeypatch, "这不是 JSON")
-    r = hs.recognize_herb_image(b"fake-bytes")
+def test_ocr_service_error(monkeypatch):
+    def _boom(*a, **k):
+        raise RuntimeError("gateway down")
+    monkeypatch.setattr(hs.requests, "post", _boom)
+    r = hs.extract_text_from_image(b"fake-bytes")
     assert r["status"] == "error"
+    # 不能泄露内部服务地址
+    assert "7863" not in (r["error"] or "")
+    assert "127.0.0.1" not in (r["error"] or "")
 
 
-def test_recognize_empty_image():
-    assert hs.recognize_herb_image(b"")["status"] == "error"
+def test_ocr_empty_image():
+    assert hs.extract_text_from_image(b"")["status"] == "error"
 
 
-def test_recognize_endpoint_checks_mime_and_size():
+def test_parse_image_reuses_formula_parser(monkeypatch):
+    """OCR 出文字后必须复用 parse_formula_text 的复核逻辑（库外名字被拒）"""
+    # 第一次调用是 OCR，其余是 parse_formula_text 的模型调用
+    outputs = iter([
+        "金银花 10g 龙须凤尾草 15g",       # OCR 结果
+        '[{"name":"金银花","grams":10},{"name":"龙须凤尾草","grams":15}]',  # 抽取结果
+    ])
+
+    class _Resp:
+        def __init__(self, text):
+            self._text = text
+        def raise_for_status(self):
+            pass
+        def json(self):
+            return {"choices": [{"message": {"content": self._text}}]}
+
+    monkeypatch.setattr(hs.requests, "post", lambda *a, **k: _Resp(next(outputs)))
+    # 复核阶段会联网查 HERB，测试里挡掉：库外名字直接判不存在
+    monkeypatch.setattr(hs, "_name_exists_locally", lambda n: n == "金银花")
+    monkeypatch.setattr(hs, "get_herb_detail",
+                        lambda n: {"status": "not_found", "name_cn": n})
+    r = hs.parse_recipe_image(b"fake-bytes")
+    assert r["status"] == "ok"
+    assert [h["name"] for h in r["herbs"]] == ["金银花"]
+    assert [x["name"] for x in r["rejected"]] == ["龙须凤尾草"]
+    assert "龙须凤尾草" in r["text"]
+
+
+def test_parse_image_no_text_short_circuits(monkeypatch):
+    """OCR 没认到字 → 直接返回 no_text，不再浪费一次模型调用"""
+    _fake_vision(monkeypatch, "")
+    r = hs.parse_recipe_image(b"fake-bytes")
+    assert r["status"] == "no_text"
+    assert r["herbs"] == []
+
+
+def test_parse_image_no_herbs(monkeypatch):
+    """有字但没药名 → no_herbs（与 no_text 区分开，前端提示不同）"""
+    outputs = iter([
+        "今日天气晴，气温 20 度",     # OCR
+        "[]",                        # 抽取结果：没有药材
+    ])
+
+    class _Resp:
+        def __init__(self, text):
+            self._text = text
+        def raise_for_status(self):
+            pass
+        def json(self):
+            return {"choices": [{"message": {"content": self._text}}]}
+
+    monkeypatch.setattr(hs.requests, "post", lambda *a, **k: _Resp(next(outputs)))
+    r = hs.parse_recipe_image(b"fake-bytes")
+    assert r["status"] == "no_herbs"
+    assert r["text"]
+
+
+def test_parse_image_endpoint_checks_mime_and_size():
     # 非图片类型
-    r = client.post("/api/v1/custom-recipe/recognize-image",
+    r = client.post("/api/v1/custom-recipe/parse-image",
                     files={"file": ("x.txt", b"hello", "text/plain")})
     assert r.status_code == 400
     # 空文件
-    r = client.post("/api/v1/custom-recipe/recognize-image",
+    r = client.post("/api/v1/custom-recipe/parse-image",
                     files={"file": ("x.jpg", b"", "image/jpeg")})
     assert r.status_code == 400
     # 超过 8MB
     big = b"\xff" * (hs.MAX_IMAGE_BYTES + 1)
-    r = client.post("/api/v1/custom-recipe/recognize-image",
+    r = client.post("/api/v1/custom-recipe/parse-image",
                     files={"file": ("x.jpg", big, "image/jpeg")})
     assert r.status_code == 413
 

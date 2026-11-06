@@ -265,15 +265,15 @@ def web_lookup_herb(body: WebLookupBody,
     return ok(result)
 
 
-@app.post("/api/v1/custom-recipe/recognize-image")
-async def recognize_recipe_image(file: UploadFile = File(..., description="药材实物照或药方文字照"),
-                                 x_ai_key: str | None = Header(None, alias="X-AI-Key")):
-    """拍照识药：上传药材实物图或药方文字图，返回 Top-N 候选药材。
+@app.post("/api/v1/custom-recipe/parse-image")
+async def parse_recipe_image(file: UploadFile = File(..., description="药方照片或截图"),
+                             x_ai_key: str | None = Header(None, alias="X-AI-Key")):
+    """拍照/截图识别方子：把图里的文字抠出来，再抽药材+克重。
 
-    设计要点（见 docs/拍照识药_方案调研.md）：
-    - 返回多个候选由用户点选确认，绝不做自动采纳（实测降质图会高置信度答错）
-    - 候选名过本地知识库/SymMap 复核，库外名字进 unverified
-    - 图片仅在内存处理，不落盘、不入库、不写日志
+    场景是「在外面看到一个方子，拍下来」——本质是上传截图，不做药材实物识别。
+    两步：① 视觉模型 OCR 出原文（返回给用户核对）② 复用 parse_formula_text
+    抽药材+克重并逐条核对数据源。
+    图片仅在内存处理，不落盘、不入库、不写日志。
     """
     mime = (file.content_type or "").lower()
     if mime not in herb_svc.ALLOWED_IMAGE_MIME:
@@ -284,13 +284,13 @@ async def recognize_recipe_image(file: UploadFile = File(..., description="药�
     if len(data) > herb_svc.MAX_IMAGE_BYTES:
         raise HTTPException(413, "图片过大，请压缩到 8MB 以内")
 
-    result = herb_svc.recognize_herb_image(data, mime, api_key=x_ai_key)
+    result = herb_svc.parse_recipe_image(data, mime, api_key=x_ai_key)
     if result["status"] == "error":
         raise HTTPException(502, result.get("error") or "识别失败")
 
     result["disclaimer"] = (
-        "识别结果由 AI 根据图片推测，仅供参考。药材形态相近者极易混淆，"
-        "请务必自行核对实物或咨询专业人士；平台不对识别结果负责。")
+        "图中文字由 AI 识别，可能因字迹、反光、拍摄角度出错；"
+        "请对照识别出的原文自行核对后再使用。平台不对识别结果负责。")
     return ok(result)
 
 

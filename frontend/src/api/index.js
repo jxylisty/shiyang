@@ -115,11 +115,12 @@ export const analyzeCustomRecipe = (herbs, claim) =>
   api.post('/custom-recipe/analyze', { herbs, claim })
 export const parseCustomRecipeText = (text) =>
   api.post('/custom-recipe/parse-text', { text })
-export const recognizeRecipeImage = (file) => {
+// 拍照/截图 → OCR 取文字 → 抽药材+克重
+export const parseRecipeImage = (file) => {
   const fd = new FormData()
   fd.append('file', file)
-  // 视觉识别后端超时 60s，这里必须留更长，否则前端先掐断、拿不到后端的友好提示
-  return api.post('/custom-recipe/recognize-image', fd, { timeout: 70000 })
+  // 后端 OCR 超时 60s，这里留更长，否则前端先掐断、拿不到后端的友好提示
+  return api.post('/custom-recipe/parse-image', fd, { timeout: 90000 })
 }
 export const webLookupHerb = (name) =>
   api.post('/custom-recipe/web-lookup', { name })
