@@ -175,3 +175,60 @@ def test_recognize_endpoint_checks_mime_and_size():
     r = client.post("/api/v1/custom-recipe/recognize-image",
                     files={"file": ("x.jpg", big, "image/jpeg")})
     assert r.status_code == 413
+
+
+# ---------- 联网搜索兜底（离线：模型调用用 monkeypatch 注入） ----------
+
+def test_web_lookup_returns_sources_from_web_search(monkeypatch):
+    """来源必须只取网关 web_search[]，正文不能替代来源"""
+    class _Resp:
+        def raise_for_status(self): pass
+        def json(self):
+            return {
+                "choices": [{"message": {"content": "这东西有健脾祛湿的作用。"}}],
+                "web_search": [
+                    {"title": "五指毛桃的功效", "link": "https://example.com/a",
+                     "publish_date": "2026-10-01"},
+                    {"title": "祛湿食材", "link": "https://example.com/b"},
+                ],
+            }
+    monkeypatch.setattr(hs.requests, "post", lambda *a, **k: _Resp())
+    # 用不会被真实缓存命中的名字（web_lookup 有 30 天缓存，真实药名可能已缓存）
+    r = hs.web_lookup_herb("测试用药材AAA")
+    assert r["status"] == "ok"
+    assert len(r["sources"]) == 2
+    assert r["sources"][0]["url"] == "https://example.com/a"
+    assert r["summary_cn"]
+
+
+def test_web_lookup_no_sources_returns_no_result(monkeypatch):
+    """web_search[] 为空 = 没搜到，必须如实报 no_result，不许产出无来源结果"""
+    class _Resp:
+        def raise_for_status(self): pass
+        def json(self):
+            return {"choices": [{"message": {"content": "我编一段话。"}}], "web_search": []}
+    monkeypatch.setattr(hs.requests, "post", lambda *a, **k: _Resp())
+    r = hs.web_lookup_herb("测试用药材BBB")
+    assert r["status"] == "no_result"
+    assert r["summary_cn"] is None
+    assert r["sources"] == []
+
+
+def test_web_lookup_service_error(monkeypatch):
+    def _boom(*a, **k):
+        raise RuntimeError("gateway down")
+    monkeypatch.setattr(hs.requests, "post", _boom)
+    r = hs.web_lookup_herb("测试用药材CCC")
+    assert r["status"] == "error"
+    assert r["sources"] == []
+
+
+def test_web_lookup_empty_name():
+    assert hs.web_lookup_herb("")["status"] == "error"
+    assert hs.web_lookup_herb("   ")["status"] == "error"
+
+
+def test_web_lookup_endpoint_validation():
+    assert client.post("/api/v1/custom-recipe/web-lookup", json={"name": ""}).status_code == 400
+    assert client.post("/api/v1/custom-recipe/web-lookup",
+                       json={"name": "药" * 51}).status_code == 400
