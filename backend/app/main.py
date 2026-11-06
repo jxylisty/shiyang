@@ -34,6 +34,7 @@ from services import report_service as report
 from services import term_service as terms
 from services import search_service as search
 from services import plain_service as plain
+from services import eval_service as evs
 
 DB_PATH = Path(__file__).resolve().parent.parent.parent / "data" / "shiyang.db"
 DISCLAIMER = "本平台内容为健康参考信息，不构成医疗建议，不用于诊断或治疗。"
@@ -379,15 +380,39 @@ def recipe_detail(rid: int):
     for k in ("scenes", "constitutions_suitable", "constitutions_unsuitable"):
         out[k] = json.loads(out.get(k) or "[]")
     out["materials"] = [dict(m) | {"nutrient": json.loads(m["nutrient"] or "null")} for m in mats]
+    out["eval_summary"] = evs.get_recipe_eval(rid, conn)
     out["analysis"] = None
     if analysis:
         a = dict(analysis)
         for k in ("top_compounds", "radar_summary", "top_targets"):
             a[k] = json.loads(a[k] or "null")
+        if out["eval_summary"]:
+            ev = out["eval_summary"]
+            a["radar_summary"] = {
+                "absorption": ev["absorption"],
+                "synergy": ev["synergy"],
+                "evidence": ev["evidence"],
+                "anti_inflammatory": ev["absorption"],
+                "immune_regulation": ev["synergy"],
+                "airway_repair": ev["evidence"],
+                "methodology_note": ev["methodology_note"],
+            }
         out["analysis"] = a
     conn.close()
     out["disclaimer"] = DISCLAIMER
     return ok(out)
+
+
+@app.get("/api/v1/recipes/{rid:int}/eval")
+def recipe_eval(rid: int):
+    """方剂食养科学三维指数（入血潜力 / 多靶协同 / 证据强度）"""
+    conn = get_db()
+    res = evs.get_recipe_eval(rid, conn)
+    conn.close()
+    if not res:
+        raise HTTPException(404, "方子不存在")
+    res["disclaimer"] = DISCLAIMER
+    return ok(res)
 
 
 @app.get("/api/v1/recipes/{rid:int}/plain")

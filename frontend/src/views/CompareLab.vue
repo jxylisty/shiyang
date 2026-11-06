@@ -60,7 +60,7 @@ const bName = computed(() => all.value.find(r => r.id === bId.value)?.name || '�
 const ready = computed(() => aId.value && bId.value && aId.value !== bId.value)
 
 const pct = (j) => Math.round(j * 100)
-const radarNames = ['抗炎', '免疫调节', '气道修复']
+const radarNames = ['入血潜力', '多靶协同', '证据强度']
 const radarMax = computed(() => {
   const vals = [...(result.value?.radar.a || []), ...(result.value?.radar.b || [])].filter(v => v != null)
   return Math.max(100, ...vals)
@@ -162,8 +162,8 @@ function poly(vals) {
         <p v-else class="hint">两者热门靶点没有交集，作用通路差异明显</p>
       </div>
 
-      <!-- 三维机制雷达 -->
-      <div class="section-title">机制强度对照</div>
+      <!-- 食养科学三维指数雷达 -->
+      <div class="section-title">食养科学三维指数对照</div>
       <div class="card radar-card">
         <svg viewBox="0 0 120 120" class="radar">
           <polygon points="60,8 112,60 60,112 8,60" fill="none" stroke="var(--green-100)" />
@@ -182,6 +182,7 @@ function poly(vals) {
               <b class="amber">{{ result.radar.b[i]?.toFixed(0) ?? '—' }}</b>
             </div>
           </div>
+          <p class="radar-note">基于 PU-Learning 入血预测、靶点网络协同度与药食同源/实验证据分级（满分 100）。</p>
         </div>
       </div>
 
@@ -298,6 +299,7 @@ function poly(vals) {
 .radar-card { display: flex; gap: 14px; align-items: center; }
 .radar { width: 130px; flex-shrink: 0; }
 .radar-side { flex: 1; min-width: 0; }
+.radar-note { font-size: 10.5px; color: var(--ink-400); margin-top: 8px; line-height: 1.4; }
 .legend { font-size: 12px; color: var(--ink-600); margin-bottom: 4px; display: flex; align-items: center; gap: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
 .dot.a { background: var(--green-600); }

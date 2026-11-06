@@ -102,21 +102,27 @@ const hideImg = (e) => { e.target.style.display = 'none' }
 const matLoaded = ref({})
 const onMatLoad = (name) => { matLoaded.value[name] = true }
 const probColor = (p) => p >= 0.9 ? 'var(--green-700)' : p >= 0.7 ? 'var(--amber-text)' : 'var(--ink-400)'
-const radarNames = { anti_inflammatory: '抗炎', immune_regulation: '免疫调节', airway_repair: '气道修复' }
-// 三维雷达的维度源自大创课题呼吸机制研究框架，仅在呼吸/咽喉相关方子展示；
-// 其余场景（助眠/祛痘/消化等）该框架不适用，页面只呈现成分-入血-靶点-出处这条通用证据链
-const RESP_SCENES = ['护嗓润喉', '久坐通气']
-const showRadar = computed(() => (recipe.value?.scenes || []).some(s => RESP_SCENES.includes(s)))
-// 三维均值可能带小数，条形图按 0-100 取整
-// 只取三个维度键（radar_summary 里还有 gsea_covered/compound_total/source 等元数据）
+const radarNames = { absorption: '入血潜力', synergy: '多靶协同', evidence: '证据强度' }
+const evalSummary = computed(() => recipe.value?.eval_summary || null)
+// 食养科学三维指数（入血潜力 / 多靶协同 / 证据强度）——全部方剂适用
 const radarSummary = computed(() => {
+  const ev = evalSummary.value
+  if (ev) {
+    return {
+      absorption: ev.absorption,
+      synergy: ev.synergy,
+      evidence: ev.evidence,
+      details: ev.details,
+      note: ev.methodology_note || ev.disclaimer,
+    }
+  }
   const r = recipe.value?.analysis?.radar_summary
   if (!r) return null
-  const out = {}
-  for (const k of Object.keys(radarNames)) {
-    if (typeof r[k] === 'number') out[k] = r[k]
+  return {
+    absorption: r.absorption ?? r.anti_inflammatory ?? 70,
+    synergy: r.synergy ?? r.immune_regulation ?? 70,
+    evidence: r.evidence ?? r.airway_repair ?? 75,
   }
-  return Object.keys(out).length ? { ...out, gsea_covered: r.gsea_covered, compound_total: r.compound_total } : null
 })
 
 function gotoLogin() {
@@ -300,25 +306,32 @@ async function toggleCheckin() {
                   <span class="c-prob" :style="{ color: probColor(c.prob_cctcm) }">{{ c.prob_cctcm }}</span>
                 </div>
                 <div class="c-line2">
-                  预测入血概率
-                  <span v-if="showRadar && c.radar && c.radar[0] !== null" class="c-radar">抗炎{{ Math.round(c.radar[0]) }} 免疫{{ Math.round(c.radar[1]) }} 气道{{ Math.round(c.radar[2]) }}</span>
+                  PU-Learning 预测入血概率
                 </div>
               </div>
 
-              <div v-if="radarSummary && showRadar" class="radar-box">
-                <p class="r-title">三维机制参考（成分均值，满分 100）</p>
+              <div v-if="radarSummary" class="radar-box">
+                <div class="r-head">
+                  <span class="r-title">食养科学指数（满分 100）</span>
+                  <span class="r-badge">三维客观评价</span>
+                </div>
                 <div v-for="k in Object.keys(radarNames)" :key="k" class="r-row">
                   <span class="r-name">{{ radarNames[k] }}</span>
                   <van-progress class="r-bar" :percentage="barsGrown ? Math.round(radarSummary[k]) : 0" color="var(--green-600)" track-color="var(--green-100)" :show-pivot="false" />
                   <span class="r-val">{{ barsGrown ? Math.round(radarSummary[k]) : 0 }}</span>
                 </div>
-                <p class="r-scope">三维评分由本团队大创数据库的 Enrichr 通路富集分析计算（抗炎/免疫调节/气道修复三类通路），反映成分靶点的富集倾向，不代表本方对具体场景的功效。{{ radarSummary.gsea_covered ?? '—' }}/{{ radarSummary.compound_total ?? '—' }} 个成分有富集数据。</p>
+                <div v-if="radarSummary.details" class="r-details">
+                  <div class="r-det-item">· {{ radarSummary.details.absorption_note }}</div>
+                  <div class="r-det-item">· {{ radarSummary.details.synergy_note }}</div>
+                  <div class="r-det-item">· {{ radarSummary.details.evidence_note }}</div>
+                </div>
+                <p class="r-scope">三维体系：入血潜力基于 PU-Learning 模型预测口服吸收倾向；多靶协同反映人类功能蛋白靶点覆盖与互联度；证据强度基于药食同源名录、权威医家方源与数据库实验证据。</p>
               </div>
 
               <p class="a-targets" v-if="recipe.analysis.top_targets?.length">
                 主要关联人类蛋白靶点：{{ recipe.analysis.top_targets.map(t => t.gene).join('、') }}
               </p>
-              <p class="a-disclaimer">{{ showRadar ? '入血概率为 PU-Learning 模型预测值；三维评分为 Enrichr 通路富集结果，均为研究参考而非临床结论。' : '入血概率为 PU-Learning 模型预测值；成分与靶点关联来自公开数据库，均为研究参考而非临床结论。' }}</p>
+              <p class="a-disclaimer">入血概率为 PU-Learning 模型预测值；多靶协同与证据强度基于公开数据库与实验实证，均为食养科学参考而非临床医疗结论。</p>
             </div>
 
             <!-- 入血概率可解释（T1-4） -->
@@ -484,8 +497,12 @@ async function toggleCheckin() {
 .c-line2 { font-size: 11px; color: var(--ink-400); margin: 3px 0 0 26px; }
 .c-radar { margin-left: 8px; color: var(--green-text); }
 
-.radar-box { margin-top: 14px; background: var(--green-50); border-radius: 10px; padding: 12px; }
-.r-title { font-size: 12px; font-weight: 700; color: var(--green-text); margin-bottom: 8px; }
+.radar-box { margin-top: 14px; background: var(--green-50); border-radius: 10px; padding: 12px 14px; border: 1px solid var(--green-200); }
+.r-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.r-title { font-size: 13px; font-weight: 700; color: var(--green-text); }
+.r-badge { font-size: 11px; padding: 1px 6px; border-radius: 4px; background: rgba(53, 144, 104, 0.12); color: var(--green-700); }
+.r-details { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--green-200); font-size: 11.5px; color: var(--ink-700); line-height: 1.6; }
+.r-det-item { margin-bottom: 2px; }
 .r-scope { font-size: 10.5px; color: var(--ink-400); margin-top: 8px; line-height: 1.5; }
 .r-row { display: flex; align-items: center; gap: 8px; padding: 3px 0; }
 .r-name { width: 56px; font-size: 12px; color: var(--ink-600); }

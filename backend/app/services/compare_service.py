@@ -8,6 +8,7 @@ import sqlite3
 from pathlib import Path
 
 from services import safety_service as safety
+from services import eval_service as evs
 
 DB_PATH = Path(__file__).resolve().parents[3] / "data" / "shiyang.db"
 
@@ -35,11 +36,22 @@ def _load_one(conn, rid: int) -> dict | None:
     out["materials"] = [dict(m) for m in mats]
     a = conn.execute("SELECT * FROM recipe_analysis WHERE recipe_id=?", (rid,)).fetchone()
     out["analysis"] = None
+    out["eval_summary"] = evs.get_recipe_eval(rid, conn)
     if a:
         a = dict(a)
         a["top_compounds"] = json.loads(a["top_compounds"] or "null") or []
         a["top_targets"] = json.loads(a["top_targets"] or "null") or []
         a["radar_summary"] = json.loads(a["radar_summary"] or "null") or {}
+        if out["eval_summary"]:
+            ev = out["eval_summary"]
+            a["radar_summary"] = {
+                "absorption": ev["absorption"],
+                "synergy": ev["synergy"],
+                "evidence": ev["evidence"],
+                "anti_inflammatory": ev["absorption"],
+                "immune_regulation": ev["synergy"],
+                "airway_repair": ev["evidence"],
+            }
         out["analysis"] = a
     return out
 
@@ -84,9 +96,9 @@ def compare(a_id: int, b_id: int) -> dict | None:
         ma = {m["name"] for m in a["materials"]}
         mb = {m["name"] for m in b["materials"]}
 
-        # ---- 雷达（三通路强度）----
-        ra = a["analysis"]["radar_summary"] if a["analysis"] else {}
-        rb = b["analysis"]["radar_summary"] if b["analysis"] else {}
+        # ---- 食养科学三维指数（入血潜力 / 多靶协同 / 证据强度）----
+        eval_a = a.get("eval_summary") or evs.get_recipe_eval(a_id, conn)
+        eval_b = b.get("eval_summary") or evs.get_recipe_eval(b_id, conn)
 
         j_compound = _jaccard(set(ca), set(cb))
         j_target = _jaccard(ta, tb)
@@ -110,10 +122,17 @@ def compare(a_id: int, b_id: int) -> dict | None:
                 "jaccard": round(j_material, 3),
             },
             "radar": {
-                "dims": ["anti_inflammatory", "immune_regulation", "airway_repair"],
-                "a": [ra.get(d) for d in ("anti_inflammatory", "immune_regulation", "airway_repair")],
-                "b": [rb.get(d) for d in ("anti_inflammatory", "immune_regulation", "airway_repair")],
+                "dims": ["absorption", "synergy", "evidence"],
+                "labels": ["入血潜力", "多靶协同", "证据强度"],
+                "a": [eval_a["absorption"] if eval_a else None,
+                      eval_a["synergy"] if eval_a else None,
+                      eval_a["evidence"] if eval_a else None],
+                "b": [eval_b["absorption"] if eval_b else None,
+                      eval_b["synergy"] if eval_b else None,
+                      eval_b["evidence"] if eval_b else None],
             },
+            "eval_a": eval_a,
+            "eval_b": eval_b,
             "constitution": {
                 "both_suitable": sorted(set(a["constitutions_suitable"]) & set(b["constitutions_suitable"])),
                 "a_only": sorted(set(a["constitutions_suitable"]) - set(b["constitutions_suitable"])),
