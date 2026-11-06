@@ -1,91 +1,750 @@
 {
  "source": "Wikimedia Commons",
  "credits": {
-  "枸杞子": null,
-  "菊花": null,
-  "金银花": null,
-  "陈皮": null,
-  "山楂": null,
-  "乌梅": null,
-  "大枣": null,
-  "生姜": null,
-  "干姜": null,
-  "甘草": null,
-  "薄荷": null,
-  "麦冬": null,
-  "桔梗": null,
-  "胖大海": null,
+  "枸杞子": {
+   "license": "Public domain",
+   "artist": "Wstefano at English Wikipedia",
+   "title": "File:Dried wolfberry closeup.jpg"
+  },
+  "菊花": {
+   "license": "CC0",
+   "artist": "Fumikas Sagisavas",
+   "title": "File:Chrysanthemum tea (20240131).jpg"
+  },
+  "金银花": {
+   "license": "CC0",
+   "artist": "Gerda Arendt",
+   "title": "File:Ehrenbach, lonicera japonica.jpg"
+  },
+  "陈皮": {
+   "license": "CC0",
+   "artist": "Fumikas Sagisavas",
+   "title": "File:Associated tangerine peel.jpg"
+  },
+  "山楂": {
+   "license": "Public domain",
+   "artist": "No machine-readable author provided. PuzzletChung assumed (b",
+   "title": "File:Crataegus pinnatifida fruit, Yongin.jpg"
+  },
+  "乌梅": {
+   "license": "CC BY-SA 3.0",
+   "artist": "Takeaway",
+   "title": "File:Buai khem.jpg"
+  },
+  "大枣": {
+   "license": "CC0",
+   "artist": "Fumikas Sagisavas",
+   "title": "File:Gray dates.jpg"
+  },
+  "生姜": {
+   "license": "CC0",
+   "artist": "Rubel Das",
+   "title": "File:Ginger Root (Zingiber officinale).jpg"
+  },
+  "干姜": {
+   "license": "CC0",
+   "artist": "Fumikas Sagisavas",
+   "title": "File:Dried ginger slices.jpg"
+  },
+  "甘草": {
+   "license": "Public domain",
+   "artist": "American Colony (Jerusalem). Photo Dept., photographer.",
+   "title": "File:Aleppolicorice.jpg"
+  },
+  "薄荷": {
+   "license": "CC0",
+   "artist": "EmirDzaferovic",
+   "title": "File:Mentha Pulegium 5.jpg"
+  },
+  "麦冬": {
+   "license": "CC0",
+   "artist": "Fumikas Sagisavas",
+   "title": "File:Dried Ophiopogon japonicus sticks.jpg"
+  },
+  "桔梗": {
+   "license": "CC BY-SA 4.0",
+   "artist": "Yuhana Nashmi",
+   "title": "File:Ganzibra Taleb Doraji April 2015.png"
+  },
+  "胖大海": {
+   "license": "Public domain",
+   "artist": "Daderot",
+   "title": "File:Sterculia lychnophora seeds - Kunming Botanical Garden - DSC03232.JPG"
+  },
   "百合": {
    "license": "CC BY 2.0",
    "artist": "John Rusk from Berkeley, CA, United States of America",
    "title": "File:H20100603-2707--Lilium columbianum--RPBG (9123641152).jpg"
   },
-  "茯苓": null,
-  "薏苡仁": null,
-  "黄芪": null,
-  "党参": null,
-  "桑叶": null,
-  "桑椹": null,
-  "酸枣仁": null,
-  "莲子": null,
-  "龙眼肉": null,
-  "玉竹": null,
-  "石斛": null,
-  "西洋参": null,
-  "葛根": null,
-  "决明子": null,
-  "荷叶": null,
-  "玫瑰花": null,
-  "山药": null,
-  "黄精": null,
-  "肉桂": null,
-  "蒲公英": null,
-  "麦芽": null,
-  "雪梨": null,
-  "莲藕": null,
-  "银耳": null,
-  "冬瓜": null,
-  "白萝卜": null,
-  "绿豆": null,
-  "赤小豆": null,
-  "粳米": null,
-  "小米": null,
-  "红糖": null,
-  "蜂蜜": null,
-  "牛奶": null,
-  "鸡蛋": null,
-  "羊肉": null,
-  "鸡肉": null,
-  "鸭肉": null,
-  "鲫鱼": null,
-  "猪骨": null,
-  "核桃": null,
-  "黑芝麻": null,
-  "板栗": null,
-  "冰糖": null,
-  "枣": null,
-  "铁皮石斛": null,
-  "芡实": null,
-  "蜜枣": null,
-  "绿茶": null,
-  "鲜芦根": null,
-  "花生": null,
-  "佛手": null,
-  "玉米须": null,
-  "柚子": null,
-  "覆盆子": null,
-  "海棠果": null,
-  "马蹄": null,
-  "眉豆": null,
-  "椰子": null,
-  "木瓜": null,
-  "乌鸡": null,
-  "排骨": null,
-  "猪肝": null,
-  "菠菜": null,
-  "红豆": null,
-  "鲢鱼头": null,
-  "白糖": null,
-  "猪肉": null
+  "茯苓": {
+   "license": "CC0",
+   "artist": "Trappem",
+   "title": "File:Poria cocos.jpg"
+  },
+  "薏苡仁": {
+   "license": "CC BY-SA 4.0",
+   "artist": "Craigallan.za",
+   "title": "File:Coix lacryma-jobi.jpg"
+  },
+  "黄芪": {
+   "license": "CC0",
+   "artist": "Fumikas Sagisavas",
+   "title": "File:Astragalus discs.jpg"
+  },
+  "党参": {
+   "license": "CC BY-SA 3.0",
+   "artist": "Juan de Vojníkov at English Wikiversity.",
+   "title": "File:Codonopsis pillosula root, higher zoom.JPG"
+  },
+  "桑叶": {
+   "license": "CC0",
+   "artist": "Fumikas Sagisavas",
+   "title": "File:Mulberry leaves and silkworms.jpg"
+  },
+  "桑椹": {
+   "license": "CC0",
+   "artist": "Fumikas Sagisavas",
+   "title": "File:Mulberry fruit (1).jpg"
+  },
+  "酸枣仁": {
+   "license": "Public domain",
+   "artist": "Agricultural Research Center-West (U.S.). Northeastern Regio",
+   "title": "File:Plant inventory; plant material introduced (1897) (14584895480).jpg"
+  },
+  "莲子": {
+   "license": "CC0",
+   "artist": "Fumikas Sagisavas",
+   "title": "File:Dried red lotus seeds.jpg"
+  },
+  "龙眼肉": {
+   "license": "CC0",
+   "artist": "Fumikas Sagisavas",
+   "title": "File:AA grade dried longan.jpg"
+  },
+  "玉竹": {
+   "license": "CC0",
+   "artist": "Fumikas Sagisavas",
+   "title": "File:Dried polygonatum odoratum slices.jpg"
+  },
+  "石斛": {
+   "license": "CC0",
+   "artist": "Fumikas Sagisavas",
+   "title": "File:Dendrobium officinale grains.jpg"
+  },
+  "西洋参": {
+   "license": "CC0",
+   "artist": "Fumikas Sagisavas",
+   "title": "File:American ginseng slices.jpg"
+  },
+  "葛根": {
+   "license": "CC0",
+   "artist": "Fumikas Sagisavas",
+   "title": "File:Crispy kudzu slices.jpg"
+  },
+  "决明子": {
+   "license": "Public domain",
+   "artist": "Dr. S. Soundarapandian S.Soundarapandian (talk) 09:36, 30 No",
+   "title": "File:தகரை1.jpg"
+  },
+  "荷叶": {
+   "license": "CC0",
+   "artist": "Fumikas Sagisavas",
+   "title": "File:Dried lotus leaf tea.jpg"
+  },
+  "玫瑰花": {
+   "license": "CC BY 4.0",
+   "artist": "Loppy poppy",
+   "title": "File:Cup of rosebud tea with dried pink rose buds.jpg"
+  },
+  "山药": {
+   "license": "Public domain",
+   "artist": "Steve Hurst. Provided by ARS Systematic Botany and Mycology ",
+   "title": "File:Dioscorea polystachya NRCS-001.jpg"
+  },
+  "黄精": {
+   "license": "CC0",
+   "artist": "Fumikas Sagisavas",
+   "title": "File:Nine-preparations black polygonatum sibiricum.jpg"
+  },
+  "肉桂": {
+   "license": "CC0",
+   "artist": "Fumikas Sagisavas",
+   "title": "File:Cinnamon sticks (1).jpg"
+  },
+  "蒲公英": {
+   "license": "CC BY-SA 4.0",
+   "artist": "GT1976",
+   "title": "File:2019-04-25 (159) Taraxacum officinale (common dandelion) at Haltgraben, Frankenfels, Austria.jpg"
+  },
+  "麦芽": {
+   "license": "CC BY-SA 2.0",
+   "artist": "Betty Longbottom",
+   "title": "File:Warminster Maltings - Pound Street - spreading the barley out to dry - geograph.org.uk - 946006.jpg"
+  },
+  "雪梨": {
+   "license": "CC0",
+   "artist": "TylerMascola",
+   "title": "File:Golden Asian Pear 2.png"
+  },
+  "莲藕": {
+   "license": "CC0",
+   "artist": "Hong Zhang (jennyzhh2008)",
+   "title": "File:Lotus flower (978659).jpg"
+  },
+  "银耳": {
+   "license": "CC0",
+   "artist": "Eileen Laidlaw",
+   "title": "File:Tremella fuciformis 75142119.jpg"
+  },
+  "冬瓜": {
+   "license": "CC0",
+   "artist": "GTSPACE",
+   "title": "File:A winter melon, gourd , wax gourd , KyaukFaYonTee.jpg"
+  },
+  "白萝卜": {
+   "license": "Public domain",
+   "artist": "Japanese fine prints, pre-1915",
+   "title": "File:Daikon radish with plant growing in the background LCCN2009630031.jpg"
+  },
+  "绿豆": {
+   "license": "CC0",
+   "artist": "pics_pd",
+   "title": "File:Mung bean sprouts, close-up.jpg"
+  },
+  "赤小豆": {
+   "license": "CC0",
+   "artist": "Judgefloro",
+   "title": "File:1876Germination of Adzuki bean 03.jpg"
+  },
+  "粳米": {
+   "license": "CC0",
+   "artist": "ImageParty",
+   "title": "File:White rice on a brown table.jpg"
+  },
+  "小米": {
+   "license": "CC BY-SA 3.0",
+   "artist": "Sengai Podhuvan",
+   "title": "File:Food grain foxtail millet.jpg"
+  },
+  "红糖": {
+   "license": "Public domain",
+   "artist": "Frank Bond",
+   "title": "File:Brown Sugar (BOND 0103).jpeg"
+  },
+  "蜂蜜": {
+   "license": "Public domain",
+   "artist": "Government of Antigua and Barbuda",
+   "title": "File:Antiguan honey products at an exhibition in Saint Lucia.jpg"
+  },
+  "牛奶": {
+   "license": "CC0",
+   "artist": "Areku",
+   "title": "File:Westmoreland Old Quilt milk glass creamer.jpg"
+  },
+  "鸡蛋": {
+   "license": "CC0",
+   "artist": "safaritravelplus",
+   "title": "File:Eggs Chicken.jpg"
+  },
+  "羊肉": {
+   "license": "CC BY-SA 4.0",
+   "artist": "Acabashi",
+   "title": "File:A roast lamb Sunday dinner at The Black Bull, Fyfield, Essex, England.jpg"
+  },
+  "鸡肉": {
+   "license": "CC0",
+   "artist": "Fumikas Sagisavas",
+   "title": "File:Uncooked raw kung pao chicken.jpg"
+  },
+  "鸭肉": {
+   "license": "CC0",
+   "artist": "cogdogblog",
+   "title": "File:Duck, Duck, Duck (2863443552).jpg"
+  },
+  "鲫鱼": {
+   "license": "CC0",
+   "artist": "Daderot",
+   "title": "File:Carassius carassius - Swedish Museum of Natural History - Stockholm, Sweden - DSC00594.JPG"
+  },
+  "猪骨": {
+   "license": "CC BY 2.0",
+   "artist": "epSos.de",
+   "title": "File:Raw Pork Meat in Bloody Butchery of Corpses.jpg"
+  },
+  "核桃": {
+   "license": "Public domain",
+   "artist": "George Chernilevsky",
+   "title": "File:Juglans regia 2009 G1.jpg"
+  },
+  "黑芝麻": {
+   "license": "CC0",
+   "artist": "Ranjithkumar Murugesan",
+   "title": "File:BLACK SESAME SEEDS.jpg"
+  },
+  "板栗": {
+   "license": "Public domain",
+   "artist": "Adriaen Coorte",
+   "title": "File:Adriaen Coorte - Chestnuts.jpg"
+  },
+  "冰糖": {
+   "license": "CC0",
+   "artist": "Fumikas Sagisavas",
+   "title": "File:Guangxi old rock candy.jpg"
+  },
+  "枣": {
+   "license": "CC0",
+   "artist": "Fumikas Sagisavas",
+   "title": "File:Gray dates.jpg"
+  },
+  "铁皮石斛": {
+   "license": "CC BY 2.0",
+   "artist": "sunoochi from Sapporo, Hokkaido, Japan",
+   "title": "File:Dendrobium officinale (colored stem type) Kimura & Migo, J. Shanghai Sci. Inst. 3 122 (1936), nom. cons (46810862855).jpg"
+  },
+  "芡实": {
+   "license": "CC BY-SA 4.0",
+   "artist": "Linguaing Yauwimop",
+   "title": "File:HK SKW 筲箕灣 Shau Kei Wan 寶文街 1 Po Man Street 峻峰花園 Perfect Mount Garden shop 惠康超市 Wellcome Supermarket October 2021 SS2 05.jpg"
+  },
+  "蜜枣": {
+   "license": "CC0",
+   "artist": "Suginami",
+   "title": "File:Donkey-hide gelatin candied jujube(Laoling Ejiao Mizao).jpg"
+  },
+  "绿茶": {
+   "license": "CC0",
+   "artist": "Alessandro Martini",
+   "title": "File:Green tea 3 appearances.jpg"
+  },
+  "鲜芦根": {
+   "license": "CC BY-SA 4.0",
+   "artist": "Ayotte, Gilles, 1948-",
+   "title": "File:Phragmites australis 15-p.bot-phrag.commu-19.jpg"
+  },
+  "花生": {
+   "license": "CC0",
+   "artist": "David E Mead",
+   "title": "File:Peanuts (shelled raw marketed).jpg"
+  },
+  "佛手": {
+   "license": "CC0",
+   "artist": "Cbaile19",
+   "title": "File:Citrus medica var. sarcodactylis, Phipps Conservatory, 2015-10-13, 01.jpg"
+  },
+  "玉米须": {
+   "license": "CC0",
+   "artist": "Cbaile19",
+   "title": "File:Corn Silk, 2020-08-03, Beechview, 01.jpg"
+  },
+  "柚子": {
+   "license": "CC BY-SA 2.5",
+   "artist": "Citrus_paradisi_(Grapefruit,_pink).jpg: א (Aleph)\nderivative",
+   "title": "File:Citrus paradisi (Grapefruit, pink) white bg.jpg"
+  },
+  "覆盆子": {
+   "license": "CC0",
+   "artist": "Dominique Lyon",
+   "title": "File:Raspberries in Sweden.jpg"
+  },
+  "海棠果": {
+   "license": "CC BY-SA 4.0",
+   "artist": "Famartin",
+   "title": "File:2015-01-30 07 33 53 Fruit on a crabapple at the intersection of Idaho Street (Interstate 80 Business) and Manzanita Drive in Elko, Nevada.JPG"
+  },
+  "马蹄": {
+   "license": "CC0",
+   "artist": "Fumikas Sagisavas",
+   "title": "File:Cooked but unshelled water chestnuts.jpg"
+  },
+  "眉豆": {
+   "license": "CC0",
+   "artist": "Kuttykrishnan Photos",
+   "title": "File:Black eyed peas food.jpg"
+  },
+  "椰子": {
+   "license": "CC0",
+   "artist": "Obsidian Soul",
+   "title": "File:Immature coconut fruit.jpg"
+  },
+  "木瓜": {
+   "license": "CC0",
+   "artist": "Scot Nelson",
+   "title": "File:Papaya (Carica papaya) Lasiodiplodia fruit rot.jpg"
+  },
+  "乌鸡": {
+   "license": "Public domain",
+   "artist": "Jean Bungartz",
+   "title": "File:Tab60 Hühner (Geflügel-Album, Jean Bungartz, 1885).jpg"
+  },
+  "排骨": {
+   "license": "Public domain",
+   "artist": "Mendaliv",
+   "title": "File:Raw pork spareribs.jpg"
+  },
+  "猪肝": {
+   "license": "CC BY-SA 4.0",
+   "artist": "Acabashi",
+   "title": "File:Liver bacon and chips sausage egg tomato at Starmugs Cafe on Lordship Lane Tottenham London England.jpg"
+  },
+  "菠菜": {
+   "license": "CC0",
+   "artist": "Judgefloro",
+   "title": "File:774Spinach leaves 02.jpg"
+  },
+  "红豆": {
+   "license": "CC0",
+   "artist": "LAHN wui Hoezhong",
+   "title": "File:GD 廣東 ZS 中山市 Zhongshan 石岐 ShiQi District 孫文西路步行區 SunWen West Road Pedestrian Zone shop 劉記 Liu Kee sweet 雙皮奶 white milk bowl with 紅豆 red bean September 2024 R12S 01.jpg"
+  },
+  "鲢鱼头": {
+   "license": "Public domain",
+   "artist": "Scan by NYPL",
+   "title": "File:111. The Northern Bill-fish (Scomberesox storeri). 112. The Banded Garfish (Belone truncata). 113. The American Pipe-fish (Fistularia serrata). Head of the same seen from above (NYPL b14505696-113744).tiff"
+  },
+  "白糖": {
+   "license": "CC0",
+   "artist": "SrKellyOP",
+   "title": "File:Disaccharides (Lactose, Maltose, and Sucrose).png"
+  },
+  "猪肉": {
+   "license": "CC0",
+   "artist": "WCPCLM 2002258",
+   "title": "File:SZ 深圳 Shenzhen 福田 Futian 皇庭廣場 Wongtee Plaza shop 漢陽廷自助烤肉 Hayaco Barbecue Restaurant raw beef n pork slices September 2025 N13P 08.jpg"
+  },
+  "橘红": {
+   "license": "CC0",
+   "artist": "Fumikas Sagisavas",
+   "title": "File:Associated tangerine peel.jpg"
+  },
+  "花椒": {
+   "license": "CC0",
+   "artist": "Ismoon (talk) 19:16, 11 October 2012 (UTC)",
+   "title": "File:Zanthoxylum piperitum Sichuan.Liujiaxia.tree.jpg"
+  },
+  "丁香": {
+   "license": "Public domain",
+   "artist": "unknown Southeast Asian artist",
+   "title": "File:Cloves - unknown Southeast Asian artist - 27 1924 17.png"
+  },
+  "八角茴香": {
+   "license": "Public domain",
+   "artist": "Jebulon",
+   "title": "File:Star aniseed.jpg"
+  },
+  "刀豆": {
+   "license": "CC0",
+   "artist": "David E Mead",
+   "title": "File:Sword bean (Canavalia gladiata) pods Singapore.jpg"
+  },
+  "小茴香": {
+   "license": "CC BY 2.0",
+   "artist": "John Rusk from Berkeley, CA, United States of America",
+   "title": "File:E20170415-0002—Foeniculum vulgare—Berkeley (34143871486).jpg"
+  },
+  "马齿苋": {
+   "license": "CC0",
+   "artist": "Bondigoldwiki",
+   "title": "File:Purslane Portulaca oleracea.jpg"
+  },
+  "紫苏籽": {
+   "license": "CC0",
+   "artist": "ally j",
+   "title": "File:Perilla seeds.jpg"
+  },
+  "黑胡椒": {
+   "license": "CC BY-SA 3.0",
+   "artist": "Ragesoss",
+   "title": "File:4 color mix of peppercorns.jpg"
+  },
+  "槐花": {
+   "license": "Public domain",
+   "artist": "Scan by NYPL",
+   "title": "File:Sophora Japonica - Sophora du Japon (NYPL b14485031-1108883).tiff"
+  },
+  "榧子": {
+   "license": "CC0",
+   "artist": "Fumikas Sagisavas",
+   "title": "File:Roasted torreya nuts and sunflower seeds.jpg"
+  },
+  "藿香": {
+   "license": "CC BY 2.5",
+   "artist": "Stanislav Doronenko",
+   "title": "File:Agastache rugosa.jpg"
+  },
+  "山柰": {
+   "license": "CC BY-SA 3.0",
+   "artist": "Mokkie",
+   "title": "File:Cekur (Kaempferia galanga).jpg"
+  },
+  "火麻仁": {
+   "license": "CC0",
+   "artist": "Vschlothauer",
+   "title": "File:Keimender Hanfsamen - Germinating hemp seed 01.jpg"
+  },
+  "白芷": {
+   "license": "CC BY-SA 3.0 de",
+   "artist": "Rillke",
+   "title": "File:Angelicae radix 021014.jpg"
+  },
+  "白果": {
+   "license": "Public domain",
+   "artist": "Love Krittaya",
+   "title": "File:Ginkgo biloba seeds, China.jpg"
+  },
+  "白扁豆": {
+   "license": "CC BY 3.0 us",
+   "artist": "Forest and Kim Starr",
+   "title": "File:Starr-090714-2751-Lablab purpureus-flowering and seeding habit-DT Fleming Beach Kapalua-Maui (24674178430).jpg"
+  },
+  "白扁豆花": {
+   "license": "CC BY-SA 4.0",
+   "artist": "சு.பத்மா",
+   "title": "File:Flowers of a hyacinth bean plant( Lablab purpureus).jpg"
+  },
+  "肉豆蔻": {
+   "license": "CC BY-SA 4.0",
+   "artist": "Vinayaraj",
+   "title": "File:Myristica fragrans - Nutmeg - WikiSangamotsavam 2018, Kottappuram, Kodungalloor (5).jpg"
+  },
+  "余甘子": {
+   "license": "CC BY-SA 3.0",
+   "artist": "J.M.Garg",
+   "title": "File:Indian gooseberry (Phyllanthus emblica syn Emblica officinalis) at Jayanti, Duars, West Bengal W Picture 045.jpg"
+  },
+  "杏仁": {
+   "license": "CC0",
+   "artist": "Shisma",
+   "title": "File:Apricot kernel in bowl.jpg"
+  },
+  "沙棘": {
+   "license": "Public domain",
+   "artist": "Post of Belarus",
+   "title": "File:Stamp of Belarus - 2004 - Colnect 85921 - Sea buckthorn Berries - Hippophae rhamnoides.jpeg"
+  },
+  "牡蛎": {
+   "license": "Public domain",
+   "artist": "Asahel Curtis",
+   "title": "File:Drying oyster shells before grinding them for chicken feed (CURTIS 1770).jpeg"
+  },
+  "昆布": {
+   "license": "CC0",
+   "artist": "Fumikas Sagisavas",
+   "title": "File:Deep sea kelp knot.jpg"
+  },
+  "罗汉果": {
+   "license": "CC0",
+   "artist": "Fumikas Sagisavas",
+   "title": "File:Dried monk fruit.jpg"
+  },
+  "青果": {
+   "license": "CC BY-SA 3.0",
+   "artist": "Takeaway",
+   "title": "File:Khao phat nam liap.jpg"
+  },
+  "鱼腥草": {
+   "license": "CC BY-SA 3.0",
+   "artist": "Cardioceras",
+   "title": "File:Houttuynia roots vegetable china.jpg"
+  },
+  "香橼": {
+   "license": "Public domain",
+   "artist": "Yankelowitz",
+   "title": "File:Balady citron (Braverman cultivar).jpg"
+  },
+  "桃仁": {
+   "license": "CC BY-SA 2.0",
+   "artist": "DONOSTIA KULTURA",
+   "title": "File:Peach Pit (26109421238).jpg"
+  },
+  "益智仁": {
+   "license": "CC0",
+   "artist": "Fumikas Sagisavas",
+   "title": "File:Dried alpinia oxyphylla.jpg"
+  },
+  "莱菔子": {
+   "license": "Public domain",
+   "artist": "Unknown authorUnknown author or not provided",
+   "title": "File:Radish Seed Packet - NARA - 5721324.jpg"
+  },
+  "菊苣": {
+   "license": "CC0",
+   "artist": "JHern OW",
+   "title": "File:Chicory Root (40x).jpg"
+  },
+  "黄芥子": {
+   "license": "Public domain",
+   "artist": "NPS/Boston Photo Imaging",
+   "title": "File:Brassica Juncea (Indian Mustard) in Billings-Kittredge Herbaria (8fd76b9a-e71e-46b1-82d5-e885780277b3).tif"
+  },
+  "紫苏": {
+   "license": "CC0",
+   "artist": "Rothias05",
+   "title": "File:Frying Perilla frutescens.jpg"
+  },
+  "西红花": {
+   "license": "CC0",
+   "artist": "ulleo",
+   "title": "File:Saffron threads in a glass jar ( Viora Saffron packaging).jpg"
+  },
+  "姜黄": {
+   "license": "CC BY-SA 3.0",
+   "artist": "Simon A. Eugster",
+   "title": "File:Curcuma longa roots.jpg"
+  },
+  "荜茇": {
+   "license": "Public domain",
+   "artist": "",
+   "title": "File:Piper longum print.jpg"
+  },
+  "灵芝": {
+   "license": "CC BY-SA 3.0",
+   "artist": "Stu's Images",
+   "title": "File:Ganoderma lucidum, Lingzhi mushroom, Darwin, Australia.JPG"
+  },
+  "山茱萸": {
+   "license": "CC0",
+   "artist": "Fumikas Sagisavas",
+   "title": "File:Dried Henan Nanyang cornelian cherries.jpg"
+  },
+  "杜仲叶": {
+   "license": "CC BY-SA 4.0",
+   "artist": "Agnieszka Kwiecień, Nova",
+   "title": "File:Eucommia ulmoides Eukomia wiązolistna 2019-09-15 02.jpg"
+  },
+  "阿胶": {
+   "license": "CC0",
+   "artist": "Fumikas Sagisavas",
+   "title": "File:Donkey-hide gelatin (E'jiao) slices.jpg"
+  },
+  "猪瘦肉": {
+   "license": "CC0",
+   "artist": "JFVelasquez Floro",
+   "title": "File:9936Pork tenderloin sauces 01.jpg"
+  },
+  "天冬": {
+   "license": "CC BY-SA 2.0",
+   "artist": "Shih-Shiuan Kao",
+   "title": "File:Asparagus cochinchinensis.jpg"
+  },
+  "猪肚": {
+   "license": "CC BY-SA 3.0",
+   "artist": "KTo288",
+   "title": "File:Mixed pork offal, Cantonese lou mei style.JPG"
+  },
+  "猪脊骨": {
+   "license": "CC0",
+   "artist": "Fumikas Sagisavas",
+   "title": "File:Pork ribs (1).jpg"
+  },
+  "天麻": {
+   "license": "CC0",
+   "artist": "Fumikas Sagisavas",
+   "title": "File:Gastrodia elata slices.jpg"
+  },
+  "栀子": {
+   "license": "CC0",
+   "artist": "Fumikas Sagisavas",
+   "title": "File:Dried gardenia seeds.jpg"
+  },
+  "砂仁": {
+   "license": "CC0",
+   "artist": "Fumikas Sagisavas",
+   "title": "File:Dried amomum villosum.jpg"
+  },
+  "槐米": {
+   "license": "Public domain",
+   "artist": "Scan by NYPL",
+   "title": "File:Sophora Japonica - Sophora du Japon (NYPL b14485031-1108883).tiff"
+  },
+  "薤白": {
+   "license": "Public domain",
+   "artist": "ぎらん",
+   "title": "File:Allium macrostemon.jpg"
+  },
+  "草果": {
+   "license": "CC0",
+   "artist": "Fumikas Sagisavas",
+   "title": "File:Dried Yunnan grass fruit.jpg"
+  },
+  "肉苁蓉": {
+   "license": "CC0",
+   "artist": "Fumikas Sagisavas",
+   "title": "File:Cistanche deserticola sticks.jpg"
+  },
+  "化橘红": {
+   "license": "CC0",
+   "artist": "Judgefloro",
+   "title": "File:176Suha Fruit of the Philippines 23.jpg"
+  },
+  "鸡内金": {
+   "license": "CC0",
+   "artist": "Fumikas Sagisavas",
+   "title": "File:Chicken gizzard slices.jpg"
+  },
+  "郁李仁": {
+   "license": "Public domain",
+   "artist": "Ishizaki Yūshi",
+   "title": "File:Naturalis Biodiversity Center - RMNH.ART.277 - Prunus mume-Prunus armeniaca-Castanea crenata-Prunus japonica-Eriobotrya japonica-Yūshi Ishizaki - Cock Blomhoff Collection - pencil drawing-water colour.jpg"
+  },
+  "枳椇子": {
+   "license": "CC0",
+   "artist": "QBK",
+   "title": "File:Hovenia dulcis in Matsudo 20120929.jpg"
+  },
+  "香薷": {
+   "license": "CC0",
+   "artist": "Татьяна Горбушина",
+   "title": "File:Elsholtzia ciliata cc0.jpg"
+  },
+  "小蓟": {
+   "license": "CC BY-SA 4.0",
+   "artist": "Ivar Leidus",
+   "title": "File:Apis mellifera - Cirsium arvense - Keila.jpg"
+  },
+  "乌梢蛇": {
+   "license": "CC BY-SA 4.0",
+   "artist": "Cheng Te Hsu",
+   "title": "File:Ptyas dhumnades 132087027.jpg"
+  },
+  "代代花": {
+   "license": "Public domain",
+   "artist": "Scan by NYPL",
+   "title": "File:Citrus aurantium - Citronier oranger. (Bitter orange) (NYPL b14485031-1110829).tiff"
+  },
+  "鲜白茅根": {
+   "license": "CC0",
+   "artist": "Apurv013",
+   "title": "File:Imperata cylindrica - Cogon grass.jpg"
+  },
+  "蒲公英根": {
+   "license": "Public domain",
+   "artist": "Zero-X at Flickr",
+   "title": "File:Roasted dandelion root.jpg"
+  },
+  "当归": {
+   "license": "CC0",
+   "artist": "Fumikas Sagisavas",
+   "title": "File:Dried angelica slices (2).jpg"
+  },
+  "地黄": {
+   "license": "Public domain",
+   "artist": "Ishizaki Yūshi",
+   "title": "File:Naturalis Biodiversity Center - RMNH.ART.342 - Dendrobium moniliforme - Rehmannia glutinosa - Adonis amurensis - Carthamus tinctorius - Draba nemorosa - Yūshi Ishizaki - Cock Blomhoff Collection - pencil drawing - water colour.jpg"
+  },
+  "淡竹叶": {
+   "license": "CC BY-SA 3.0",
+   "artist": "keisotyo",
+   "title": "File:Lophatherum gracile sasakusa01.JPG"
+  },
+  "淡豆豉": {
+   "license": "CC0",
+   "artist": "Fumikas Sagisavas",
+   "title": "File:Black soybeans.jpg"
+  },
+  "高良姜": {
+   "license": "CC0",
+   "artist": "Fumikas Sagisavas",
+   "title": "File:Dried galangal.jpg"
+  }
  }
 }

@@ -60,7 +60,12 @@
 4. **后台标签页 rAF 冻结**：动画收尾计时不要用双 `requestAnimationFrame`，用双 `setTimeout`（提交 7c4056b 之前的教训，`Quiz.vue`/`RecipeDetail.vue` 已修，新动画沿用）。
 5. **Vant `van-popup` 的 show 是布尔值**：「选中哪个槽位」这类字符串状态需要 computed 桥接（`CompareLab.vue` 的做法）。
 6. **测试依赖不在正式 requirements**：pytest 装在运行环境里（9.1.1），正式依赖见 `backend/requirements.txt`，测试依赖见 `backend/requirements-dev.txt`。
-7. **图片资源**：配料图构建期预拉取（`scripts/fetch_material_images.py` → `frontend/public/img/materials/`），新增食材要同步补拉图与异名映射（`api/index.js` 的 `MAT_IMG_ALIAS`）。
+7. **图片资源**：配料图构建期预拉取（`scripts/fetch_material_images.py` → `frontend/public/img/materials/`）。
+   新增食材必须同步补词表（`MATERIALS`，值可写 `list` 做学名回退——带 dried/rhizome 等限定词
+   会把 Commons 结果压进文献扫描区，纯学名命中率高得多）。三条硬规矩：
+   ① 不要为「缺图兜底」写跨物种映射（`当归→党参` 这类会显示**别的药材**照片，属数据失真）；
+   ② 每次抓完跑 `scripts/audit_image_credits.py` 确认「图 ↔ 署名」齐全（CC BY/CC BY-SA 要求署名）；
+   ③ Commons 的「缩略图」对 PNG 原图仍返回 PNG，脚本已统一转真 JPEG，勿绕过。
 8. **药材-成分归属有三种口径，不要 `JOIN rel_herb_compound` 了事**：`rel_herb_compound`(v1) 里旧 34 味的
    201 行是**未修复的错乱快照**（人参皂苷挂薄荷那版），v3 才是修复口径；扩容的 71 味写在 v1 的非 ccTCM 行，
    补录的 10 味在新表 `rel_herb_compound_herb`。凡按药材取成分/按成分反查药材，统一用
