@@ -1,5 +1,6 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
+import { FlaskConical, ArrowRight } from '@lucide/vue'
 import AppIcon from '../components/AppIcon.vue'
 import RecipeRow from '../components/RecipeRow.vue'
 import { getStats, listRecipes, getTermCurrent, matImg, getLocalConstitution } from '../api'
@@ -277,6 +278,22 @@ function onDailyImgErr() {
     <div class="card">
       <RecipeRow v-for="r in sleepRecipes" :key="r.id" :recipe="r" />
     </div>
+
+    <!-- 对比实验室特色入口 -->
+    <div class="section-title">对比实验室</div>
+    <router-link to="/recipes/compare" class="card home-lab-card pressable orn-lattice">
+      <div class="hlc-icon-wrap">
+        <FlaskConical :size="24" :stroke-width="2.2" />
+      </div>
+      <div class="hlc-body">
+        <div class="hlc-head">
+          <b>两方深度对比 PK</b>
+          <span class="tag warm">科学机制</span>
+        </div>
+        <p class="hlc-sub">活性成分 Jaccard 重叠度 · 预测入血化合物对比 · 关联靶点通路与同饮禁忌</p>
+      </div>
+      <span class="hlc-go"><ArrowRight :size="16" /></span>
+    </router-link>
 
     <!-- 数据资产入口 -->
     <div class="section-title">成分数据图鉴</div>
@@ -574,4 +591,27 @@ function onDailyImgErr() {
   .d-one { font-size: 13.5px; max-width: 60ch; }
   .d-main { padding-right: 96px; }
 }
+
+.home-lab-card {
+  display: flex; align-items: center; gap: 14px; padding: 16px; margin-bottom: 20px;
+  text-decoration: none; color: inherit; background: linear-gradient(135deg, rgba(244, 249, 246, 0.95) 0%, rgba(255, 255, 255, 0.95) 100%);
+  border: 1px solid rgba(58, 122, 94, 0.2);
+}
+.hlc-icon-wrap {
+  width: 48px; height: 48px; border-radius: 12px; background: var(--green-100);
+  display: flex; align-items: center; justify-content: center; color: var(--green-text);
+  flex-shrink: 0; box-shadow: 0 2px 6px rgba(58, 122, 94, 0.1);
+}
+.hlc-body { flex: 1; min-width: 0; }
+.hlc-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.hlc-head b { font-family: var(--font-serif); font-size: 15.5px; color: var(--ink-900); }
+.hlc-sub { font-size: 12px; color: var(--ink-600); margin: 0; line-height: 1.45; }
+.hlc-go {
+  width: 28px; height: 28px; border-radius: 50%; background: #fff;
+  border: 1px solid var(--green-100); display: flex; align-items: center;
+  justify-content: center; color: var(--green-text); flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+.home-lab-card:hover .hlc-go { transform: translateX(3px); background: var(--green-600); color: #fff; }
+
 </style>

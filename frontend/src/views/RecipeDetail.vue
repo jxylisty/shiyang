@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { BadgeCheck, Clock, ExternalLink, Star, StarOff, CheckCircle2, ArrowUp } from '@lucide/vue'
+import { BadgeCheck, Clock, ExternalLink, Star, StarOff, CheckCircle2, ArrowUp, FlaskConical } from '@lucide/vue'
 import AppIcon from '../components/AppIcon.vue'
 import { showSuccessToast } from 'vant'
 import { getRecipe, getRecipePlain, getExposure, getPathways, addFavorite, removeFavorite, listFavorites, isLoggedIn, pushHistory, doCheckin, undoCheckin, matImg } from '../api'
@@ -221,6 +221,9 @@ async function toggleCheckin() {
                     <CheckCircle2 :size="14" :stroke-width="2.2" />
                     {{ checkedToday ? '今日已打卡' : '今日打卡' }}
                   </button>
+                  <router-link :to="`/recipes/compare?a=${recipe.id}`" class="btn ghost h-compare" title="将此方加入对比实验室">
+                    <FlaskConical :size="14" :stroke-width="2.2" /> 对比此方
+                  </router-link>
                   <SharePoster :recipe-id="route.params.id" />
                 </div>
               </div>

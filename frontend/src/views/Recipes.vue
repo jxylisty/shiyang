@@ -167,8 +167,8 @@ function onCoverErr(r) {
 
     <div class="list-head" v-if="!loading && !loadError">
       <span class="count">共 <b>{{ total }}</b> 款食养方</span>
-      <router-link to="/recipes/compare" class="lab-link">
-        <FlaskConical :size="13" :stroke-width="2.2" /> 对比实验室
+      <router-link to="/recipes/compare" class="lab-link" title="进入对比实验室两方PK">
+        <FlaskConical :size="13" :stroke-width="2.2" /> 对比实验室 · 两方PK
       </router-link>
     </div>
 
@@ -217,6 +217,9 @@ function onCoverErr(r) {
             <div class="rc-bottom">
               <span v-for="s in r.scenes.slice(0, 2)" :key="s" class="tag">{{ s }}</span>
               <span v-if="r.analysis_ready" class="tag lab"><BadgeCheck :size="12" :stroke-width="2.4" /> 成分有据</span>
+              <router-link :to="`/recipes/compare?a=${r.id}`" class="rc-compare-tag" @click.stop title="加入对比实验室">
+                <FlaskConical :size="11" /> 对比
+              </router-link>
             </div>
           </div>
         </router-link>
@@ -270,10 +273,25 @@ function onCoverErr(r) {
 }
 .list-head b { color: var(--ink-900); font-variant-numeric: tabular-nums; }
 .lab-link {
-  font-size: 12.5px; color: var(--green-text); text-decoration: none;
-  display: inline-flex; align-items: center; gap: 4px; font-weight: 500;
-  background: var(--green-50); padding: 3px 10px; border-radius: 12px;
-  border: 1px solid var(--green-100);
+  font-size: 12px; color: var(--green-text); text-decoration: none;
+  display: inline-flex; align-items: center; gap: 5px; font-weight: 600;
+  background: linear-gradient(135deg, var(--green-50) 0%, #fff 100%);
+  padding: 4px 12px; border-radius: 99px;
+  border: 1px solid rgba(58, 122, 94, 0.25);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+  transition: all 0.2s ease;
+}
+.lab-link:hover {
+  background: var(--green-600); color: #fff; border-color: var(--green-600);
+}
+.rc-compare-tag {
+  margin-left: auto; display: inline-flex; align-items: center; gap: 3px;
+  font-size: 11px; color: var(--green-text); background: var(--green-50);
+  border: 1px solid var(--green-100); padding: 2px 8px; border-radius: 6px;
+  text-decoration: none; transition: all 0.15s ease;
+}
+.rc-compare-tag:hover {
+  background: var(--green-600); color: #fff; border-color: var(--green-600);
 }
 
 .recipe-list { display: flex; flex-direction: column; gap: 12px; }
