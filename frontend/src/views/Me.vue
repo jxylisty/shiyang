@@ -7,6 +7,7 @@ import RecipeRow from '../components/RecipeRow.vue'
 import DisclaimerBanner from '../components/DisclaimerBanner.vue'
 import AppIcon from '../components/AppIcon.vue'
 import { proMode } from '../utils/proMode'
+import { FONT_KEYS, FONT_LABELS, fontScale, setFontScale } from '../utils/fontScale'
 import { getGuestConstitutionRecord, GUEST_EXTRA_KEYS, CODE_NAME } from '../utils/guestArchive'
 
 // ---- 体质名片（T2-10，登录档案与未登录本机暂存均支持） ----
@@ -58,17 +59,8 @@ function showFailToastSafe(e) {
     showFailToast(e?.response?.data?.detail || '操作失败'))
 }
 
-// ---- 设置（纯本地，未登录可用） ----
-const FONT_KEYS = ['standard', 'large', 'xlarge']
-const FONT_LABELS = { standard: '标准', large: '大', xlarge: '特大' }
-const fontScale = ref(localStorage.getItem('shiyang_fontscale') || 'standard')
+// ---- 设置（纯本地，未登录可用；字号与顶栏长辈版开关共享响应式状态） ----
 const darkMode = ref(localStorage.getItem('shiyang_theme') === 'dark')
-
-function setFontScale(v) {
-  fontScale.value = v
-  localStorage.setItem('shiyang_fontscale', v)
-  document.documentElement.dataset.fontsize = v
-}
 // 暗色模式切换：支持 View Transitions 的浏览器做「从开关位置圆形扩散」，
 // 不支持的直接切换（startViewTransition 不存在时行为与原来一致）
 function toggleDark(v, ev) {
@@ -117,7 +109,6 @@ function doClearHistory() {
 }
 
 onMounted(async () => {
-  document.documentElement.dataset.fontsize = FONT_KEYS.includes(fontScale.value) ? fontScale.value : 'standard'
   if (darkMode.value) {
     document.documentElement.classList.add('van-theme-dark')
     document.documentElement.dataset.theme = 'dark'

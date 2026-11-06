@@ -45,6 +45,7 @@
   --card-border: rgba(120, 95, 60, 0.16);
   --radius: 14px;
   --radius-sm: 8px;
+  --tabbar-offset: 0px;
   --shadow-sm: 0 1px 2px rgba(74, 56, 32, 0.06), 0 1px 3px rgba(74, 56, 32, 0.04);
   --shadow: 0 2px 6px -1px rgba(74, 56, 32, 0.07), 0 6px 18px -6px rgba(74, 56, 32, 0.10);
   --shadow-hover: 0 4px 10px -2px rgba(74, 56, 32, 0.10), 0 12px 28px -8px rgba(74, 56, 32, 0.16);
@@ -203,7 +204,7 @@ body {
   letter-spacing: 0.01em;
 }
 #app { min-height: 100vh; }
-.app-shell { max-width: 750px; margin: 0 auto; }
+.app-shell { max-width: 750px; margin: 0 auto; padding-bottom: var(--tabbar-offset); }
 
 /* 内容较少的页面（登录/测评）也要撑住版面：给主区域一个最小高度，
    配合页脚云纹，避免下方留出大片纯空白 */
@@ -271,13 +272,15 @@ body {
   background: var(--cinnabar);
   transform: translateX(-50%);
 }
-@media (max-width: 420px) {
-  .topbar-inner { padding: 9px 12px; }
-  .topbar .logo { font-size: 16px; }
+@media (max-width: 960px) {
   .topbar .logo small { display: none; }
-  .topbar nav a { padding: 7px 8px; font-size: 13px; white-space: nowrap; }
-  .topbar nav a .nav-label { display: none; }
-  .topbar nav a.router-link-active::after { width: 10px; bottom: 2px; }
+}
+@media (max-width: 720px) {
+  :root { --tabbar-offset: calc(62px + env(safe-area-inset-bottom, 0px)); }
+  .topbar-inner { padding: 9px 12px; gap: 8px; }
+  .topbar .logo { font-size: 17px; letter-spacing: 1.5px; }
+  /* 手机端由底部固定中文导航栏（.mobile-tabbar）接管，收起顶栏拥挤小图标 */
+  .topbar nav.desktop-nav { display: none; }
 }
 
 /* 底部免责声明 */
@@ -543,17 +546,90 @@ body {
 :root:is(.van-theme-dark, [data-theme="dark"]) .switch-btn { background: #3d362c; }
 :root:is(.van-theme-dark, [data-theme="dark"]) .seal { color: #fbf3e4; }
 
-/* ===== 字号调节（Me 页设置：标准/大/特大，仅作用于正文内容） ===== */
+/* ===== 长辈大字与高对比度适老模式（顶栏「长辈版」或「我的」页设置：标准 / 大 / 特大） =====
+   说明：避免使用 CSS zoom（会破坏 ECharts 与 ViewTransition 的 getBoundingClientRect 坐标），
+   采用全站墨色对比度提级 + 正文/标题/按钮/标签/列表精准字号放大 + >=44px 触控热区。 */
+:root:is([data-fontsize="large"], [data-fontsize="xlarge"]):not(.van-theme-dark):not([data-theme="dark"]) {
+  --ink-900: #1c1813;
+  --ink-600: #3d352b;
+  --ink-400: #5c5142;
+  --green-text: #1f4d3b;
+  --amber-text: #694a10;
+  --red-text: #7d291c;
+  --card-border: rgba(105, 82, 50, 0.26);
+}
+:root:is([data-fontsize="large"], [data-fontsize="xlarge"]):is(.van-theme-dark, [data-theme="dark"]) {
+  --ink-900: #efe6d5;
+  --ink-600: #c8bca8;
+  --ink-400: #9e927e;
+  --card-border: rgba(235, 225, 208, 0.20);
+}
+
 :root[data-fontsize="large"] .page { font-size: 17.5px; }
-:root[data-fontsize="xlarge"] .page { font-size: 19px; }
+:root[data-fontsize="large"] .page .section-title { font-size: 19px; }
 :root[data-fontsize="large"] .page p,
-:root[data-fontsize="large"] .page .rc-one,
+:root[data-fontsize="large"] .page li,
+:root[data-fontsize="large"] .page .method,
+:root[data-fontsize="large"] .page .as-bubble,
+:root[data-fontsize="large"] .page .opt,
 :root[data-fontsize="large"] .page .r-one,
-:root[data-fontsize="large"] .page .q-text { line-height: 1.75; }
+:root[data-fontsize="large"] .page .rc-one,
+:root[data-fontsize="large"] .page .d-one { font-size: 16.5px; line-height: 1.75; }
+:root[data-fontsize="large"] .page .r-name,
+:root[data-fontsize="large"] .page .rc-name,
+:root[data-fontsize="large"] .page .m-name,
+:root[data-fontsize="large"] .page .c-name { font-size: 17.5px; }
+:root[data-fontsize="large"] .page .d-name,
+:root[data-fontsize="large"] .page .head h2 { font-size: 21px; }
+:root[data-fontsize="large"] .page .q-text { font-size: 20px; line-height: 1.65; }
+:root[data-fontsize="large"] .page .btn { font-size: 16px; min-height: 44px; padding: 10px 20px; }
+:root[data-fontsize="large"] .page .tag,
+:root[data-fontsize="large"] .page .as-chip,
+:root[data-fontsize="large"] .page .cat-tab { font-size: 13.5px; padding: 4px 12px; }
+:root[data-fontsize="large"] .page .hint,
+:root[data-fontsize="large"] .page .sub,
+:root[data-fontsize="large"] .page .a-intro,
+:root[data-fontsize="large"] .page .source p,
+:root[data-fontsize="large"] .page .source a,
+:root[data-fontsize="large"] .disclaimer { font-size: 14px; line-height: 1.65; }
+:root[data-fontsize="large"] .page .m-grams { font-size: 16px; }
+:root[data-fontsize="large"] .page .warn-box { font-size: 15.5px; line-height: 1.7; }
+:root[data-fontsize="large"] .page .mat-tile .mt-name { font-size: 15px; }
+:root[data-fontsize="large"] .page input,
+:root[data-fontsize="large"] .page textarea { font-size: 16px; }
+
+:root[data-fontsize="xlarge"] .page { font-size: 19.5px; }
+:root[data-fontsize="xlarge"] .page .section-title { font-size: 21px; }
 :root[data-fontsize="xlarge"] .page p,
-:root[data-fontsize="xlarge"] .page .rc-one,
+:root[data-fontsize="xlarge"] .page li,
+:root[data-fontsize="xlarge"] .page .method,
+:root[data-fontsize="xlarge"] .page .as-bubble,
+:root[data-fontsize="xlarge"] .page .opt,
 :root[data-fontsize="xlarge"] .page .r-one,
-:root[data-fontsize="xlarge"] .page .q-text { line-height: 1.8; }
+:root[data-fontsize="xlarge"] .page .rc-one,
+:root[data-fontsize="xlarge"] .page .d-one { font-size: 18px; line-height: 1.8; }
+:root[data-fontsize="xlarge"] .page .r-name,
+:root[data-fontsize="xlarge"] .page .rc-name,
+:root[data-fontsize="xlarge"] .page .m-name,
+:root[data-fontsize="xlarge"] .page .c-name { font-size: 19px; }
+:root[data-fontsize="xlarge"] .page .d-name,
+:root[data-fontsize="xlarge"] .page .head h2 { font-size: 22.5px; }
+:root[data-fontsize="xlarge"] .page .q-text { font-size: 22px; line-height: 1.7; }
+:root[data-fontsize="xlarge"] .page .btn { font-size: 17px; min-height: 48px; padding: 11px 22px; }
+:root[data-fontsize="xlarge"] .page .tag,
+:root[data-fontsize="xlarge"] .page .as-chip,
+:root[data-fontsize="xlarge"] .page .cat-tab { font-size: 14.5px; padding: 5px 13px; }
+:root[data-fontsize="xlarge"] .page .hint,
+:root[data-fontsize="xlarge"] .page .sub,
+:root[data-fontsize="xlarge"] .page .a-intro,
+:root[data-fontsize="xlarge"] .page .source p,
+:root[data-fontsize="xlarge"] .page .source a,
+:root[data-fontsize="xlarge"] .disclaimer { font-size: 15px; line-height: 1.7; }
+:root[data-fontsize="xlarge"] .page .m-grams { font-size: 17.5px; }
+:root[data-fontsize="xlarge"] .page .warn-box { font-size: 17px; line-height: 1.75; }
+:root[data-fontsize="xlarge"] .page .mat-tile .mt-name { font-size: 16px; }
+:root[data-fontsize="xlarge"] .page input,
+:root[data-fontsize="xlarge"] .page textarea { font-size: 17px; }
 
 /* ===== 暗色模式下的动效基建取色 ===== */
 :root:is(.van-theme-dark, [data-theme="dark"]) .skl {

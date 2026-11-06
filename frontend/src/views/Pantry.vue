@@ -1484,7 +1484,7 @@ watch(() => customResult.value, r => {
 /* ============ 手机端悬浮茶罐结果底栏 ============ */
 .pantry-dock {
   position: sticky;
-  bottom: 12px;
+  bottom: calc(12px + var(--tabbar-offset, 0px));
   z-index: 18;
   margin-top: 14px;
   padding: 9px 11px 9px 13px;

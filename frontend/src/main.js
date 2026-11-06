@@ -7,11 +7,9 @@ import Vant from 'vant'
 // 否则 --van-primary-color 等主题覆盖会被 Vant 默认值反压（实测解析成默认蓝 #1989fa）。
 import 'vant/lib/index.css'
 import './style.css'
+import './utils/fontScale'
 
-// 启动即应用本机设置（字号/主题），跨页面不丢
-const FONT_KEYS = ['standard', 'large', 'xlarge']
-const font = localStorage.getItem('shiyang_fontscale')
-document.documentElement.dataset.fontsize = FONT_KEYS.includes(font) ? font : 'standard'
+// 启动即应用本机暗色主题，跨页面不丢（字号由 utils/fontScale 自动同步）
 const dark = localStorage.getItem('shiyang_theme') === 'dark'
 document.documentElement.classList.toggle('van-theme-dark', dark)
 document.documentElement.dataset.theme = dark ? 'dark' : 'light'

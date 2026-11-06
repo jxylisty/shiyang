@@ -1231,7 +1231,7 @@ onBeforeUnmount(() => { clearTick(); abort?.() })
 }
 
 /* 底部输入栏 */
-.as-input { display: flex; align-items: flex-end; gap: 8px; padding: 10px 12px; position: sticky; bottom: 12px; margin-top: 12px; }
+.as-input { display: flex; align-items: flex-end; gap: 8px; padding: 10px 12px; position: sticky; bottom: calc(12px + var(--tabbar-offset, 0px)); margin-top: 12px; z-index: 20; }
 .as-input textarea {
   flex: 1; border: none; resize: none; outline: none; background: transparent;
   font-family: inherit; font-size: 14px; line-height: 1.5; color: var(--ink-900); max-height: 96px;

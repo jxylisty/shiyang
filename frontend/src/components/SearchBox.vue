@@ -226,20 +226,18 @@ const probColor = (p) => p >= 0.9 ? 'var(--green-700)' : p >= 0.7 ? 'var(--amber
 .gs-sub { font-size: 11.5px; color: var(--ink-400); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .gs-fade-enter-active, .gs-fade-leave-active { transition: opacity .15s ease, transform .15s ease; }
 .gs-fade-enter-from, .gs-fade-leave-to { opacity: 0; transform: translateY(-4px); }
-@media (max-width: 560px) {
-  /* 窄屏：顶栏放不下 logo + 5 项导航 + 输入框，搜索收成一个图标；点开时浮层覆盖导航
-     不这么做会撑出横向滚动条（375px 下溢出约 72px）。topbar 是 sticky 定位的
-     包含块，absolute 相对它定位 */
-  .gs-input { padding: 6px; border-radius: 50%; }
+@media (max-width: 860px) {
+  /* 中小屏：搜索框收成 34px 圆形搜索钮，点开时浮层展开，不挤占导航与长辈版开关 */
+  .gs-input { padding: 8px; border-radius: 50%; }
   .gs-input input { display: none; }
   .gsearch.expanded {
-    position: absolute; right: 12px; top: 50%; translate: 0 -50%; z-index: 30;
+    position: absolute; right: 12px; top: 50%; translate: 0 -50%; z-index: 35;
   }
   .gsearch.expanded .gs-input {
-    border-radius: 18px; padding: 5px 12px;
-    background: var(--card); box-shadow: 0 2px 12px rgba(31, 74, 56, .12);
+    border-radius: 18px; padding: 6px 12px;
+    background: var(--card); box-shadow: 0 3px 14px rgba(31, 74, 56, .15);
   }
-  .gsearch.expanded .gs-input input { display: block; width: 150px; min-width: 0; }
-  .gs-panel { width: min(280px, calc(100vw - 32px)); right: 0; }
+  .gsearch.expanded .gs-input input { display: block; width: min(190px, 50vw); min-width: 0; }
+  .gs-panel { width: min(300px, calc(100vw - 24px)); right: 0; }
 }
 </style>

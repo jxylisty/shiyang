@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { BadgeCheck, Clock, ExternalLink, Star, StarOff, CheckCircle2, ArrowUp, FlaskConical } from '@lucide/vue'
+import { BadgeCheck, Clock, ExternalLink, Star, StarOff, CheckCircle2, ArrowUp, FlaskConical, ShieldAlert } from '@lucide/vue'
 import AppIcon from '../components/AppIcon.vue'
 import { showSuccessToast } from 'vant'
 import { getRecipe, getRecipePlain, getExposure, getPathways, addFavorite, removeFavorite, listFavorites, isLoggedIn, pushHistory, doCheckin, undoCheckin, matImg } from '../api'
@@ -278,7 +278,10 @@ async function toggleCheckin() {
             <p v-if="recipe.constitutions_suitable.length"><b>适宜体质：</b>{{ recipe.constitutions_suitable.join('、') }}</p>
             <p v-if="recipe.constitutions_unsuitable.length" style="margin-top:6px"><b>不宜体质：</b>{{ recipe.constitutions_unsuitable.join('、') }}</p>
             <p style="margin-top:6px"><b>适合人群：</b>{{ recipe.population }}</p>
-            <p class="warn-box">{{ recipe.contraindication }}</p>
+            <div v-if="recipe.contraindication" class="warn-box">
+              <ShieldAlert :size="16" :stroke-width="2.2" class="warn-ic" />
+              <div><b>注意与禁忌：</b>{{ recipe.contraindication }}</div>
+            </div>
             <FamilyFit :suitable="recipe.constitutions_suitable" :unsuitable="recipe.constitutions_unsuitable" />
           </div>
 
@@ -484,12 +487,14 @@ async function toggleCheckin() {
 .m-name { font-size: 15px; font-weight: 600; }
 .m-kind { font-size: 10px; padding: 1px 7px; border-radius: 8px; background: var(--green-100); color: var(--green-text); margin-left: 8px; }
 .m-nutri { font-size: 10.5px; color: var(--amber-text); margin-left: 6px; cursor: help; }
-.m-grams { font-size: 13px; color: var(--ink-600); }
+.m-grams { font-size: 14.5px; font-weight: 700; color: var(--green-text); background: var(--green-50); border: 1px solid var(--green-100); padding: 3px 10px; border-radius: 999px; font-variant-numeric: tabular-nums; white-space: nowrap; flex-shrink: 0; }
+.m-grams small { font-weight: 500; font-size: 0.85em; opacity: 0.85; margin-left: 2px; }
 .m-note { font-size: 11px; color: var(--ink-400); margin-top: 8px; }
 
-.method { font-size: 14px; }
-.duration { font-size: 12px; color: var(--ink-400); margin-top: 6px; }
-.warn-box { margin-top: 10px; padding: 8px 12px; background: var(--red-50); border-radius: 8px; color: var(--red-text); font-size: 13px; }
+.method { font-size: 14.5px; line-height: 1.72; }
+.duration { font-size: 12.5px; color: var(--ink-400); margin-top: 6px; display: inline-flex; align-items: center; gap: 4px; }
+.warn-box { margin-top: 12px; padding: 10px 13px; background: var(--red-50); border: 1px solid rgba(176, 74, 58, 0.22); border-left: 3.5px solid var(--cinnabar); border-radius: 9px; color: var(--red-text); font-size: 13.5px; line-height: 1.65; display: flex; align-items: flex-start; gap: 8px; }
+.warn-ic { flex-shrink: 0; margin-top: 3px; color: var(--cinnabar); }
 
 .a-intro { font-size: 13px; color: var(--ink-600); margin-bottom: 10px; }
 .comp { padding: 8px 0; border-bottom: 1px dashed var(--green-50); animation: rise .4s var(--ease-out-soft) backwards; animation-delay: calc(var(--i) * 35ms); }
@@ -531,7 +536,7 @@ async function toggleCheckin() {
 
 /* 返回顶部 */
 .back-top {
-  position: fixed; right: max(16px, calc(50% - 375px + 16px)); bottom: 28px; z-index: 30;
+  position: fixed; right: max(16px, calc(50% - 375px + 16px)); bottom: calc(28px + var(--tabbar-offset, 0px)); z-index: 30;
   width: 42px; height: 42px; border: none; border-radius: 50%;
   background: var(--card); color: var(--green-text); box-shadow: 0 4px 14px rgba(31, 74, 56, 0.18);
   display: flex; align-items: center; justify-content: center; cursor: pointer;

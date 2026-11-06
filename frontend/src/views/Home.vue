@@ -137,30 +137,30 @@ function onDailyImgErr() {
           </div>
         </div>
         <div v-if="stats" class="hero-stats">
-          <div class="h-stat-pod">
+          <router-link to="/recipes" class="h-stat-pod pressable">
             <div class="h-stat-icon"><AppIcon name="book" :size="18" /></div>
             <div class="h-stat-info">
               <b>{{ animatedRecipe }}</b>
               <span>经典食养方</span>
               <small>茶饮 · 药膳细分</small>
             </div>
-          </div>
-          <div class="h-stat-pod">
+          </router-link>
+          <router-link to="/compounds" class="h-stat-pod pressable">
             <div class="h-stat-icon"><AppIcon name="molecule" :size="18" /></div>
             <div class="h-stat-info">
               <b>{{ animatedCompound }}</b>
               <span>测算活性成分</span>
               <small>PU-Learning 入血预测</small>
             </div>
-          </div>
-          <div class="h-stat-pod">
+          </router-link>
+          <router-link to="/chem-map" class="h-stat-pod pressable">
             <div class="h-stat-icon"><AppIcon name="herb" :size="18" /></div>
             <div class="h-stat-info">
               <b>{{ animatedTarget }}</b>
               <span>关联生物靶点</span>
               <small>通路富集机制透视</small>
             </div>
-          </div>
+          </router-link>
         </div>
       </div>
     </div>
@@ -376,15 +376,18 @@ function onDailyImgErr() {
 .hero-stats {
   display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px;
 }
-.h-stat-pod {
+.hero .h-stat-pod {
   display: flex; flex-direction: column; align-items: flex-start; gap: 6px;
   background: rgba(255,255,255,.1); backdrop-filter: blur(8px);
   border: 1px solid rgba(255,255,255,.14);
   border-radius: 4px; padding: 9px 10px;
-  min-width: 0;
-  transition: background var(--dur-fast) ease, transform var(--dur-fast) ease;
+  min-width: 0; text-decoration: none; color: #f3efe2;
+  transition: background var(--dur-fast) ease, transform var(--dur-fast) ease, border-color var(--dur-fast) ease;
 }
-.h-stat-pod:active { background: rgba(255,255,255,.2); }
+@media (hover: hover) {
+  .hero .h-stat-pod:hover { background: rgba(255,255,255,.16); border-color: rgba(255,255,255,.26); transform: translateY(-1px); }
+}
+.hero .h-stat-pod:active { background: rgba(255,255,255,.2); }
 .h-stat-icon {
   width: 26px; height: 26px; border-radius: 50%;
   background: rgba(255, 255, 255, 0.12);
