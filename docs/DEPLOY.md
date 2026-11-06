@@ -65,16 +65,47 @@ npx vite build        # 产物在 frontend/dist/
 
 ## 4. 数据库准备与重建
 
-```bash
-# 知识库缺失/需重建时（会覆盖 data/shiyang.db，先备份）
-python -X utf8 scripts/build_db.py
+> **完整链路、依赖表、每步校验点与实测记录见
+> [知识库重建链路_2026-11-06.md](知识库重建链路_2026-11-06.md)。本节只给最短可用命令。**
 
-# 冒烟测试（需后端已在本机 8100 起好；脚本会自动清理测试账号）
-python -X utf8 scripts/smoke_test.py
+> ### ⚠️ 不要单独运行 `scripts/build_db.py`
+>
+> `build_db.py` 第 20-21 行是 `if OUT.exists(): OUT.unlink()`——**它会先删掉
+> `data/shiyang.db`**，然后只建 **11 张表**（34 味药材 / 165 或 138 个成分），
+> **扩容得到的 71 味新药材、5,478 个新成分、59,437 条成分-靶点关联全部丢失**，
+> 且中途失败时库里只剩半成品。
+> 它只是完整链路的第一步，**不是**"重建知识库"的命令。
+
+重建（沙箱模式，不碰生产库）：
+
+```bash
+# 1) 只打印计划 + 资源检查，不建任何文件
+python -X utf8 scripts/rebuild_all.py --dry-run
+
+# 2) 在临时目录重建（推荐先这样验证；无 AI key 时加 --skip-ai）
+python -X utf8 scripts/rebuild_all.py --target-dir data/_rebuild_test/run1 --skip-ai
+
+# 3) 校验通过后，部署时用新库替换生产库（先备份！）
+cp data/shiyang.db data/shiyang.db.bak-before-replace-$(date +%Y%m%d%H%M%S)
+cp data/_rebuild_test/run1/root/data/shiyang.db data/shiyang.db
 ```
 
-- 重建会**不影响** `user.db`（两库独立是有意设计）。
-- 历史备份：`data/shiyang.db.bak-before-rebuild` 与 `shiyang.db.bak-sync-*` 已入库备查。
+说明：
+
+- `rebuild_all.py` 在 `<target-dir>/root/` 镜像仓库并复制外部资源，脚本里的 `ROOT`
+  全部解析到沙箱，**生产库 `data/shiyang.db` 全程只读**。因此不存在"先删库再失败"的窗口。
+- 缺 AI key / 无本机 ZeroGate 网关时用 `--skip-ai`：AI 解读表（`recipe_pregen_ai`）与
+  白话解读 JSON 不生成，其余 19 张业务表照常重建。
+- 只想复刻 2026-11-06 的 19 表基线（不含当天新增的 10 味补录）加 `--skip-legacy10`。
+- 重建**不影响** `user.db`（两库独立是有意设计）。
+- 历史备份：`data/shiyang.db.bak-before-rebuild` 与 `shiyang.db.bak-sync-*` 已入库备查
+  （其中 `bak-before-rebuild` 是唯一能 100% 复刻现库 `recipe_analysis` 的种子，见链路文档 §5）。
+
+冒烟测试（需后端已在本机 8100 起好；脚本会自动清理测试账号）：
+
+```bash
+python -X utf8 scripts/smoke_test.py
+```
 
 ## 5. 测试与自检
 
