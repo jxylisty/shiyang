@@ -13,6 +13,8 @@ import json
 import sqlite3
 from pathlib import Path
 
+from services.herb_relation import DUAL_RELATION_SQL
+
 DB_PATH = Path(__file__).resolve().parents[3] / "data" / "shiyang.db"
 
 # Lipinski 类五规则（Ro5）科普阈值（多氢键供体/受体数本库无，展示 mw/logp 两项+说明）
@@ -74,11 +76,14 @@ def compound_explain(name: str) -> dict | None:
             (name,)).fetchone()
         if not row:
             return None
+        # 成分→药材反查走双口径（v3 修复口径 + 扩容 HERB 口径 + 补录 10 味），
+        # 否则 5,478 个扩容成分在成分详情页会显示「未关联任何药材」
         herbs = [r[0] for r in conn.execute(
-            "SELECT h.name FROM rel_herb_compound_v3 rc JOIN herb h ON h.id=rc.herb_id "
+            f"SELECT h.name FROM ({DUAL_RELATION_SQL}) rc JOIN herb h ON h.id=rc.herb_id "
             "WHERE rc.compound_id=?", (row["id"],)).fetchall()]
         herb_ids = [r[0] for r in conn.execute(
-            "SELECT herb_id FROM rel_herb_compound_v3 WHERE compound_id=?", (row["id"],)).fetchall()]
+            f"SELECT herb_id FROM ({DUAL_RELATION_SQL}) WHERE compound_id=?",
+            (row["id"],)).fetchall()]
         # 「出现在哪些方子里」：经关联药材反查方子配料（成分词典页主体区块）
         recipes = []
         if herb_ids:

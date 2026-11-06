@@ -29,6 +29,7 @@ from services import safety_service as safety
 from services import evidence_service as evidence
 from services import explain_service as explain
 from services import open_api
+from services.herb_relation import DUAL_RELATION_SQL
 from services import report_service as report
 from services import term_service as terms
 from services import search_service as search
@@ -815,7 +816,12 @@ async def ai_report(rid: int, key: str | None = Query(None), provider: str = "de
 def evidence_chain(rid: int, max_herbs: int = 6, max_compounds: int = 10,
                    max_targets: int = 10):
     """方子 → 药材(克重) → 活性成分(入血概率) → 人类蛋白靶点，四层证据链。
-    归属关系取自 rel_herb_compound_v3（大创库修复版，与 v2 内容一致；旧 rel_herb_compound 为错乱表，禁用）。"""
+
+    归属关系走双口径（services/herb_relation.DUAL_RELATION_SQL）：
+    - 旧 34 味 → rel_herb_compound_v3（大创库修复版，成分带入血概率预测）
+    - 2026-11 扩容的 71 味 → rel_herb_compound（HERB 全量成分，prob 为 NULL）
+    v1 里旧 34 味那 201 行是未修复的错乱快照，已排除。
+    无 prob 的成分按靶点数补位（COALESCE(prob,0) 会让它们全沉到末尾）。"""
     max_herbs = max(1, min(max_herbs, 12))
     max_compounds = max(1, min(max_compounds, 20))
     max_targets = max(1, min(max_targets, 20))
@@ -825,11 +831,11 @@ def evidence_chain(rid: int, max_herbs: int = 6, max_compounds: int = 10,
         conn.close()
         raise HTTPException(404, "方子不存在")
 
-    # 药材层：有成分数据的配料，按克重降序
-    herbs = conn.execute("""
+    # 药材层：有成分数据的配料（双口径），按克重降序
+    herbs = conn.execute(f"""
         SELECT m.herb_id, m.name, m.grams FROM rel_recipe_material m
         WHERE m.recipe_id=? AND m.herb_id IS NOT NULL AND m.herb_id IN (
-            SELECT DISTINCT herb_id FROM rel_herb_compound_v3)
+            SELECT DISTINCT herb_id FROM ({DUAL_RELATION_SQL}))
         ORDER BY COALESCE(m.grams, 0) DESC LIMIT ?""", (rid, max_herbs)).fetchall()
     if not herbs:
         conn.close()
@@ -838,15 +844,18 @@ def evidence_chain(rid: int, max_herbs: int = 6, max_compounds: int = 10,
     herb_ids = [h["herb_id"] for h in herbs]
     hp = ",".join("?" * len(herb_ids))
 
-    # 成分层：这些药材的真实成分，按入血概率降序取 Top N
+    # 成分层：这些药材的真实成分。有入血预测的优先（按概率降序），
+    # 无预测的扩容成分按靶点数补位——否则 COALESCE(prob,0) 会把它们全部沉底
     comps = conn.execute(f"""
-        SELECT c.id, c.name, c.prob_cctcm,
+        SELECT c.id, c.name, c.prob_cctcm, c.target_count,
                GROUP_CONCAT(DISTINCT h.name) AS herbs
-        FROM rel_herb_compound_v3 rc
+        FROM ({DUAL_RELATION_SQL}) rc
         JOIN compound c ON c.id = rc.compound_id
         JOIN herb h ON h.id = rc.herb_id
         WHERE rc.herb_id IN ({hp})
-        GROUP BY c.id ORDER BY c.prob_cctcm DESC LIMIT ?""",
+        GROUP BY c.id
+        ORDER BY (c.prob_cctcm IS NULL), c.prob_cctcm DESC, c.target_count DESC
+        LIMIT ?""",
         (*herb_ids, max_compounds)).fetchall()
     if not comps:
         conn.close()
@@ -874,18 +883,21 @@ def evidence_chain(rid: int, max_herbs: int = 6, max_compounds: int = 10,
         nodes.append({"name": h["name"], "depth": 1, "kind": "herb",
                       "value": h["grams"]})
     for c in comps:
+        # prob 为 NULL（扩容成分）时 value 留 None：前端据此显示「无入血预测」，
+        # 写 0 会被读成「预测概率为 0」，属于把缺失伪装成数值
         nodes.append({"name": c["name"], "depth": 2, "kind": "compound",
-                      "value": round(c["prob_cctcm"], 2)})
+                      "value": round(c["prob_cctcm"], 2) if c["prob_cctcm"] is not None else None,
+                      "has_prob": c["prob_cctcm"] is not None})
     for t in targets:
         nodes.append({"name": t["gene"], "depth": 3, "kind": "target"})
 
     for h in herbs:
         links.append({"source": r["name"], "target": h["name"],
                       "value": h["grams"] or 5})
-    # 药材 → 成分（真实归属，来自大创库修复表 v3）
+    # 药材 → 成分（真实归属，双口径）
     hc = conn.execute(f"""
         SELECT h.name hn, c.name cn, c.prob_cctcm p
-        FROM rel_herb_compound_v3 rc
+        FROM ({DUAL_RELATION_SQL}) rc
         JOIN compound c ON c.id = rc.compound_id
         JOIN herb h ON h.id = rc.herb_id
         WHERE rc.herb_id IN ({hp}) AND rc.compound_id IN ({cp})""",

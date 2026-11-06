@@ -39,8 +39,13 @@ function buildOption(d) {
         if (p.dataType === 'edge') return `${p.data.source} → ${p.data.target}`
         const n = d.nodes[p.dataIndex]
         const lv = levels.value[n?.depth] || ''
+        // 扩容成分无入血预测（value=null）——不能显示成「入血概率 null」，
+        // 更要避免被读成 0（数据真实口径：缺失 ≠ 预测为 0）
         const extra = n?.kind === 'herb' && n.value ? ` · ${n.value}g`
-          : n?.kind === 'compound' && n.value ? ` · 入血概率 ${n.value}` : ''
+          : n?.kind === 'compound'
+            ? (n.value != null ? ` · 入血概率 ${n.value}`
+                               : (n.has_prob === false ? ' · 无入血预测' : ''))
+            : ''
         return `${lv}：${p.name}${extra}`
       },
     },

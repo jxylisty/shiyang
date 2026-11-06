@@ -14,6 +14,7 @@ import sqlite3
 from pathlib import Path
 
 from services import constitution_service as cs
+from services.herb_relation import DUAL_RELATION_SQL
 from services.search_service import global_search
 
 DB_PATH = Path(__file__).resolve().parents[3] / "data" / "shiyang.db"
@@ -169,11 +170,14 @@ def _herb_full(conn, herb_ids: list[str]):
 
 
 def _herb_top_compounds(conn, herb_id: str, limit: int) -> list:
+    # 归属关系走双口径（v3 修复口径 + 扩容 HERB 口径 + 补录 10 味）。
+    # 排序：有入血预测的优先（按概率降序），扩容成分（prob 为 NULL）按靶点数补位，
+    # 否则只有扩容数据的药材在问答里会「没有成分」。
     return conn.execute(
-        # 归属关系统一读 v3 修复表（旧 rel_herb_compound 为错乱表，禁用）
-        "SELECT c.name, c.prob_cctcm, c.target_count FROM rel_herb_compound_v3 hc "
-        "JOIN compound c ON c.id=hc.compound_id WHERE hc.herb_id=? AND c.prob_cctcm IS NOT NULL "
-        "ORDER BY c.prob_cctcm DESC LIMIT ?", (herb_id, limit)).fetchall()
+        f"SELECT c.name, c.prob_cctcm, c.target_count FROM ({DUAL_RELATION_SQL}) hc "
+        f"JOIN compound c ON c.id=hc.compound_id WHERE hc.herb_id=? "
+        f"ORDER BY (c.prob_cctcm IS NULL), c.prob_cctcm DESC, c.target_count DESC LIMIT ?",
+        (herb_id, limit)).fetchall()
 
 
 def retrieve_context(question: str, constitution_code: str | None = None) -> dict:

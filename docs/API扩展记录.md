@@ -1,8 +1,8 @@
 # API 扩展记录（v0.2.0 基线之后）
 
-- **实测方式**：`main.app.openapi()` 导出（非手抄），核实日期 **2026-10-27**。
-- **规模**：**49 条路径 / 53 个端点**。docs/API接口设计文档.md 所记「24 端点」为 v0.2.0 基线口径，已过时，本文档补充增量部分；基线接口的设计原则与响应约定仍以该文档为准。
-- ⚠️ **口径说明（数据真实）**：多工作线并行期间清单曾两次失真，最终于数据线提交 `578c54b` 后**重测复核**：本清单与届时 HEAD 完全一致（46 路径 / 50 端点，无未提交路由混入）。此后若再合并增量，须用文末命令重跑并更新本表。2026-10-27 UX 线新增 2 端点后复核 48 路径 / 52 端点；同日 AI 助手线新增 `/assistant/chat` 后复核 **49 路径 / 53 端点**。
+- **实测方式**：`main.app.openapi()` 导出（非手抄），最新核实日期 **2026-11-06**。
+- **规模**：**55 条路径 / 59 个端点**。docs/API接口设计文档.md 所记「24 端点」为 v0.2.0 基线口径，已过时，本文档补充增量部分；基线接口的设计原则与响应约定仍以该文档为准。
+- ⚠️ **口径说明（数据真实）**：多工作线并行期间清单曾两次失真，最终于数据线提交 `578c54b` 后**重测复核**：本清单与届时 HEAD 完全一致（46 路径 / 50 端点，无未提交路由混入）。此后若再合并增量，须用文末命令重跑并更新本表。2026-10-27 UX 线新增 2 端点后复核 48/52；同日 AI 助手线新增 `/assistant/chat` 后复核 49/53。2026-11-05/06 自定义茶罐线新增 5 端点（custom-recipe ×4、`/recipes/{rid}/plain`）、化学空间线补登记 `explain/map` 后，复核 **55 路径 / 59 端点**。
 - **复核命令**（数据或代码变动后重新生成此清单）：
 
 ```bash
@@ -26,9 +26,14 @@ for p in sorted(main.app.openapi()['paths']):
 | POST | /api/v1/constitution/submit | 基线 |
 | POST | /api/v1/constitution/recommend | **UX线** 为你推荐·游客态（body 传本地暂存 judged，2026-10-27 提交 b82a68d；注册在 {code} 之前） |
 | GET | /api/v1/constitution/{code} | 基线 |
+| POST | /api/v1/custom-recipe/analyze | **自定义茶罐线** 多味药材合并分析（成分/靶点/疾病去重统计；HERB 未命中时本地 105 味知识库兜底，2026-11-06 提交 42a2e50） |
+| POST | /api/v1/custom-recipe/parse-text | **自定义茶罐线** 粘贴文案 AI 抽取药材+克重（逐条本地复核防幻觉，提交 e15c36b） |
+| POST | /api/v1/custom-recipe/plain | **自定义茶罐线** 自定义方大白话通俗解读 |
+| POST | /api/v1/custom-recipe/web-lookup | **自定义茶罐线** HERB/本地库均未命中的药材联网搜索兜底（返回真实搜索来源，AI 摘要须标注，提交 00c47a6） |
 | GET | /api/v1/evidence/levels | **T1-3** 证据分级定义（A/B/C） |
 | GET | /api/v1/evidence/recipe/{rid} | **T1-3** 单方三级证据链+PMID 链接 |
 | GET | /api/v1/explain/compound?name= | **T1-4** 单成分入血解释（Lipinski 特征） |
+| GET | /api/v1/explain/map | **化学空间线** 165 成分 UMAP 二维坐标（入血/应用域/一致性能着色），2026-10-30 |
 | GET | /api/v1/explain/recipe/{rid} | **T1-4** 方子 Top 成分特征一览 |
 | GET / POST | /api/v1/family/members | **T2-8** 家庭成员列表/添加 |
 | DELETE | /api/v1/family/members/{member_id} | **T2-8** |
@@ -40,7 +45,7 @@ for p in sorted(main.app.openapi()['paths']):
 | GET | /api/v1/me | 基线 |
 | GET | /api/v1/me/recommend | **UX线** 为你推荐·登录态（体质档案+收藏打卡偏好+当令节气，2026-10-27 提交 b82a68d） |
 | GET | /api/v1/open | **T1-6** 开放数据自描述索引 |
-| GET | /api/v1/open/catalog | **T1-6** 药食同源目录（实测 34 条命中药材） |
+| GET | /api/v1/open/catalog | **T1-6** 药食同源目录（2026-11-05 扩容后实测 105 条命中药材） |
 | GET | /api/v1/open/compounds | **T1-6** |
 | GET | /api/v1/open/compounds/{name}/targets | **T1-6** |
 | GET | /api/v1/open/constitutions | **T1-6** |
@@ -57,6 +62,7 @@ for p in sorted(main.app.openapi()['paths']):
 | GET | /api/v1/recipes/{rid}/exposure | 基线（P2.5；P0 合并见提交 8cbc5f8） |
 | GET | /api/v1/recipes/{rid}/network | 基线（P2.6） |
 | GET | /api/v1/recipes/{rid}/pathways | 数据线（通路富集，见提交 8c47247） |
+| GET | /api/v1/recipes/{rid}/plain | **普通模式线** 方剂大白话通俗解读（专业模式对照，提交 0ac98e4） |
 | GET | /api/v1/report/cycle | **T2-7** 周期报告（7/21/90 天，需登录） |
 | POST | /api/v1/safety/check-batch | **T1-5** 批量人群安全检查 |
 | GET | /api/v1/safety/check/{recipe_id} | **T1-5** |

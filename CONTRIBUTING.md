@@ -8,7 +8,7 @@
 | 东西 | 从哪来 | 说明 |
 |---|---|---|
 | 仓库代码 | `git clone https://github.com/jxylisty/shiyang.git` | 公开仓库 |
-| `data/shiyang.db` | **向项目维护者索取**（约 2.7 MB） | 知识库，见下方说明，不在仓库里 |
+| `data/shiyang.db` | **向项目维护者索取**（约 15.5 MB，2026-11-06 实测） | 知识库，见下方说明，不在仓库里 |
 
 ### 关于数据库（重要，别自己造）
 
@@ -16,12 +16,17 @@
 
 **`data/shiyang.db`（知识库，需要索取）**
 
-34 味药材 / 165 化合物 / 2807 靶点 / 73 方 —— 这是项目的核心数据，必须向维护者要一份，放到 `shiyang/data/` 下。
+105 味药材 / 5,643 化合物 / 10,091 靶点 / 73 方 —— 这是项目的核心数据，必须向维护者要一份，放到 `shiyang/data/` 下。
 
-不要试图用 `scripts/build_db.py` 自己重建，它有两个限制：
+**不要单独跑 `scripts/build_db.py` 重建。** 它有两个硬限制：
 
-1. 它的数据源是 `../my-asthma-system/asthma-core/data/asthma_v2.db`（仓库外部路径），你本地没有；
-2. 它只建 13 张表，而实际库有 18 张 —— `recipe_analysis`（成分分析）、`recipe_pregen_ai`（AI 预生成解读）、`recipe_pathway`（通路富集）是后续脚本产出的，`build_db.py` 不覆盖，你重建出来的库会缺这些，方子详情页会大片空白。
+1. 数据源是 `../my-asthma-system/asthma-core/data/asthma_v2.db`（仓库外部路径），你本地没有；
+2. 它**开头就 `OUT.unlink()` 删掉现有库**，且只建 11 张表，而实际库有 19 张 —— 药材扩容
+   （`import_herbs_20261105.py`）、成分分析/预生成解读/通路富集（`pregen_*`）、含量、ChEMBL
+   活性、化学空间坐标都是后续脚本产出的；单独跑 `build_db.py` 会得到一个方子详情大片空白的
+   残缺库，并且**扩容的 71 味药材和 5,478 个成分全部丢失**。
+
+需要从零重建时走完整管线，见 `docs/DEPLOY.md` §4「知识库重建（完整链路）」。
 
 **`data/user.db`（用户库，不用索取）**
 
@@ -117,7 +122,7 @@ git push origin feat/简短描述
 ## 6. 提交前必须跑一遍
 
 ```bash
-# 后端单测（当前基线 67 passed，以实际运行为准）
+# 后端单测（2026-11-06 实测 84 passed，以实际运行为准）
 cd backend && python -X utf8 -m pytest tests/ -q
 
 # 端点规模（真实数字，别抄文档）

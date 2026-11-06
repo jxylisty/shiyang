@@ -39,11 +39,18 @@ else:
     problems += 1
     print(f"[不一致] v2={len(v2)} 条, v3={len(v3)} 条, 差集 {len(v2 ^ v3)} 条")
 
-# 2. herb.compound_count（双口径：ccTCM 旧药按 v3，HERB/imp 新药按 v1）
-bad_h = conn.execute("""
+# 2. herb.compound_count（三口径：ccTCM 旧药 = v3 + 补录10味表，HERB/imp 新药 = v1）
+#    补录表 rel_herb_compound_herb 可能不存在（旧库），此时按 0 计
+_has_rhch = conn.execute(
+    "SELECT 1 FROM sqlite_master WHERE type='table' AND name='rel_herb_compound_herb'"
+).fetchone() is not None
+_extra = ("+ (SELECT COUNT(*) FROM rel_herb_compound_herb h2 WHERE h2.herb_id=h.id)"
+          if _has_rhch else "")
+bad_h = conn.execute(f"""
     SELECT h.id, h.name, h.compound_count,
            CASE WHEN h.id LIKE 'ccTCM%' THEN
                (SELECT COUNT(*) FROM rel_herb_compound_v3 v WHERE v.herb_id=h.id)
+               {_extra}
            ELSE
                (SELECT COUNT(*) FROM rel_herb_compound v WHERE v.herb_id=h.id)
            END AS actual
@@ -57,16 +64,17 @@ if bad_h:
     if len(bad_h) > 20:
         print(f"    ...（共 {len(bad_h)} 行）")
     if APPLY:
-        conn.execute("""UPDATE herb SET compound_count =
+        conn.execute(f"""UPDATE herb SET compound_count =
             CASE WHEN herb.id LIKE 'ccTCM%' THEN
                 (SELECT COUNT(*) FROM rel_herb_compound_v3 v WHERE v.herb_id=herb.id)
+                {_extra}
             ELSE
                 (SELECT COUNT(*) FROM rel_herb_compound v WHERE v.herb_id=herb.id)
             END""")
         conn.commit()
-        print("    已按双口径重算修复（ccTCM→v3，HERB/imp→v1）")
+        print("    已按三口径重算修复（ccTCM→v3+补录表，HERB/imp→v1）")
 else:
-    print("[ok] herb.compound_count 与双口径（ccTCM→v3 / HERB→v1）一致")
+    print("[ok] herb.compound_count 与三口径（ccTCM→v3+补录 / HERB→v1）一致")
 
 # 3. compound.target_count
 bad_c = conn.execute("""
