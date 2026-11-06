@@ -118,7 +118,8 @@ export const parseCustomRecipeText = (text) =>
 export const recognizeRecipeImage = (file) => {
   const fd = new FormData()
   fd.append('file', file)
-  return api.post('/custom-recipe/recognize-image', fd)
+  // 视觉识别后端超时 60s，这里必须留更长，否则前端先掐断、拿不到后端的友好提示
+  return api.post('/custom-recipe/recognize-image', fd, { timeout: 70000 })
 }
 export const webLookupHerb = (name) =>
   api.post('/custom-recipe/web-lookup', { name })
@@ -137,7 +138,9 @@ export const getEvidence = (recipeId) => api.get(`/evidence/recipe/${recipeId}`)
 // ---- 入血概率可解释 ----
 export const getExplainCompound = (name) => api.get('/explain/compound', { params: { name } })
 export const getExplainRecipe = (recipeId) => api.get(`/explain/recipe/${recipeId}`)
-export const getChemMap = () => api.get('/explain/map')
+// maxPoints>0：后端做确定性抽样（保留全部有预测的成分），用于预览卡/移动端不卡顿
+export const getChemMap = (maxPoints) =>
+  api.get('/explain/map', { params: maxPoints ? { max_points: maxPoints } : {} })
 
 // ---- 开放数据 API ----
 export const getOpenIndex = () => api.get('/open')
