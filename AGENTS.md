@@ -61,6 +61,13 @@
 5. **Vant `van-popup` 的 show 是布尔值**：「选中哪个槽位」这类字符串状态需要 computed 桥接（`CompareLab.vue` 的做法）。
 6. **测试依赖不在正式 requirements**：pytest 装在运行环境里（9.1.1），正式依赖见 `backend/requirements.txt`，测试依赖见 `backend/requirements-dev.txt`。
 7. **图片资源**：配料图构建期预拉取（`scripts/fetch_material_images.py` → `frontend/public/img/materials/`），新增食材要同步补拉图与异名映射（`api/index.js` 的 `MAT_IMG_ALIAS`）。
+8. **药材-成分归属有三种口径，不要 `JOIN rel_herb_compound` 了事**：`rel_herb_compound`(v1) 里旧 34 味的
+   201 行是**未修复的错乱快照**（人参皂苷挂薄荷那版），v3 才是修复口径；扩容的 71 味写在 v1 的非 ccTCM 行，
+   补录的 10 味在新表 `rel_herb_compound_herb`。凡按药材取成分/按成分反查药材，统一用
+   `services/herb_relation.DUAL_RELATION_SQL`，否则要么丢扩容数据、要么把错乱数据捞回来。
+9. **`scripts/build_db.py` 会删库**（开头 `OUT.unlink()`），且只建 11 表。它是重建链路的**第一步**，
+   不是「重建知识库」的命令；单独跑会丢 71 味药材 + 5,478 成分。完整链路见
+   `docs/知识库重建链路_2026-11-06.md` / `scripts/rebuild_all.py`。
 
 ## 6. 自检命令（改完提交前跑一遍）
 
@@ -69,7 +76,7 @@
 cd backend && python -X utf8 -c "import sys; sys.path.insert(0,'app'); import main; \
   s=main.app.openapi(); print('paths', len(s['paths']), 'endpoints', sum(len(v) for v in s['paths'].values()))"
 
-# 单测（2026-10-26 复测 23 passed；数量随测试线补用例增长，以实际运行为准，别抄文档）
+# 单测（2026-11-06 实测 84 passed；数量随测试线补用例增长，以实际运行为准，别抄文档）
 cd backend && python -X utf8 -m pytest tests/ -v
 
 # 冒烟（TestClient，不占端口；注意测试数据清理规则见 §2.7）
@@ -89,7 +96,7 @@ cd frontend && npx vite build
 |---|---|---|
 | README.md | 项目门面（数字为 2026-10 盘点口径） | 数据重建后需复核 |
 | docs/API接口设计文档.md | v0.2.0 基线 24 端点设计 | **基线过时**，增量见下 |
-| docs/API扩展记录.md | 实测 50 端点全清单与增量说明 | 本文档 |
+| docs/API扩展记录.md | 实测 55 路径/59 端点全清单与增量说明 | 本文档 |
 | docs/数据库设计文档.md | 两库表结构 | user.db 含 family_member（T2-8） |
 | docs/功能扩展调研清单.md | T1/T2 梯队功能与竞品对照 | 功能已按此实现 |
 | docs/归属重建报告.md | 药材-成分归属系统性修复 | 重建后数据以此为准 |

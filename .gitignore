@@ -19,6 +19,11 @@ frontend/.app_api_base
 *.db-shm
 *.db-wal
 *.sqlite
+# 迁移/回填/重建时的自动备份（_migrate_20261105 / backfill_material_herb_id 等生成，3-15MB）
+# 注意上面的 *.db 匹配不到「shiyang.db.bak-xxx」这种以 .bak 结尾的名字，必须单列。
+# 已入库的两份历史种子（bak-before-rebuild / bak-sync-*）是显式例外。
+*.db.bak-*
+*.bak-migrate-*
 
 # 运行时缓存（后端 embedding/chembl 等，随用随建，不入库）
 data/cache/

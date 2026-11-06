@@ -153,3 +153,19 @@
 **数据真实红线执行情况**：新成分 prob_cctcm/radar 等模型列全 NULL（实测 0 污染）；新靶点 species='未知(herb.ac.cn)'；每味药材带 HERB ID 溯源；蝮蛇无 HERB 条目如实缺（105≠106）。
 **已知口径边界**：证据链/解读端点仍读 v3（旧 34 味），新 71 味成分数据在检索/自定义鉴方/open API 可见、暂不进证据链（双口径取舍，扩容报告 §四 有升级路径）；custom-recipe 先查本地再打 API 的优化（P2）留待下阶段。
 **注意**：`docs/数据扩容方案_2026-11-05.md` 修正了调研文档两处口径——HERB detail_api 数据在响应顶层（无 res_data 包裹）；74 味待新增药材异名映射后全可命中。
+
+## 扩容二期收口 + 重建链路（2026-11-06：证据链全打通 / 一键重建）
+
+| 提交 | 功能 | 关键文件 | 验证 |
+|---|---|---|---|
+| `c99bdd3` | **新药材全量入证据链**：①`backfill_material_herb_id.py` 回填 53 条配料 `herb_id`（枣/莲子/决明子/荷叶等，扩容前库里没这味药所以 NULL，是 21 方空链根因；正名→别名→药典异名三级匹配，53/53 精确命中 0 条靠猜）②`import_herbs_legacy10.py` 补 10 味旧药材（天冬/玉竹/百合/胖大海/薏苡仁/蜂蜜/酸枣仁/麦冬/麦芽/黄芪：v3 只覆盖 24 味，v1 对这 10 味与自建含量表重叠 0/10 判定错乱，故从 HERB 重拉；成分详情按 top20 逐个拉 `ingredient_target` 取真实靶点，**不做药材级靶点×全部成分的交叉积**）③新增 `services/herb_relation.py` 三口径统一读取 ④`/chain`、`explain/compound`、`rag_service` 改用三口径 | `scripts/backfill_material_herb_id.py`（新）`scripts/import_herbs_legacy10.py`（新）`backend/app/services/herb_relation.py`（新）`main.py` `explain_service.py` `rag_service.py` `EvidenceChain.vue` | **`/recipes/{rid}/chain` 覆盖 52/73 → 73/73（空链 0）**；成分反查打通（coumestrol → 枣/葛根/酸枣仁 + 8 方）；pytest 84 passed；check_consistency 全绿；vite build ✓ |
+| `c99bdd3` | **口径对齐**：`API扩展记录.md` 补 6 条缺失端点（实测 55 路径/59 端点，清单 55 行 × 59 方法逐条与 openapi 对齐）；`CONTRIBUTING.md`（库 2.7MB→15.5MB、规模口径、pytest 基线 67→84、build_db 删库警告）；`数据库设计文档` §1.3 规模表全部更新 + 扩容对照 + 构建管线完整链路；`check_consistency.py` 计数改三口径 | `docs/API扩展记录.md` `CONTRIBUTING.md` `docs/数据库设计文档.md` `scripts/check_consistency.py` | 清单行数与端点数均与 openapi 复核一致 ✅ |
+| `df2c722` | **知识库一键重建链路**：`rebuild_all.py`（926 行，沙箱驱动 19 步，每步可判定校验点，`--dry-run`/`--skip-ai`/`--skip-network`/`--skip-legacy10`/`--seed-from`/`--start-at`）+ 依赖表 + 实测记录；`DEPLOY.md` §4 移除「先跑 build_db.py」引导，改为醒目删库警告 + 链路指引 | `scripts/rebuild_all.py`（新）`docs/知识库重建链路_2026-11-06.md`（新）`docs/DEPLOY.md` | **两条链实测跑通并与现库行数完全对齐**：19 表口径 105/5,643/10,091/9,106/59,437、21 表口径 6,098/10,151/62,617/824/627；`check_consistency` 退出码 **0**；`recipe_analysis` 69 行逐字段 0 差异（`--seed-from`）；生产库全程只读、`integrity_check=ok` ✅ |
+| 本提交 | **收尾**：`.gitignore` 补 `*.db.bak-*`/`*.bak-migrate-*`（`*.db` 匹配不到 `shiyang.db.bak-xxx`，15MB 备份一度会被误提交）；README/CONTRIBUTING/数据库设计文档同步最终口径（6,098 成分 / 10,151 靶点 / 62,617 关联）；AGENTS.md 补两条已知坑（三口径归属不要直接 JOIN v1；build_db.py 会删库） | `.gitignore` `README.md` `CONTRIBUTING.md` `docs/数据库设计文档.md` `AGENTS.md` | pytest 84 passed；openapi 55/59；vite build ✓；check_consistency exit=0 ✅ |
+
+**实测发现的三个上游陷阱（已写进链路文档 §7.7，后续重建必读）**：
+1. `build_db.py` 读修复**后**表只有 138 个成分，现库 165 来自修复**前**的旧表——直接跑复刻不出现库，需 `--seed-from`。
+2. `pregen_analysis_v3.py` **不建表**，必须先跑 v1 否则崩溃。
+3. `import_herbs_20261105.py` 按 v1 重算 `compound_count`，会把旧药的三口径计数覆盖掉（31 行偏差）——链路必须紧跟 `12b-recount`，否则 `check_consistency` 退出码 1。
+
+**仍做不到逐行复刻的三项（依赖环境或外部 API，已在文档标注）**：`compound_map`（umap 0.5.12 需 sklearn≥1.5，本机 1.4.2）、`recipe_pathway`（Enrichr 判定漂移，58/57/61）、`compound_chembl_activity`（外部 API 数据随时间变，468 vs 465）。
