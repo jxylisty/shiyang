@@ -57,7 +57,7 @@ const baseUrl = import.meta.env.BASE_URL
           <span>返回</span>
         </button>
         <router-link to="/" class="logo">
-          <AppIcon name="leaf" class="logo-icon" :size="20" :stroke-width="2.2" />
+          <AppIcon name="brand" class="logo-icon" :size="21" :stroke-width="2.1" />
           <span>食养有据</span>
           <small>药食同源 · 成分有据</small>
         </router-link>

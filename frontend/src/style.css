@@ -204,7 +204,13 @@ body {
   letter-spacing: 0.01em;
 }
 #app { min-height: 100vh; }
-.app-shell { max-width: 750px; margin: 0 auto; padding-bottom: var(--tabbar-offset); }
+:root { --topbar-height: 52px; }
+.app-shell {
+  max-width: 750px;
+  margin: 0 auto;
+  padding-top: calc(var(--topbar-height, 52px) + env(safe-area-inset-top, 0px));
+  padding-bottom: var(--tabbar-offset);
+}
 
 /* 内容较少的页面（登录/测评）也要撑住版面：给主区域一个最小高度，
    配合页脚云纹，避免下方留出大片纯空白 */
@@ -218,22 +224,32 @@ body {
 
 /* 顶部栏：外层全宽通栏消解宽屏直角断边，内层与主内容区严格对齐 */
 .topbar {
-  position: sticky; top: 0; z-index: 40;
-  background-color: rgba(253, 250, 241, 0.88);
-  backdrop-filter: blur(12px) saturate(1.06);
-  -webkit-backdrop-filter: blur(12px) saturate(1.06);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  z-index: 100;
+  background-color: rgba(253, 250, 241, 0.94);
+  backdrop-filter: blur(14px) saturate(1.1);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1);
   background-image:
     var(--paper-fiber),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.45), transparent);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.5), transparent);
   background-blend-mode: multiply, normal;
   border-bottom: 1px solid var(--card-border);
-  box-shadow: 0 1px 6px rgba(74, 56, 32, 0.04);
+  box-shadow: 0 1px 6px rgba(74, 56, 32, 0.05);
 }
 .topbar-inner {
   position: relative;
-  max-width: 750px; margin: 0 auto;
+  max-width: 750px;
+  margin: 0 auto;
   padding: 10px 16px;
-  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding-top: calc(10px + env(safe-area-inset-top, 0px));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
 }
 /* 顶栏下沿压一道极淡回纹，替代纯直线分隔 */
 .topbar::after {
@@ -276,8 +292,15 @@ body {
   .topbar .logo small { display: none; }
 }
 @media (max-width: 720px) {
-  :root { --tabbar-offset: calc(62px + env(safe-area-inset-bottom, 0px)); }
-  .topbar-inner { padding: 9px 12px; gap: 8px; }
+  :root {
+    --tabbar-offset: calc(62px + env(safe-area-inset-bottom, 0px));
+    --topbar-height: 48px;
+  }
+  .topbar-inner {
+    padding: 8px 12px;
+    padding-top: calc(8px + env(safe-area-inset-top, 0px));
+    gap: 8px;
+  }
   .topbar .logo { font-size: 17px; letter-spacing: 1.5px; }
   /* 手机端由底部固定中文导航栏（.mobile-tabbar）接管，收起顶栏拥挤小图标 */
   .topbar nav.desktop-nav { display: none; }
