@@ -3,7 +3,9 @@
 // 引用卡可点进详情；历史存 localStorage 最多 20 轮；体质快捷注入用本地暂存的测评结果
 import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
+import { Check } from '@lucide/vue'
 import AppIcon from '../components/AppIcon.vue'
+import AgentAvatar from '../components/AgentAvatar.vue'
 import DisclaimerBanner from '../components/DisclaimerBanner.vue'
 import { streamAssistantChat, getLocalConstitution, matImg } from '../api'
 import { PHARMACOPOEIA_FUNCTIONS } from '../utils/pharmacopoeiaFunctions'
@@ -364,11 +366,17 @@ onBeforeUnmount(() => { clearTick(); abort?.() })
 <template>
   <div class="page as-page">
     <div class="as-head card">
-      <div class="as-title">
-        <AppIcon name="chat" :size="17" :stroke-width="2" /> 问一问
-        <button v-if="msgs.length" class="as-clear" @click="clearAll">清空记录</button>
+      <div class="as-head-main">
+        <AgentAvatar :size="38" :state="sending ? 'thinking' : 'idle'" />
+        <div class="as-head-copy">
+          <div class="as-title">
+            <span>问一问</span>
+            <span class="as-persona-badge">青囊 · 寻证助手</span>
+            <button v-if="msgs.length" class="as-clear" @click="clearAll">清空记录</button>
+          </div>
+          <p class="as-sub">由食养寻证助手「青囊」检索方子库、药典性味与入血成分依据作答；AI 生成，仅供参考。</p>
+        </div>
       </div>
-      <p class="as-sub">基于本平台方子库与药材库的食养问答，回答附出处引用；AI 生成，仅供参考。</p>
       <!-- 体质快捷注入：本地暂存过测评结果才显示 -->
       <div v-if="constNames.length" class="as-const" @click.prevent>
         <label class="as-switch">
@@ -382,11 +390,11 @@ onBeforeUnmount(() => { clearTick(); abort?.() })
     <div class="as-list" ref="listRef">
       <!-- 空会话：快捷提问 -->
       <div v-if="!msgs.length" class="card as-empty">
-        <div class="as-empty-emblem">
-          <AppIcon name="leaf" :size="20" />
+        <div class="as-empty-avatar">
+          <AgentAvatar :size="60" state="idle" />
         </div>
-        <p class="as-empty-title">寻方问药 · 有据可依</p>
-        <p class="as-empty-sub">提问会自动检索库内食养方、本草性味与活性成分依据，试试这样问：</p>
+        <p class="as-empty-title">你好，我是「青囊」</p>
+        <p class="as-empty-sub">食养有据专属寻证助手——每次提问都会先翻阅库内方剂、本草性味与活性成分依据，试试这样问：</p>
         <div class="as-chips">
           <button v-for="qq in QUICK_QS" :key="qq" class="as-chip pressable" @click="send(qq)">
             <span>{{ qq }}</span>
@@ -396,13 +404,17 @@ onBeforeUnmount(() => { clearTick(); abort?.() })
       </div>
 
       <div v-for="(m, i) in msgs" :key="i" class="as-row" :class="m.role">
-        <div v-if="m.role === 'assistant'" class="as-avatar" :class="{ thinking: m.streaming }">
-          <AppIcon name="leaf" :size="13" />
-        </div>
+        <AgentAvatar
+          v-if="m.role === 'assistant'"
+          :size="32"
+          :state="m.streaming ? (m.content ? 'speaking' : 'thinking') : 'idle'"
+          class="as-msg-avatar"
+        />
 
         <div class="as-bubble" :class="{ me: m.role === 'user', 'is-thinking': m.role === 'assistant' && m.streaming && !m.content }">
-          <!-- ============ AI 回复顶栏：AI 生成标识 + 检索脉络胶囊 ============ -->
+          <!-- ============ AI 回复顶栏：青囊名号 + AI 生成标识 + 检索脉络胶囊 ============ -->
           <div v-if="m.role === 'assistant'" class="as-meta-bar">
+            <span class="as-agent-name">青囊</span>
             <span class="as-tag">
               <AppIcon name="sparkles" :size="10" /> AI 生成
             </span>
@@ -421,7 +433,7 @@ onBeforeUnmount(() => { clearTick(); abort?.() })
               @click="toggleTrace(m)"
             >
               <span v-if="m.streaming" class="as-live-dot" />
-              <span v-else class="as-done-check">✓</span>
+              <Check v-else :size="11" :stroke-width="2.6" class="as-done-check" />
               <span v-if="m.citations?.length">
                 已检索 {{ m.citations.length }} 条库内依据
                 <template v-if="m.ttftSec"> · {{ m.ttftSec }}s</template>
@@ -435,18 +447,18 @@ onBeforeUnmount(() => { clearTick(); abort?.() })
           <Transition name="tk-fold">
             <div v-if="m.role === 'assistant' && m.thinkOpen && (m.content || !m.streaming)" class="as-trace-drawer">
               <div class="td-step">
-                <span class="td-dot">✓</span>
+                <Check :size="11" :stroke-width="2.6" class="td-dot" />
                 <span>拆解提问意图并扫描药食同源知识库</span>
               </div>
               <div class="td-step">
-                <span class="td-dot">✓</span>
+                <Check :size="11" :stroke-width="2.6" class="td-dot" />
                 <span v-if="m.citations?.length">
                   命中 {{ citeStats(m).summary }}（点击正文角标或下方卡片可溯源）
                 </span>
                 <span v-else>库内未命中直接同名条目，按日常食养通识提供温和参考</span>
               </div>
               <div v-if="m.usedConst" class="td-step">
-                <span class="td-dot">✓</span>
+                <Check :size="11" :stroke-width="2.6" class="td-dot" />
                 <span>结合「{{ m.usedConst }}」体质倾向校准适宜配伍</span>
               </div>
             </div>
@@ -483,7 +495,7 @@ onBeforeUnmount(() => { clearTick(); abort?.() })
             <div class="tk-steps">
               <div class="tk-step" :class="{ done: thinkingState(m).stepIdx > 0, active: thinkingState(m).stepIdx === 0 }">
                 <span class="tk-step-node">
-                  <template v-if="thinkingState(m).stepIdx > 0">✓</template>
+                  <Check v-if="thinkingState(m).stepIdx > 0" :size="9" :stroke-width="3" />
                   <span v-else class="tk-bars"><i /><i /><i /></span>
                 </span>
                 <span class="tk-step-label">巡检知识库</span>
@@ -491,7 +503,7 @@ onBeforeUnmount(() => { clearTick(); abort?.() })
               <span class="tk-step-line" :class="{ lit: thinkingState(m).stepIdx >= 1 }" />
               <div class="tk-step" :class="{ done: thinkingState(m).stepIdx > 1, active: thinkingState(m).stepIdx === 1 }">
                 <span class="tk-step-node">
-                  <template v-if="thinkingState(m).stepIdx > 1">✓</template>
+                  <Check v-if="thinkingState(m).stepIdx > 1" :size="9" :stroke-width="3" />
                   <span v-else-if="thinkingState(m).stepIdx === 1" class="tk-bars"><i /><i /><i /></span>
                   <span v-else class="tk-idle-dot" />
                 </span>
@@ -596,12 +608,24 @@ onBeforeUnmount(() => { clearTick(); abort?.() })
 <style scoped>
 .as-page { max-width: 760px; margin: 0 auto; padding-bottom: 20px; }
 .as-head { padding: 14px 16px; margin-bottom: 12px; }
-.as-title { display: flex; align-items: center; gap: 7px; font-size: 16px; font-weight: 700; color: var(--ink-900); font-family: var(--font-serif); }
-.as-title svg { color: var(--green-600); }
+.as-head-main { display: flex; align-items: center; gap: 12px; }
+.as-head-copy { flex: 1; min-width: 0; }
+.as-title { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; font-size: 16px; font-weight: 700; color: var(--ink-900); font-family: var(--font-serif); }
+.as-persona-badge {
+  font-family: var(--font-sans);
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--green-text);
+  background: var(--green-50);
+  border: 1px solid var(--green-100);
+  padding: 1px 8px;
+  border-radius: 999px;
+  line-height: 17px;
+}
 .as-clear { margin-left: auto; border: none; background: none; color: var(--ink-400); font-size: 12px; cursor: pointer; font-family: inherit; transition: color var(--dur-fast) ease; }
 .as-clear:hover { color: var(--cinnabar); }
-.as-sub { font-size: 12px; color: var(--ink-400); margin: 6px 0 0; line-height: 1.6; }
-.as-const { margin-top: 10px; }
+.as-sub { font-size: 12px; color: var(--ink-400); margin: 4px 0 0; line-height: 1.55; }
+.as-const { margin-top: 10px; padding-top: 9px; border-top: 1px dashed var(--card-border); }
 .as-switch { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink-600); cursor: pointer; }
 .as-switch input { accent-color: var(--green-600); }
 .as-const-tip { margin: 4px 0 0 22px; font-size: 11px; color: var(--ink-400); }
@@ -610,14 +634,13 @@ onBeforeUnmount(() => { clearTick(); abort?.() })
 
 /* 空态卡片 */
 .as-empty { padding: 28px 20px; text-align: center; color: var(--ink-600); }
-.as-empty-emblem {
-  width: 42px; height: 42px; margin: 0 auto 10px; border-radius: 50%;
-  background: var(--green-50); border: 1px solid var(--green-100);
-  display: inline-flex; align-items: center; justify-content: center;
-  color: var(--green-600);
+.as-empty-avatar {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 10px;
 }
-.as-empty-title { font-family: var(--font-serif); font-size: 15px; font-weight: 700; color: var(--ink-900); }
-.as-empty-sub { font-size: 12.5px; color: var(--ink-400); margin-top: 5px; line-height: 1.6; }
+.as-empty-title { font-family: var(--font-serif); font-size: 16px; font-weight: 700; color: var(--ink-900); }
+.as-empty-sub { font-size: 12.5px; color: var(--ink-400); max-width: 440px; margin: 6px auto 0; line-height: 1.65; }
 .as-chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 14px; }
 .as-chip {
   display: inline-flex; align-items: center; gap: 5px;
@@ -629,26 +652,10 @@ onBeforeUnmount(() => { clearTick(); abort?.() })
 .as-chip:hover { border-color: var(--green-600); color: var(--green-text); }
 .as-chip:hover svg { transform: translateX(2px); color: var(--green-600); opacity: 1; }
 
-/* 消息行与头像 */
-.as-row { display: flex; gap: 9px; align-items: flex-start; }
+/* 消息行与青囊头像 */
+.as-row { display: flex; gap: 10px; align-items: flex-start; }
 .as-row.user { justify-content: flex-end; }
-.as-avatar {
-  position: relative;
-  flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%;
-  background: var(--green-50); border: 1px solid var(--green-100);
-  display: inline-flex; align-items: center; justify-content: center; color: var(--green-600);
-  margin-top: 2px;
-  transition: border-color var(--dur-med) ease, box-shadow var(--dur-med) ease;
-}
-.as-avatar.thinking {
-  border-color: var(--green-600);
-  box-shadow: 0 0 0 3px rgba(58, 122, 94, 0.12);
-  animation: avatarPulse 2s ease-in-out infinite;
-}
-@keyframes avatarPulse {
-  0%, 100% { box-shadow: 0 0 0 2px rgba(58, 122, 94, 0.10); }
-  50% { box-shadow: 0 0 0 6px rgba(58, 122, 94, 0.18); }
-}
+.as-msg-avatar { margin-top: 2px; }
 
 /* 气泡主体：统一采用宣纸卡色 var(--card)，兼容暗黑模式 */
 .as-bubble {
@@ -681,8 +688,15 @@ onBeforeUnmount(() => { clearTick(); abort?.() })
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 7px;
   margin-bottom: 7px;
+}
+.as-agent-name {
+  font-family: var(--font-serif);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-900);
+  letter-spacing: 0.02em;
 }
 .as-tag {
   display: inline-flex;

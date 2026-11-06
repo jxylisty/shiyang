@@ -5,6 +5,7 @@
 // - 结构化分块展示：【核心功效】【配伍奥秘】【通俗机理】【冲泡建议与避坑】
 import { ref, computed, onMounted } from 'vue'
 import { Sparkles, RotateCcw, SlidersHorizontal, AlertCircle, Target, Leaf, Lightbulb, Coffee } from '@lucide/vue'
+import AgentAvatar from './AgentAvatar.vue'
 import DisclaimerBanner from './DisclaimerBanner.vue'
 import { streamAIReport } from '../api'
 
@@ -147,9 +148,9 @@ onMounted(() => {
     <!-- 头部操作条：标题 + Agent标识 + 重新生成操作 -->
     <div class="ai-head-bar">
       <div class="ai-title-wrap">
-        <Sparkles :size="15" :stroke-width="2.2" class="ai-title-icon" />
+        <AgentAvatar :size="26" :state="phase === 'streaming' ? (text ? 'speaking' : 'thinking') : 'idle'" />
         <span class="ai-title">食养核心功效解读</span>
-        <span class="agent-tag">食养 Agent</span>
+        <span class="agent-tag">青囊 · 寻证助手</span>
       </div>
       <div class="ai-head-ops">
         <button v-if="phase === 'done' || phase === 'error'" class="btn-regen" @click="start" title="重新生成解读">
@@ -233,7 +234,7 @@ onMounted(() => {
         <div class="skl" style="height: 20px; width: 60%; margin-bottom: 8px;"></div>
         <div class="skl" style="height: 14px; width: 90%; margin-bottom: 6px;"></div>
         <div class="skl" style="height: 14px; width: 80%;"></div>
-        <p class="ai-loading-tip"><span class="ai-dots"></span>食养 Agent 正在拆解方剂功效…</p>
+        <p class="ai-loading-tip"><AgentAvatar :size="22" state="thinking" /><span class="ai-dots"></span>青囊正在拆解方剂配伍与成分依据…</p>
       </div>
     </div>
 
@@ -540,9 +541,12 @@ onMounted(() => {
   padding: 12px 0;
 }
 .ai-loading-tip {
-  font-size: 11.5px;
-  color: var(--green-600);
-  margin-top: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--green-text);
+  margin-top: 10px;
 }
 .ai-dots::after {
   content: "…";
