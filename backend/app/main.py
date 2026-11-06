@@ -36,6 +36,7 @@ from services import term_service as terms
 from services import search_service as search
 from services import plain_service as plain
 from services import eval_service as evs
+from services import prob_caliber as pc
 
 DB_PATH = Path(__file__).resolve().parent.parent.parent / "data" / "shiyang.db"
 DISCLAIMER = "本平台内容为健康参考信息，不构成医疗建议，不用于诊断或治疗。"
@@ -381,17 +382,38 @@ def explain_map(max_points: int = Query(0, ge=0, le=10000)):
     max_points>0 时做**确定性抽样**：先保留全部有入血概率预测的成分，剩余无预测成分
     按固定步长等距抽取，保证同一份库每次返回同一批点（预览卡用，避免整页 4,500+ 点）。
     返回的 total / sampled / stats 始终是**全库真实计数**，抽样不影响统计口径。
+
+    概率口径（2026-11-06 起）：`prob` 走 prob_caliber 统一口径（主力模型优先，
+    没有才退 HERB 外推），`caliber` 标明来源；主力模型与独立模型一致性（cv_level）
+    只有旧 165 个训练集内成分有，其余为 null —— 前端按「未评估」处理，不当作一致。
     """
     conn = get_db()
     rows = conn.execute(
-        "SELECT name, x, y, prob_cctcm, prob_indep, ad_level, cv_level "
-        "FROM compound_map ORDER BY name").fetchall()
+        "SELECT name, x, y, prob_cctcm, prob_cctcm_v2, prob_herb_v2, prob_indep, "
+        "ad_level, cv_level FROM compound_map ORDER BY name").fetchall()
     conn.close()
+
+    def _prob(r):
+        return r["prob_cctcm"] if r["prob_cctcm"] is not None else (
+            r["prob_cctcm_v2"] if r["prob_cctcm_v2"] is not None else r["prob_herb_v2"])
+
+    def _cal(r):
+        if r["prob_cctcm"] is not None:
+            return "cctcm_legacy"
+        if r["prob_cctcm_v2"] is not None:
+            return "cctcm_v2"
+        if r["prob_herb_v2"] is not None:
+            return "herb_extrapolated"
+        return None
+
     total = len(rows)
     stats = {
         "total": total,
-        "with_prob": sum(1 for r in rows if r["prob_cctcm"] is not None),
-        "no_prob": sum(1 for r in rows if r["prob_cctcm"] is None),
+        "with_prob": sum(1 for r in rows if _prob(r) is not None),
+        "no_prob": sum(1 for r in rows if _prob(r) is None),
+        "primary_prob": sum(1 for r in rows
+                            if r["prob_cctcm"] is not None or r["prob_cctcm_v2"] is not None),
+        "extrapolated": sum(1 for r in rows if _cal(r) == "herb_extrapolated"),
         "ad_in": sum(1 for r in rows if r["ad_level"] == "in"),
         "ad_edge": sum(1 for r in rows if r["ad_level"] == "edge"),
         "ad_out": sum(1 for r in rows if r["ad_level"] == "out"),
@@ -403,18 +425,38 @@ def explain_map(max_points: int = Query(0, ge=0, le=10000)):
 
     picked = rows
     if max_points and total > max_points:
-        scored = [r for r in rows if r["prob_cctcm"] is not None]
-        rest = [r for r in rows if r["prob_cctcm"] is None]
-        room = max(max_points - len(scored), 0)
-        if room and rest:
-            # 等距抽取（确定性，无随机数）：同一份库每次得到同一批点
-            step = len(rest) / room
-            sampled = [rest[min(int(i * step), len(rest) - 1)] for i in range(room)]
-        else:
-            sampled = []
-        picked = sorted(scored + sampled, key=lambda r: r["name"])
+        # 抽样优先级：主力模型结论 > HERB 外推 > 无数据。这样预览卡上永远是
+        # 「能信的点」优先保留，外推点按等距抽样，避免 3,598 个外推点挤掉真结论。
+        # 若主力结论本身就超过上限（现为 960 > 700），同样对主力做等距抽样，
+        # 保证响应体积可控——统计口径仍由 stats 给全库真值。
+        primary = [r for r in rows if _cal(r) in ("cctcm_legacy", "cctcm_v2")]
+        extra = [r for r in rows if _cal(r) == "herb_extrapolated"]
+        none = [r for r in rows if _cal(r) is None]
+        rest = extra + none
 
-    return ok({"items": [dict(r) for r in picked], "count": len(picked),
+        def _even(items, n):
+            """确定性等距抽样（无随机数）：同一份库每次得到同一批点。"""
+            if n <= 0:
+                return []
+            if n >= len(items):
+                return items
+            step = len(items) / n
+            return [items[min(int(i * step), len(items) - 1)] for i in range(n)]
+
+        if len(primary) >= max_points:
+            kept = _even(primary, max_points)
+        else:
+            kept = primary + _even(rest, max_points - len(primary))
+        picked = sorted(kept, key=lambda r: r["name"])
+
+    items = []
+    for r in picked:
+        d = dict(r)
+        d["prob"] = _prob(r)
+        d["caliber"] = _cal(r)
+        items.append(d)
+
+    return ok({"items": items, "count": len(picked),
                "total": total, "sampled": len(picked) < total, "stats": stats,
                "note": "坐标为 UMAP 降维（Morgan 指纹 1024 位 → 2 维），相对位置有意义、"
                        "坐标轴数值无物理含义；着色维度见图例。"})
@@ -513,20 +555,37 @@ def list_herbs(q: str | None = None):
 
 @app.get("/api/v1/compounds")
 def list_compounds(min_prob: float = 0.5, limit: int = 50):
+    """成分库列表，按入血概率排序。
+
+    概率口径统一走 `prob_caliber`：优先主力模型（prob_cctcm / prob_cctcm_v2），
+    没有才退到 HERB 外推（prob_herb_v2，C 级）。响应里带 `caliber` 元信息，
+    前端据此区分「模型结论」与「外推参考」，不再把两者摆在同一位置。
+    """
     min_prob = max(0.0, min(min_prob, 1.0))
     conn = get_db()
     total = conn.execute(
-        "SELECT COUNT(*) FROM compound WHERE prob_cctcm>=?", (min_prob,)).fetchone()[0]
+        f"SELECT COUNT(*) FROM compound c WHERE {pc.SQL_PROB} >= ?", (min_prob,)).fetchone()[0]
     rows = conn.execute(
-        "SELECT c.id,c.name,c.prob_cctcm,c.prob_herb,c.mw,c.logp,"
+        f"SELECT c.id,c.name,{pc.SQL_PROB} AS prob,{pc.SQL_CALIBER} AS caliber,"
+        "c.prob_cctcm,c.prob_cctcm_v2,c.prob_herb,c.prob_herb_v2,c.mw,c.logp,"
+        "c.ad_level,"
         "COALESCE(c.radar_anti_inflammatory_gsea,c.radar_anti_inflammatory) radar_anti_inflammatory,"
         "COALESCE(c.radar_immune_regulation_gsea,c.radar_immune_regulation) radar_immune_regulation,"
         "COALESCE(c.radar_airway_repair_gsea,c.radar_airway_repair) radar_airway_repair "
-        "FROM compound c WHERE c.prob_cctcm>=? ORDER BY c.prob_cctcm DESC LIMIT ?",
+        f"FROM compound c WHERE {pc.SQL_PROB} >= ? "
+        f"ORDER BY {pc.SQL_PROB} DESC LIMIT ?",
         (min_prob, min(limit, 200))).fetchall()
     conn.close()
+    items = []
+    for r in rows:
+        d = dict(r)
+        d["caliber"] = pc.describe(d.get("caliber"))
+        items.append(d)
     # total=满足过滤条件的库内总数；returned=本次实际返回条数（差值即被 limit 截断量）
-    return ok({"total": total, "returned": len(rows), "items": [dict(r) for r in rows]})
+    return ok({"total": total, "returned": len(items), "items": items,
+               "caliber_note": "入血概率按可信度优先取主力模型（ccTCM）；"
+                               "无主力预测的成分退用 HERB 兜底模型外推，"
+                               "其 caliber.is_extrapolated=true，仅供参考。"})
 
 
 @app.get("/api/v1/foods")

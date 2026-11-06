@@ -57,14 +57,22 @@ def main():
     coords = reducer.fit_transform(np.array([np.array(f) for f in fps], dtype=np.float32))
     print(f"UMAP 完成: {coords.shape}")
 
+    # 坐标只依赖 SMILES（UMAP），概率/应用域每次从 compound 现取——
+    # 这样重跑预测后不必重跑 UMAP（UMAP 是全链路最慢的一步），坐标保持稳定可比。
     conn.executescript("""
     CREATE TABLE IF NOT EXISTS compound_map (
         compound_id TEXT PRIMARY KEY,
         name TEXT, x REAL, y REAL,
         prob_cctcm REAL, prob_indep REAL,
-        ad_level TEXT, cv_level TEXT
+        ad_level TEXT, cv_level TEXT,
+        prob_cctcm_v2 REAL, prob_herb_v2 REAL, ad_level_live TEXT
     );
     """)
+    # 老库建表时没有后三列，幂等补齐（CREATE TABLE IF NOT EXISTS 不会改存量表）
+    have = {row[1] for row in conn.execute("PRAGMA table_info(compound_map)")}
+    for col in ("prob_cctcm_v2", "prob_herb_v2", "ad_level_live"):
+        if col not in have:
+            conn.execute(f"ALTER TABLE compound_map ADD COLUMN {col} REAL")
     conn.execute("DELETE FROM compound_map")
     n = 0
     for r, (x, y) in zip(keep_rows, coords):
@@ -76,10 +84,17 @@ def main():
             cv = ("both_high" if hi_main and hi_ind else
                   "main_only" if hi_main else
                   "indep_only" if hi_ind else "both_low")
+        # 2026-11-06 起概率有三列（旧主力 / 正式版回填 / HERB 外推），
+        # ad_level 也在 predict_remaining_compounds.py 里扩到了全库。
+        # 这里一并带出来，前端才能按口径区分着色，而不是把外推值当主力结论。
+        live = conn.execute(
+            "SELECT prob_cctcm_v2, prob_herb_v2, ad_level FROM compound WHERE id=?",
+            (r["id"],)).fetchone()
+        p_v2, p_hb, ad_live = (live[0], live[1], live[2]) if live else (None, None, None)
         conn.execute(
-            "INSERT OR REPLACE INTO compound_map VALUES (?,?,?,?,?,?,?,?)",
+            "INSERT OR REPLACE INTO compound_map VALUES (?,?,?,?,?,?,?,?,?,?,?)",
             (r["id"], r["name"], round(float(x), 3), round(float(y), 3),
-             p_main, p_ind, r["ad_level"], cv))
+             p_main, p_ind, r["ad_level"], cv, p_v2, p_hb, ad_live))
         n += 1
     conn.commit()
     conn.close()

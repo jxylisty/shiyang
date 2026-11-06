@@ -26,9 +26,9 @@ let ctx = null
 let ro = null
 
 const MODES = [
-  { key: 'prob', label: '入血概率', hint: '颜色越绿，模型判断越可能入血' },
-  { key: 'domain', label: '应用域', hint: '绿=域内（训练集里有相似样本），红=域外（预测可靠性有限）' },
-  { key: 'consistency', label: '模型一致性', hint: '主模型与独立算法模型判断是否一致；分歧点若聚团，说明分歧来自结构类别' },
+  { key: 'prob', label: '入血概率', hint: '绿/红=ccTCM 主力模型结论；土黄=HERB 兜底模型外推，误差更大' },
+  { key: 'domain', label: '应用域', hint: '绿=域内（训练集里有相似样本），红=域外（预测可靠性有限）；全库已覆盖' },
+  { key: 'consistency', label: '模型一致性', hint: '主模型与独立算法模型判断是否一致；只有 165 个训练集内成分评估过，其余显示为未评估' },
 ]
 
 const cvNames = {
@@ -37,18 +37,22 @@ const cvNames = {
 }
 
 const NO_PROB = '#c9c1b4'   // 无预测成分：中性灰，不参与任何着色维度
+const EXTRAP = '#b9a67c'    // HERB 外推估计：灰黄色，与主力模型的绿/红刻意区分
 const adColors = { in: '#2e7d5b', edge: '#9a6b1f', out: '#b04a3a' }
 const cvColors = { both_high: '#2e7d5b', both_low: '#6b7a72', main_only: '#9a6b1f', indep_only: '#9a6b1f' }
 
 function colorOf(it) {
   // 没有任何预测数据 → 灰色。不要落到「<0.5 偏低」的红色档，
   // 那会把「没测」误读成「测了但很低」，属于数据失真。
-  if (it.prob_cctcm == null) return NO_PROB
+  if (it.prob == null) return NO_PROB
+  // 外推估计（C 级，仅 HERB 兜底模型、误差明显更大）单独一档灰黄，
+  // 绝不与主力模型的绿/红同色，否则用户会以为两者同等可靠。
+  if (it.caliber === 'herb_extrapolated') return EXTRAP
   if (mode.value === 'prob') {
-    const p = it.prob_cctcm
+    const p = it.prob
     return p >= 0.9 ? '#1d4a38' : p >= 0.7 ? '#2e7d5b' : p >= 0.5 ? '#9a6b1f' : '#b04a3a'
   }
-  if (mode.value === 'domain') return adColors[it.ad_level] || NO_PROB
+  if (mode.value === 'domain') return adColors[it.ad_level_live ?? it.ad_level] || NO_PROB
   return cvColors[it.cv_level] || NO_PROB
 }
 
@@ -69,7 +73,8 @@ const legend = computed(() => {
     return [
       { c: '#1d4a38', t: '≥0.9 很高' }, { c: '#2e7d5b', t: '0.7–0.9 较高' },
       { c: '#9a6b1f', t: '0.5–0.7 中等' }, { c: '#b04a3a', t: '<0.5 偏低' },
-      { c: NO_PROB, t: `暂无预测 ${s.no_prob ?? ''}`.trim() }]
+      { c: EXTRAP, t: `外推估计 ${s.extrapolated ?? 0}` },
+      { c: NO_PROB, t: `无预测 ${s.no_prob ?? 0}` }]
   }
   if (mode.value === 'domain') {
     return [
@@ -82,7 +87,7 @@ const legend = computed(() => {
     { c: cvColors.both_high, t: `结论一致·高 ${s.cv_both_high ?? 0}` },
     { c: cvColors.both_low, t: `结论一致·低 ${s.cv_both_low ?? 0}` },
     { c: cvColors.main_only, t: `分歧 ${s.cv_diverge ?? 0}` },
-    { c: NO_PROB, t: `暂无预测 ${s.no_prob ?? 0}` }]
+    { c: NO_PROB, t: `未评估 ${s.total - (s.cv_both_high ?? 0) - (s.cv_both_low ?? 0) - (s.cv_diverge ?? 0)}` }]
 })
 
 // ---- canvas 绘制 ----
@@ -102,7 +107,7 @@ function draw() {
 
   // 先画无预测的灰点（在底层），再画有预测的彩点，保证彩点不被压住
   const gray = [], color = []
-  for (const it of items.value) (it.prob_cctcm == null ? gray : color).push(it)
+  for (const it of items.value) (it.prob == null ? gray : color).push(it)
 
   const r = cssW / 100   // 与旧 SVG 视野 100×100 对齐，点径 1.1 → 视觉尺寸不变
   ctx.globalAlpha = 0.5
@@ -144,7 +149,7 @@ function onClick(ev) {
     const d = Math.hypot(px(it) - mx, py(it) - my)
     if (d < bestD) { bestD = d; best = it }
   }
-  if (best && bestD <= tol && best.prob_cctcm != null) {
+  if (best && bestD <= tol && best.prob != null) {
     picked.value = picked.value?.name === best.name ? null : best
   } else {
     picked.value = null
@@ -164,22 +169,26 @@ async function load() {
     items.value = d.items || []
     stats.value = d.stats || null
     loaded.value = true
-    await nextTick()
-    draw()
-  } catch { loadError.value = true } finally { loading.value = false }
+  } catch {
+    loadError.value = true
+  } finally {
+    // 必须先关 loading：canvas 在 `v-else-if="!loaded"` 之后的分支里，
+    // loading 仍为 true 时 DOM 上是「加载中…」，此时 nextTick 后 draw() 拿不到 canvas，
+    // 画布会一直空白（2026-11-06 实测踩过）。
+    loading.value = false
+  }
+  await nextTick()
+  draw()
 }
 
 watch(mode, () => draw())
 
 onMounted(() => {
-  if (typeof IntersectionObserver === 'undefined') {
-    load()
-  } else {
-    const io = new IntersectionObserver((entries) => {
-      if (entries.some(e => e.isIntersecting)) { load(); io.disconnect() }
-    }, { rootMargin: '150px' })
-    if (wrapEl.value) io.observe(wrapEl.value)
-  }
+  // 整页地图是用户主动导航进来的，页面存在的唯一目的就是看这张图 ——
+  // 不需要滚动触发。2026-11-06 实测：在 in-app browser 里对整页 canvas 容器
+  // 挂 IntersectionObserver，回调根本不触发（手动构造 IO 观察同一元素 1.5s 无回调），
+  // 页面会永久停在「滚动到此处自动加载」。这里改为直接加载，不赌环境。
+  load()
   // 窗口尺寸变化重绘（canvas 不是矢量的，缩放必须重画）
   if (typeof ResizeObserver !== 'undefined' && wrapEl.value) {
     ro = new ResizeObserver(() => draw())
@@ -222,10 +231,14 @@ onBeforeUnmount(() => {
 
       <div v-if="picked" class="map-picked" @click="goDetail">
         <b>{{ picked.name }}</b>
-        <span>入血概率 {{ picked.prob_cctcm ?? '—' }}<template v-if="picked.cv_level"> · {{ cvNames[picked.cv_level] }}</template></span>
+        <span>入血概率 {{ picked.prob != null ? picked.prob.toFixed(3) : '—' }}<template v-if="picked.cv_level"> · {{ cvNames[picked.cv_level] }}</template></span>
+        <span v-if="picked.caliber === 'herb_extrapolated'" class="pick-warn">外推估计（不在主力模型训练集内，仅供参考）</span>
         <em>点按查看成分档案 →</em>
       </div>
-      <p v-else-if="loaded && stats?.no_prob" class="map-tip">点彩色的点查看成分档案；灰色点只有结构数据、暂无入血概率预测，不可点选。</p>
+      <p v-else-if="loaded && stats?.extrapolated" class="map-tip">
+        绿/红色点是 ccTCM 主力模型结论，可点选查看成分档案；土黄色点是 HERB 兜底模型外推估计
+        （该成分不在这两个模型的训练集内，仅有结构数据可算），误差更大，仅供参考。
+      </p>
 
       <p class="a-disclaimer">坐标为 UMAP 降维结果（Morgan 指纹→2 维），相对位置有意义、坐标轴数值无物理含义。</p>
       <DisclaimerBanner variant="compound" style="margin-top: 12px;" />
@@ -257,5 +270,6 @@ onBeforeUnmount(() => {
 .map-picked b { font-size: 14px; color: var(--ink-900); }
 .map-picked span { font-size: 12px; color: var(--ink-600); font-variant-numeric: tabular-nums; }
 .map-picked em { font-size: 11px; color: var(--green-text); font-style: normal; }
+.map-picked .pick-warn { font-size: 11px; color: var(--amber-text); }
 .map-tip { margin-top: 10px; font-size: 11px; color: var(--ink-400); line-height: 1.6; }
 </style>

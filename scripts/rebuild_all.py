@@ -426,6 +426,27 @@ def build_steps(args):
                       "SELECT COUNT(*) FROM herb WHERE category IS NULL OR TRIM(category)=''", 0)],
         note="编辑性典籍整理，非实验数据；归经缺失（代代花/白扁豆花）不猜，允许为空")
 
+    # 9d) 入血概率回填：官方预测表（cctcm_v2_predictions_union.csv）里早就算好、
+    #     但当初灌库漏掉的那批成分。零重训，按 canonical SMILES 精确结构匹配。
+    #     必须在 10-expand / 11-legacy10 之后（那时成分才齐）。
+    add(id="12d-prob-backfill", title="入血概率回填（官方预测表已有的成分）",
+        script="backfill_model_predictions.py", argv=["--apply"], hard=True,
+        network=False,
+        checks=[at_least("prob_cctcm_v2 非空行数",
+                         "SELECT COUNT(*) FROM compound WHERE prob_cctcm_v2 IS NOT NULL", 700)],
+        note="依赖仓库外 ../入血预测/cctcm2.0_v2/cctcm_v2_predictions_union.csv；"
+             "只填 prob_cctcm IS NULL 的新成分，老 165 个不动（两套口径不混）")
+
+    # 9e) 训练集外成分：只跑 HERB 兜底模型（实测偏差 0.135）+ 全库应用域。
+    #     ccTCM 缺 7 个 ADME 特征时偏差 0.29、44% 结论翻转，不用于外推。
+    add(id="12e-prob-extrap", title="训练集外成分 HERB 外推 + 全库应用域",
+        script="predict_remaining_compounds.py", argv=["--apply"], hard=True,
+        network=False,
+        checks=[exact("应用域已标注数",
+                      "SELECT COUNT(*) FROM compound WHERE ad_level IS NOT NULL", 4558)],
+        note="写入 prob_herb_v2（C 级外推，界面须与主力模型结论区分展示）；"
+             "依赖 ../入血预测 的模型 joblib")
+
     # 10) 研究类（full 口径：扩容后、覆盖全库）
     if args.profile == "full":
         S.extend([

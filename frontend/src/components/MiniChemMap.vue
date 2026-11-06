@@ -28,12 +28,15 @@ const PROB_LEGEND = [
   { c: 'var(--green-700)', t: '0.7–0.9 较高' },
   { c: 'var(--amber-600)', t: '0.5–0.7 中等' },
   { c: 'var(--red-500)', t: '<0.5 偏低' },
-  { c: '#c9c1b4', t: '暂无预测' },
+  { c: '#b9a67c', t: '外推估计' },
+  { c: '#c9c1b4', t: '无预测' },
 ]
 
 function colorOf(it) {
-  const p = it.prob_cctcm
-  if (p == null) return '#c9c1b4'
+  if (it.prob == null) return '#c9c1b4'
+  // HERB 外推（C 级）单独一档土黄，不与主力模型的绿/红同色
+  if (it.caliber === 'herb_extrapolated') return '#b9a67c'
+  const p = it.prob
   if (p >= 0.9) return 'var(--green-900)'
   if (p >= 0.7) return 'var(--green-700)'
   if (p >= 0.5) return 'var(--amber-600)'
@@ -83,7 +86,7 @@ onBeforeUnmount(() => { io?.disconnect(); io = null })
         <span class="mm-count">{{ stats ? `${stats.total} 个成分` : '—' }}</span>
       </div>
       <p class="mm-hint">
-        结构相似的成分在空间上靠得近 · 颜色越绿入血概率越高<template v-if="stats && stats.no_prob"> · 灰点为暂无预测</template>
+        结构相似的成分在空间上靠得近 · 颜色越绿入血概率越高<template v-if="stats && stats.extrapolated"> · 土黄点为外推估计（误差较大）</template>
       </p>
     </div>
 

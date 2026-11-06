@@ -14,6 +14,7 @@ import sqlite3
 from pathlib import Path
 
 from services.herb_relation import DUAL_RELATION_SQL
+from services import prob_caliber
 
 DB_PATH = Path(__file__).resolve().parents[3] / "data" / "shiyang.db"
 
@@ -70,7 +71,8 @@ def compound_explain(name: str) -> dict | None:
     conn = _db()
     try:
         row = conn.execute(
-            "SELECT id,name,smiles,mw,logp,prob_cctcm,prob_herb,target_count,"
+            "SELECT id,name,smiles,mw,logp,prob_cctcm,prob_cctcm_v2,prob_herb,prob_herb_v2,"
+            "target_count,"
             "max_sim_to_train,ad_level,ad_nearest,chembl_id,"
             "chembl_target_count,chembl_strong_count,prob_indep FROM compound WHERE name=?",
             (name,)).fetchone()
@@ -112,12 +114,18 @@ def compound_explain(name: str) -> dict | None:
     finally:
         conn.close()
 
-    band = _band(row["prob_cctcm"] or 0)
-    feats = _explain(row["mw"], row["logp"], row["prob_cctcm"] or 0)
+    # 概率口径统一：主力模型优先，没有才退到 HERB 外推（C 级）。band/features 必须用
+    # 同一个概率值，否则会出现「标签说偏低、雷达却按 0 算」的自相矛盾。
+    prob, caliber = prob_caliber.resolve(row)
+    band = _band(prob) if prob is not None else None
+    feats = _explain(row["mw"], row["logp"], prob)
     n_pass = sum(1 for f in feats if f["pass"])
     return {
         "name": row["name"], "smiles": row["smiles"], "mw": row["mw"], "logp": row["logp"],
-        "prob_cctcm": row["prob_cctcm"], "prob_herb": row["prob_herb"],
+        # prob 为推荐展示值；caliber 说明它来自哪个模型（外推估计会标 is_extrapolated）
+        "prob": prob, "caliber": caliber,
+        "prob_cctcm": row["prob_cctcm"], "prob_cctcm_v2": row["prob_cctcm_v2"],
+        "prob_herb": row["prob_herb"], "prob_herb_v2": row["prob_herb_v2"],
         "target_count": row["target_count"], "herbs": herbs,
         "recipes": recipes, "targets": targets,
         "band": band, "features": feats,

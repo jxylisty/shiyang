@@ -41,7 +41,9 @@ const RADAR = [
   { key: 'radar_airway_repair', name: '气道修复' },
 ]
 // 概率三档色：走令牌
-const probColor = (p) => p >= 0.9 ? 'var(--green-700)' : p >= 0.7 ? 'var(--amber-text)' : 'var(--ink-400)'
+const probColor = (p) => p == null ? 'var(--ink-400)'
+  : p >= 0.9 ? 'var(--green-700)' : p >= 0.7 ? 'var(--amber-text)' : 'var(--ink-400)'
+const fmt = (p) => p == null ? '—' : Number(p).toFixed(3)
 </script>
 
 <template>
@@ -73,19 +75,23 @@ const probColor = (p) => p >= 0.9 ? 'var(--green-700)' : p >= 0.7 ? 'var(--amber
           <div class="cp-head">
             <span class="cp-rank">{{ i + 1 }}</span>
             <b class="cp-name">{{ c.name }}</b>
-            <span class="cp-prob" :style="{ color: probColor(c.prob_cctcm) }">{{ c.prob_cctcm }}</span>
+            <span class="cp-prob" :style="{ color: probColor(c.prob) }">{{ c.prob != null ? c.prob.toFixed(3) : '—' }}</span>
           </div>
+          <!-- 口径标签：外推估计必须与主力模型结论视觉上分开，不能让用户以为同等可靠 -->
+          <p v-if="c.caliber" class="cp-caliber" :class="{ ext: c.caliber.is_extrapolated }">
+            {{ c.caliber.is_extrapolated ? '外推估计' : '模型预测' }} · {{ c.caliber.label }}
+          </p>
           <!-- 双模型对比条：入场后从 0 生长到目标宽度 -->
           <div class="cp-bars">
             <div class="cp-bar-row">
               <span class="cp-bar-label">ccTCM</span>
-              <div class="cp-bar"><i :style="{ width: barsGrown ? `${Math.round(c.prob_cctcm * 100)}%` : '0%', background: probColor(c.prob_cctcm) }"></i></div>
-              <span class="cp-bar-val">{{ c.prob_cctcm }}</span>
+              <div class="cp-bar"><i :style="{ width: barsGrown ? `${Math.round((c.prob_cctcm_v2 ?? c.prob_cctcm ?? 0) * 100)}%` : '0%', background: probColor(c.prob_cctcm_v2 ?? c.prob_cctcm) }"></i></div>
+              <span class="cp-bar-val">{{ fmt(c.prob_cctcm_v2 ?? c.prob_cctcm) }}</span>
             </div>
             <div class="cp-bar-row">
               <span class="cp-bar-label">HERB</span>
-              <div class="cp-bar"><i :style="{ width: barsGrown ? `${Math.round(c.prob_herb * 100)}%` : '0%', background: 'var(--amber-600)' }"></i></div>
-              <span class="cp-bar-val">{{ c.prob_herb }}</span>
+              <div class="cp-bar"><i :style="{ width: barsGrown ? `${Math.round((c.prob_herb_v2 ?? c.prob_herb ?? 0) * 100)}%` : '0%', background: 'var(--amber-600)' }"></i></div>
+              <span class="cp-bar-val">{{ fmt(c.prob_herb_v2 ?? c.prob_herb) }}</span>
             </div>
           </div>
           <!-- 三维雷达分 -->
@@ -145,6 +151,10 @@ const probColor = (p) => p >= 0.9 ? 'var(--green-700)' : p >= 0.7 ? 'var(--amber
 }
 .cp-name { flex: 1; font-size: 15px; color: var(--ink-900); font-weight: 600; }
 .cp-prob { font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* 口径标签：外推估计用琥珀色描边区分，避免与主力模型结论同等阅读 */
+.cp-caliber { font-size: 10.5px; color: var(--ink-400); margin: 3px 0 0 28px; line-height: 1.4; }
+.cp-caliber.ext { color: var(--amber-text); }
 
 .cp-bars { margin: 10px 0 8px; display: flex; flex-direction: column; gap: 6px; }
 .cp-bar-row { display: flex; align-items: center; gap: 8px; }

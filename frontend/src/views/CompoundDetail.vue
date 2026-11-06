@@ -27,7 +27,8 @@ async function load() {
 }
 onMounted(load)
 
-const probColor = (p) => p >= 0.9 ? 'var(--green-700)' : p >= 0.7 ? 'var(--amber-text)' : 'var(--ink-400)'
+const probColor = (p) => p == null ? 'var(--ink-400)'
+  : p >= 0.9 ? 'var(--green-700)' : p >= 0.7 ? 'var(--amber-text)' : 'var(--ink-400)'
 
 function goHerb(name) { router.push({ path: '/herbs', query: { h: name } }) }
 function goRecipe(id) { router.push(`/recipes/${id}`) }
@@ -47,9 +48,12 @@ function goRecipe(id) { router.push(`/recipes/${id}`) }
       <div class="card cd-head">
         <div class="cd-title">
           <h2>{{ data.name }}</h2>
-          <span class="cd-badge" :style="{ background: data.band.color }">{{ data.band.tier }}入血可能</span>
+          <span v-if="data.band" class="cd-badge" :style="{ background: data.band.color }">{{ data.band.tier }}入血可能</span>
         </div>
-        <p class="cd-say">{{ data.band.say }}</p>
+        <!-- 外推成分的档位必须加限定语：不能先说「较高」再在下面说「仅供参考」 -->
+        <p class="cd-say">
+          {{ data.caliber?.is_extrapolated ? '以下档位基于兜底模型外推，仅供粗筛参考，不等同于主力模型结论' : (data.band?.say || '该成分暂无入血概率预测') }}
+        </p>
         <div class="cd-props">
           <span v-if="data.mw != null">MW {{ data.mw.toFixed(1) }} Da</span>
           <span v-if="data.logp != null">logP {{ data.logp.toFixed(2) }}</span>
@@ -61,18 +65,25 @@ function goRecipe(id) { router.push(`/recipes/${id}`) }
       <!-- 2. 双模型概率对比 -->
       <div class="card">
         <b class="cd-sec">入血概率 · 双模型对比</b>
+        <p v-if="data.caliber" class="cd-caliber" :class="{ ext: data.caliber.is_extrapolated }">
+          {{ data.caliber.is_extrapolated ? '⚠ 外推估计' : '模型预测' }} · {{ data.caliber.label }}
+        </p>
         <div class="cd-bars">
           <div class="cd-bar-row">
             <span class="cd-bar-label">ccTCM</span>
-            <div class="cd-bar"><i :style="{ width: `${Math.round((data.prob_cctcm || 0) * 100)}%`, background: probColor(data.prob_cctcm) }"></i></div>
-            <span class="cd-bar-val">{{ data.prob_cctcm ?? '—' }}</span>
+            <div class="cd-bar"><i :style="{ width: `${Math.round((data.prob_cctcm_v2 ?? data.prob_cctcm ?? 0) * 100)}%`, background: probColor(data.prob_cctcm_v2 ?? data.prob_cctcm) }"></i></div>
+            <span class="cd-bar-val">{{ (data.prob_cctcm_v2 ?? data.prob_cctcm)?.toFixed(3) ?? '—' }}</span>
           </div>
           <div class="cd-bar-row">
             <span class="cd-bar-label">HERB</span>
-            <div class="cd-bar"><i :style="{ width: `${Math.round((data.prob_herb || 0) * 100)}%`, background: 'var(--amber-600)' }"></i></div>
-            <span class="cd-bar-val">{{ data.prob_herb ?? '—' }}</span>
+            <div class="cd-bar"><i :style="{ width: `${Math.round((data.prob_herb_v2 ?? data.prob_herb ?? 0) * 100)}%`, background: 'var(--amber-600)' }"></i></div>
+            <span class="cd-bar-val">{{ (data.prob_herb_v2 ?? data.prob_herb)?.toFixed(3) ?? '—' }}</span>
           </div>
         </div>
+        <p v-if="data.caliber?.is_extrapolated" class="cd-caliber-note">
+          该成分不在 ccTCM 主力模型训练集内，上表 ccTCM 列为空；HERB 列是兜底模型
+          仅凭分子结构外推的估计值，误差明显大于训练集内成分，仅供参考。
+        </p>
       </div>
 
       <!-- 3. Lipinski 特征解读（为什么是这个概率） -->
@@ -119,8 +130,8 @@ function goRecipe(id) { router.push(`/recipes/${id}`) }
         <p class="cd-ad-say">{{ data.cross_validation.say }}</p>
         <div class="cd-bar-row">
           <span class="cd-bar-label">主模型</span>
-          <div class="cd-bar"><i :style="{ width: `${Math.round((data.prob_cctcm || 0) * 100)}%`, background: probColor(data.prob_cctcm) }"></i></div>
-          <span class="cd-bar-val">{{ data.prob_cctcm }}</span>
+          <div class="cd-bar"><i :style="{ width: `${Math.round((data.prob_cctcm_v2 ?? data.prob_cctcm ?? 0) * 100)}%`, background: probColor(data.prob_cctcm_v2 ?? data.prob_cctcm) }"></i></div>
+          <span class="cd-bar-val">{{ (data.prob_cctcm_v2 ?? data.prob_cctcm)?.toFixed(3) ?? '—' }}</span>
         </div>
         <div class="cd-bar-row">
           <span class="cd-bar-label">独立模型</span>
@@ -219,6 +230,10 @@ function goRecipe(id) { router.push(`/recipes/${id}`) }
 .cd-feat-say { font-size: 12.5px; color: var(--ink-900); margin-top: 6px; line-height: 1.6; }
 .cd-feat-why { font-size: 11px; color: var(--ink-400); margin-top: 3px; }
 .cd-note { font-size: 11px; color: var(--ink-400); margin-top: 10px; line-height: 1.6; }
+/* 概率口径标签：外推估计用琥珀色，与主力模型结论视觉区分 */
+.cd-caliber { font-size: 11px; color: var(--ink-400); margin: 4px 0 8px; line-height: 1.5; }
+.cd-caliber.ext { color: var(--amber-text); }
+.cd-caliber-note { font-size: 11px; color: var(--amber-text); margin-top: 8px; line-height: 1.6; }
 
 .cd-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .cd-chip { border: 1px solid var(--green-100); background: var(--green-50); color: var(--green-text);
