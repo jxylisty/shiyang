@@ -781,6 +781,16 @@ watch(() => customResult.value, r => {
               <span class="ocr-label">图片原文（请核对）</span>
               <pre class="ocr-text">{{ photoInfo.text }}</pre>
             </div>
+            <!-- OCR 易认错形近字，纠正过的必须显式告诉用户 -->
+            <div v-if="photoInfo.corrections?.length" class="pf-fix" style="margin-top: 8px;">
+              <b>已自动纠正 {{ photoInfo.corrections.length }} 处疑似识别错误：</b>
+              <ul>
+                <li v-for="(c, i) in photoInfo.corrections" :key="i">
+                  {{ c.from }} <span class="fix-arrow">→</span> {{ c.to }}
+                </li>
+              </ul>
+              <div class="hint" style="margin-top: 4px;">如与原文不符，请在下方列表里改回来</div>
+            </div>
             <div v-if="photoInfo.rejected?.length" class="pf-rej" style="margin-top: 8px;">
               <b>未采用的条目：</b>
               <ul>
@@ -1601,6 +1611,13 @@ watch(() => customResult.value, r => {
 .pf-rej b { display: block; color: var(--amber-text); margin-bottom: 4px; }
 .pf-rej ul { margin: 0; padding-left: 16px; color: var(--ink-600); }
 .pf-rej li { margin-bottom: 2px; }
+
+/* OCR 形近字纠正提示（蓝调，区别于"未采用"的琥珀色警告） */
+.pf-fix { background: var(--green-50); border: 1px solid rgba(58, 122, 94, 0.22); border-radius: 8px; padding: 8px 10px; }
+.pf-fix b { display: block; color: var(--green-text); margin-bottom: 4px; }
+.pf-fix ul { margin: 0; padding-left: 16px; color: var(--ink-600); }
+.pf-fix li { margin-bottom: 2px; }
+.fix-arrow { color: var(--green-700); font-weight: 700; margin: 0 2px; }
 
 /* 添加行 */
 .add-row { display: flex; gap: 8px; }

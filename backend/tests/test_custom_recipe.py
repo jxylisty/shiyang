@@ -281,3 +281,63 @@ def test_web_lookup_endpoint_validation():
     assert client.post("/api/v1/custom-recipe/web-lookup", json={"name": ""}).status_code == 400
     assert client.post("/api/v1/custom-recipe/web-lookup",
                        json={"name": "药" * 51}).status_code == 400
+
+
+# ---------- OCR 形近字纠错（解决「认错一个字，后面全错」） ----------
+
+def test_correct_name_fixes_confusable_chars():
+    """形近字错认要能纠正回正确药名"""
+    cases = [("金银化", "金银花"), ("簿荷", "薄荷"), ("甘革", "甘草"),
+             ("麦各", "麦冬"), ("黄茂", "黄芪"), ("获苓", "茯苓"),
+             ("决名子", "决明子"), ("山查", "山楂")]
+    for wrong, expect in cases:
+        r = hs.correct_herb_name(wrong)
+        assert r["name"] == expect, f"{wrong} 应纠正为 {expect}，实际 {r['name']}"
+        assert r["corrected"] is True
+
+
+def test_correct_name_never_touches_valid_names():
+    """已在词表里的正确药名绝不能被改（零误纠正是最重要的安全指标）"""
+    good = ["金银花", "陈皮", "山楂", "茯苓", "甘草", "薄荷", "菊花", "黄芪",
+            "枸杞子", "决明子", "麦冬", "生姜", "红枣", "乌梅", "党参", "山药",
+            "百合", "莲子", "银耳", "蜂蜜", "葛根", "荷叶", "桑椹", "胖大海",
+            "西洋参", "石斛", "桂圆", "薏苡仁", "白术", "当归", "桂枝", "紫苏"]
+    for g in good:
+        r = hs.correct_herb_name(g)
+        assert r["name"] == g and r["corrected"] is False, f"{g} 被误改为 {r['name']}"
+
+
+def test_correct_name_rejects_unrelated_substitution():
+    """毫不相干的字被硬换（桂圆→桂枝）必须拒绝，宁可不动也不瞎猜"""
+    r = hs.correct_herb_name("桂圆")     # 不在词表，但与桂枝无字形关系
+    assert r["corrected"] is False
+
+
+def test_correct_name_empty():
+    for v in ("", "   ", None):
+        r = hs.correct_herb_name(v or "")
+        assert r["corrected"] is False
+
+
+def test_parse_image_reports_corrections(monkeypatch):
+    """parse_recipe_image 要把纠正记录进 corrections 返回给前端"""
+    outputs = iter([
+        "金银花 10g 甘革 3g",      # OCR 原文（含错字）
+        '[{"name":"金银花","grams":10},{"name":"甘革","grams":3}]',
+    ])
+
+    class _Resp:
+        def __init__(self, text):
+            self._text = text
+        def raise_for_status(self):
+            pass
+        def json(self):
+            return {"choices": [{"message": {"content": self._text}}]}
+
+    # OCR 走视觉模型路径（跳过本地 RapidOCR，便于注入）
+    monkeypatch.setattr(hs, "_ocr_with_rapidocr", lambda b: None)
+    monkeypatch.setattr(hs.requests, "post", lambda *a, **k: _Resp(next(outputs)))
+    r = hs.parse_recipe_image(b"fake-bytes")
+    names = [h["name"] for h in r["herbs"]]
+    assert "金银花" in names
+    assert any(c["from"] == "甘革" and c["to"] == "甘草" for c in r["corrections"])
