@@ -1231,17 +1231,14 @@ watch(() => customResult.value, r => {
   cursor: pointer;
 }
 
-/* 横向滑动分屉栏：手机单手左右滑，隐藏滚动条 */
+/* 分类标签栏：平铺全部显示，无需横向滚动，一览即达 */
 .cat-rail {
   display: flex;
-  gap: 6px;
-  overflow-x: auto;
-  margin: 10px -2px 11px;
-  padding: 2px 2px 3px;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
+  flex-wrap: wrap;
+  gap: 7px 8px;
+  margin: 10px 0 12px;
+  padding: 0;
 }
-.cat-rail::-webkit-scrollbar { display: none; }
 .cat-pill {
   flex-shrink: 0;
   display: inline-flex;
