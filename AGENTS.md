@@ -14,7 +14,7 @@
 | 知识库 | `data/shiyang.db`（方子/药材/成分/靶点，**运行时只读** `mode=ro`） | `main.py` 的 `get_db()` |
 | 用户库 | `data/user.db`（账号/档案/收藏/打卡/家庭成员，运行时可写，WAL） | `backend/app/services/user_service.py` |
 | 数据库是否入库 | **否**。`*.db` 在 .gitignore；`scripts/build_db.py` 可重建；重建前的备份 `data/shiyang.db.bak-before-rebuild` 已提交 | `git ls-files data/` |
-| 端点规模 | 2026-11-06 实测 56 路径 / 60 端点（v0.2.0 旧文档写 24 个、2026-10-26 为 46/50，均过时，对照见 docs/API扩展记录.md） | 见 §6 自检命令 |
+| 端点规模 | 2026-11-06 实测 **57 路径 / 61 端点**（v0.2.0 旧文档写 24 个，历史口径 46/50、55/59、56/60 均已过时；清单见 docs/API扩展记录.md，以 §6 复跑结果为准） | 见 §6 自检命令 |
 | 运行环境 | Python 3.12 / Node 20（Windows + Git Bash） | `python --version; node --version` |
 
 **红线（每页、每个接口响应都要在）**：
@@ -34,6 +34,10 @@
 1. **数字只能来自实测**。引用「多少个方子/成分/靶点/端点」之前，先跑查询（§6 有现成命令），并写明核实日期。数据会被重建（2026-10 已发生过一次药材-成分归属系统性重建，见 docs/归属重建报告.md），**旧数字即刻作废**。
 2. **来源字段不许留空**。新增药材/方子/成分关联必须带出处（`source`/`reference_url`），录入模板与 `recipe.source` 的既有惯例是「机构名+篇名+链接」。没有来源的数据宁可不录。
 3. **模型预测 ≠ 实验事实**。入血概率（`prob_cctcm`）是 PU-Learning 模型预测值；三维机制评分沿用大创课题靶点富集框架、按场景门控（提交 7c4056b）。任何文案不得把预测/参考分写成疗效或临床结论。
+   **入血概率有三档口径，不要直接 `SELECT prob_cctcm`**（那只有 165 行，会把 4,200+ 成分显示成"无数据"）：
+   统一走 `services/prob_caliber.py` 的 `SQL_PROB` / `SQL_CALIBER`，它按
+   `prob_cctcm`(165, 旧主力) → `prob_cctcm_v2`(795, 正式版) → `prob_herb_v2`(3,602, C 级外推) 选唯一值并带回来源标签。
+   **缺预测返回 None，绝不填 0**：0 表示"模型判定完全不入血"，与"没有预测"是两个结论。
 4. **证据分级不许越级**。A=权威出处 / B=实验数据库（含 PMID）/ C=模型预测，定义在 `services/evidence_service.py`；新增数据按此定义如实归级，禁止为好看而拔高。
 5. **编辑性规则要标注**。安全滤镜禁忌词表（`services/safety_service.py`）、节气食养主题映射（`services/term_service.py`）等属于「按药典通识/常识整理的产品规则」，改动时在注释里注明性质与依据，不得伪装成实验数据；涉及人群安全的内容发布前需真人医药背景审校。
 6. **AI 生成内容必须标注**。`recipe_pregen_ai` 预生成解读回放时要显示来源为 AI（现有 `source: 'pregen'` 约定），新界面不得移除该标注。
@@ -88,7 +92,8 @@
 cd backend && python -X utf8 -c "import sys; sys.path.insert(0,'app'); import main; \
   s=main.app.openapi(); print('paths', len(s['paths']), 'endpoints', sum(len(v) for v in s['paths'].values()))"
 
-# 单测（2026-11-06 实测 94 passed；数量随测试线补用例增长，以实际运行为准，别抄文档）
+# 单测（2026-11-06 实测 106 passed，10 个文件；测试索引见 backend/tests/README.md。
+# 数量随测试线补用例增长，以实际运行为准，别抄文档）
 cd backend && python -X utf8 -m pytest tests/ -v
 
 # 冒烟（TestClient，不占端口；注意测试数据清理规则见 §2.7）
@@ -102,15 +107,24 @@ cd frontend && npx vite build
 # 知识库只读性抽查（运行期不应有任何写接口动 shiyang.db）
 ```
 
-## 7. 文档区索引（现状 2026-10-26）
+## 7. 文档区索引（现状 2026-11-06）
+
+**先看 [`docs/00-index.md`](docs/00-index.md)**：它维护全量文档地图、已确认的矛盾登记和过期警告，
+是本仓库文档的导航权威。下表只列最常被引用的几份。
 
 | 文档 | 内容 | 时效 |
 |---|---|---|
-| README.md | 项目门面（数字为 2026-10 盘点口径） | 数据重建后需复核 |
+| docs/00-index.md | 全量文档索引 + 一致性矛盾登记 + 过期警告 | 有改动后需同步 |
+| README.md | 项目门面（数据规模为 2026-11-06 只读实测口径） | 数据变动后需复核 |
+| docs/PROGRESS.md | 项目进度、阻断项、下一步判断 | project-driver 维护 |
 | docs/API接口设计文档.md | v0.2.0 基线 24 端点设计 | **基线过时**，增量见下 |
-| docs/API扩展记录.md | 实测 55 路径/59 端点全清单与增量说明 | 本文档 |
-| docs/数据库设计文档.md | 两库表结构 | user.db 含 family_member（T2-8） |
-| docs/功能扩展调研清单.md | T1/T2 梯队功能与竞品对照 | 功能已按此实现 |
+| docs/API扩展记录.md | 实测 57 路径/61 端点全清单与增量说明 | 加端点后须复跑补行 |
+| docs/数据库设计文档.md | 两库表结构（§1.3 实测行数，§6 扩容 schema 增量） | user.db 含 family_member（T2-8） |
+| docs/知识库重建链路_2026-11-06.md | 从零重建 19 步链路（输入/校验点/跳过后果） | **重建唯一权威**，别照旧文档跑 build_db.py |
+| docs/数据扩容执行报告_2026-11-06.md | 34→105 味扩容落库结果 | 现行数据口径权威 |
 | docs/归属重建报告.md | 药材-成分归属系统性修复 | 重建后数据以此为准 |
+| docs/功能扩展调研清单.md | T1/T2 梯队功能与竞品对照 | 功能已按此实现 |
 | docs/竞品对比分析.md / 支撑论文清单.md / 开源资源清单.md / 数据应用与真实化方案.md / 用户验证方案.md | 课题材料 | 逐链接/逐条核实版 |
+| backend/tests/README.md | 测试索引：10 文件 106 用例、跑法、排障 | 加测试后需同步 |
+| scripts/README.md | 41 个脚本分类索引 + 危险脚本清单 | 加脚本后需同步 |
 | CHANGELOG.md | 开发日志（含提交哈希） | 持续维护 |
