@@ -273,6 +273,10 @@ body {
   text-decoration: none; color: var(--ink-600); font-size: 14px;
   padding: 6px 12px; border-radius: 999px;
   display: inline-flex; align-items: center; gap: 5px;
+  /* 导航文字禁止折行：中宽屏 flex 挤压时宁可溢出隐藏，也不能出现
+     「方子/库」两行竖排的破相（2026-11-07 实测截图） */
+  white-space: nowrap;
+  flex-shrink: 0;
   transition: background var(--dur-fast) ease, color var(--dur-fast) ease;
 }
 @media (hover: hover) {
@@ -289,6 +293,18 @@ body {
   transform: translateX(-50%);
 }
 @media (max-width: 960px) {
+  .topbar .logo small { display: none; }
+}
+/* 中宽屏（721–1120px）：logo+副标+6 导航+长辈版+搜索框在此区间会超宽，
+   导航文字被 flex 挤成两行竖排（方子/库）。分档回收空间：
+   ≤1120px 收紧导航内边距与搜索框；≤960px 隐副标（原有）；≤860px 收窄搜索框 */
+@media (max-width: 1120px) {
+  .topbar nav a { padding: 6px 8px; gap: 4px; }
+  .topbar-actions { gap: 6px; }
+  .gs-input input { width: 118px; }
+}
+@media (min-width: 961px) and (max-width: 1120px) {
+  /* 960 断点只藏手机窄屏副标，中宽屏也藏掉才够宽（原 960 断点保留不动） */
   .topbar .logo small { display: none; }
 }
 @media (max-width: 720px) {
