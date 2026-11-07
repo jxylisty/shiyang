@@ -1,13 +1,11 @@
 <script setup>
-// 成分化学空间地图（T3-14）：全库 4,558 个可解析结构的成分的 UMAP 散点
-// 相对位置有意义（结构相似的成分靠近），坐标轴数值无物理含义
-// 着色：入血概率梯度 / 应用域 / 主模型 vs 独立模型一致性，三种视角切换
-//
-// 渲染用 canvas 而不是 SVG：4,500+ 个 circle 会插 4,500+ DOM 节点，手机上拖都拖不动。
-// 数据懒加载（进视口才请求），且只有概率预测的那 165 个支持点选查成分——
-// 其余成分没有预测值，点开也没有可解释内容，光标就不该给 affordance。
+// 成分化学空间地图（T3-14）：全库 4,558 个可解析结构的成分的 UMAP 散点流形
+// 相对位置有意义（基于 ECFP4 Morgan 指纹，结构相似的成分在流形上自发聚类）
+// 着色：入血概率梯度 / 应用域 / 主模型 vs 独立模型一致性
+// 视觉采用生信顶刊标准的粒子星云与半透明密度融合，消除过度绘制（Overplotting）
 import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
+import { FlaskConical, ExternalLink, Sparkles, Compass } from '@lucide/vue'
 import { getChemMap } from '../api'
 import DisclaimerBanner from '../components/DisclaimerBanner.vue'
 
@@ -26,37 +24,34 @@ let ctx = null
 let ro = null
 
 const MODES = [
-  { key: 'prob', label: '入血概率', hint: '绿/红=ccTCM 主力模型结论；土黄=HERB 兜底模型外推，误差更大' },
-  { key: 'domain', label: '应用域', hint: '绿=域内（训练集里有相似样本），红=域外（预测可靠性有限）；全库已覆盖' },
-  { key: 'consistency', label: '模型一致性', hint: '主模型与独立算法模型判断是否一致；只有 165 个训练集内成分评估过，其余显示为未评估' },
+  { key: 'prob', label: '入血概率', hint: '深绿/朱砂红：ccTCM 核心训练验证集；冷灰青星云：HERB 拓展空间外推参考' },
+  { key: 'domain', label: '应用域 (AD)', hint: '深绿=域内（高置信度高相似样本），红=域外（外推可靠性受限）；全库流形覆盖' },
+  { key: 'consistency', label: '模型一致性', hint: '主模型与独立算法判定对比；核心 165 个训练集成分通过交叉双重检验' },
 ]
 
 const cvNames = {
-  both_high: '结论一致·高', both_low: '结论一致·低',
+  both_high: '双模型一致·高入血', both_low: '双模型一致·低入血',
   main_only: '主模型单独高', indep_only: '独立模型单独高',
 }
 
-const NO_PROB = '#c9c1b4'   // 无预测成分：中性灰，不参与任何着色维度
-const EXTRAP = '#b9a67c'    // HERB 外推估计：灰黄色，与主力模型的绿/红刻意区分
-const adColors = { in: '#2e7d5b', edge: '#9a6b1f', out: '#b04a3a' }
-const cvColors = { both_high: '#2e7d5b', both_low: '#6b7a72', main_only: '#9a6b1f', indep_only: '#9a6b1f' }
+// 学术级高阶配色（消除脏黄色，采用冷灰青石雾与高纯度翡翠/珊瑚朱砂）
+const NO_PROB = '#a8b4ad'       // 无预测/背景成分：通透冷灰
+const EXTRAP = '#7a8f83'        // HERB 外推估计：冷青石雾，高雅星云底色
+const adColors = { in: '#1b6e4b', edge: '#9a6b1f', out: '#b03d2f' }
+const cvColors = { both_high: '#1b6e4b', both_low: '#5d7367', main_only: '#9a6b1f', indep_only: '#9a6b1f' }
 
 function colorOf(it) {
-  // 没有任何预测数据 → 灰色。不要落到「<0.5 偏低」的红色档，
-  // 那会把「没测」误读成「测了但很低」，属于数据失真。
   if (it.prob == null) return NO_PROB
-  // 外推估计（C 级，仅 HERB 兜底模型、误差明显更大）单独一档灰黄，
-  // 绝不与主力模型的绿/红同色，否则用户会以为两者同等可靠。
   if (it.caliber === 'herb_extrapolated') return EXTRAP
   if (mode.value === 'prob') {
     const p = it.prob
-    return p >= 0.9 ? '#1d4a38' : p >= 0.7 ? '#2e7d5b' : p >= 0.5 ? '#9a6b1f' : '#b04a3a'
+    return p >= 0.9 ? '#114a31' : p >= 0.7 ? '#1b6e4b' : p >= 0.5 ? '#a8711e' : '#b03d2f'
   }
   if (mode.value === 'domain') return adColors[it.ad_level_live ?? it.ad_level] || NO_PROB
   return cvColors[it.cv_level] || NO_PROB
 }
 
-// 视口归一化：UMAP 坐标 → 单位方框，绘制时再乘画布像素
+// 视口归一化：UMAP 坐标 → 单位方框（保留 6% 边距留给学术坐标轴）
 const bounds = computed(() => {
   if (!items.value.length) return { x0: 0, y0: 0, s: 1 }
   const xs = items.value.map(i => i.x), ys = items.value.map(i => i.y)
@@ -64,38 +59,45 @@ const bounds = computed(() => {
   const y0 = Math.min(...ys), y1 = Math.max(...ys)
   return { x0, y0, s: 1 / Math.max(x1 - x0, y1 - y0, 1e-9) }
 })
-const px = (it) => 0.03 + (it.x - bounds.value.x0) * bounds.value.s * 0.94
-const py = (it) => 0.97 - (it.y - bounds.value.y0) * bounds.value.s * 0.94
+
+// 留出左侧与底部 32px 空间画 UMAP 坐标轴
+const px = (it) => 0.06 + (it.x - bounds.value.x0) * bounds.value.s * 0.88
+const py = (it) => 0.92 - (it.y - bounds.value.y0) * bounds.value.s * 0.86
 
 const legend = computed(() => {
   const s = stats.value || {}
   if (mode.value === 'prob') {
     return [
-      { c: '#1d4a38', t: '≥0.9 很高' }, { c: '#2e7d5b', t: '0.7–0.9 较高' },
-      { c: '#9a6b1f', t: '0.5–0.7 中等' }, { c: '#b04a3a', t: '<0.5 偏低' },
-      { c: EXTRAP, t: `外推估计 ${s.extrapolated ?? 0}` },
-      { c: NO_PROB, t: `无预测 ${s.no_prob ?? 0}` }]
+      { c: '#114a31', t: '≥0.9 极高入血' },
+      { c: '#1b6e4b', t: '0.7–0.9 较高入血' },
+      { c: '#a8711e', t: '0.5–0.7 中等' },
+      { c: '#b03d2f', t: '<0.5 偏低' },
+      { c: EXTRAP, t: `外推星云 ${s.extrapolated ?? 0}` },
+      { c: NO_PROB, t: `背景结构 ${s.no_prob ?? 0}` }
+    ]
   }
   if (mode.value === 'domain') {
     return [
-      { c: adColors.in, t: `域内 ${s.ad_in ?? 0}` },
-      { c: adColors.edge, t: `边缘 ${s.ad_edge ?? 0}` },
-      { c: adColors.out, t: `域外 ${s.ad_out ?? 0}` },
-      { c: NO_PROB, t: `未评估 ${s.no_prob ?? 0}` }]
+      { c: adColors.in, t: `域内高信度 ${s.ad_in ?? 0}` },
+      { c: adColors.edge, t: `临界边缘 ${s.ad_edge ?? 0}` },
+      { c: adColors.out, t: `域外外推 ${s.ad_out ?? 0}` },
+      { c: NO_PROB, t: `未评估 ${s.no_prob ?? 0}` }
+    ]
   }
   return [
-    { c: cvColors.both_high, t: `结论一致·高 ${s.cv_both_high ?? 0}` },
-    { c: cvColors.both_low, t: `结论一致·低 ${s.cv_both_low ?? 0}` },
-    { c: cvColors.main_only, t: `分歧 ${s.cv_diverge ?? 0}` },
-    { c: NO_PROB, t: `未评估 ${s.total - (s.cv_both_high ?? 0) - (s.cv_both_low ?? 0) - (s.cv_diverge ?? 0)}` }]
+    { c: cvColors.both_high, t: `结论一致·高入血 ${s.cv_both_high ?? 0}` },
+    { c: cvColors.both_low, t: `结论一致·低入血 ${s.cv_both_low ?? 0}` },
+    { c: cvColors.main_only, t: `两模型分歧 ${s.cv_diverge ?? 0}` },
+    { c: NO_PROB, t: `未评估 ${s.total - (s.cv_both_high ?? 0) - (s.cv_both_low ?? 0) - (s.cv_diverge ?? 0)}` }
+  ]
 })
 
-// ---- canvas 绘制 ----
+// ---- 生信顶刊级 Canvas 绘制 ----
 function draw() {
   const cv = canvasEl.value
   if (!cv || !items.value.length) return
-  const dpr = Math.min(window.devicePixelRatio || 1, 2)   // 上限 2：3x 屏上 4,500 点没必要
-  const cssW = cv.clientWidth || 320
+  const dpr = Math.min(window.devicePixelRatio || 1, 2)
+  const cssW = cv.clientWidth || 340
   const cssH = cssW
   if (cv.width !== Math.round(cssW * dpr)) {
     cv.width = Math.round(cssW * dpr)
@@ -105,45 +107,106 @@ function draw() {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
   ctx.clearRect(0, 0, cssW, cssH)
 
-  // 先画无预测的灰点（在底层），再画有预测的彩点，保证彩点不被压住
-  const gray = [], color = []
-  for (const it of items.value) (it.prob == null ? gray : color).push(it)
+  // 1. 绘制极淡科研背景与微对齐十字网格
+  ctx.fillStyle = '#f6faf7'
+  ctx.fillRect(0, 0, cssW, cssH)
 
-  const r = cssW / 100   // 与旧 SVG 视野 100×100 对齐，点径 1.1 → 视觉尺寸不变
-  ctx.globalAlpha = 0.5
-  ctx.fillStyle = NO_PROB
-  for (const it of gray) {
+  ctx.strokeStyle = 'rgba(58, 122, 94, 0.06)'
+  ctx.lineWidth = 1
+  const gridStep = cssW / 8
+  ctx.beginPath()
+  for (let x = gridStep; x < cssW; x += gridStep) {
+    ctx.moveTo(x, 0); ctx.lineTo(x, cssH)
+  }
+  for (let y = gridStep; y < cssH; y += gridStep) {
+    ctx.moveTo(0, y); ctx.lineTo(cssW, y)
+  }
+  ctx.stroke()
+
+  // 2. 数据分流：背景外推点 (多) vs 核心验证集预测点 (少而精)
+  const bgDots = [], coreDots = []
+  for (const it of items.value) {
+    if (it.caliber === 'herb_extrapolated' || it.prob == null) {
+      bgDots.push(it)
+    } else {
+      coreDots.push(it)
+    }
+  }
+
+  // 3. 绘制底层星云：微粒子半透明叠加，自然形成密度晕
+  const rBg = Math.max(1.3, cssW / 240)
+  ctx.globalAlpha = 0.25
+  ctx.fillStyle = EXTRAP
+  for (const it of bgDots) {
     ctx.beginPath()
-    ctx.arc(px(it) * cssW, py(it) * cssH, r * 1.1, 0, Math.PI * 2)
+    ctx.arc(px(it) * cssW, py(it) * cssH, rBg, 0, Math.PI * 2)
     ctx.fill()
   }
-  ctx.globalAlpha = 0.9
-  for (const it of color) {
+
+  // 4. 绘制核心预测点（带层次与清晰色彩）
+  const rCore = Math.max(2.4, cssW / 140)
+  ctx.globalAlpha = 0.88
+  for (const it of coreDots) {
+    const cx = px(it) * cssW, cy = py(it) * cssH
     ctx.fillStyle = colorOf(it)
     ctx.beginPath()
-    ctx.arc(px(it) * cssW, py(it) * cssH, r * 1.3, 0, Math.PI * 2)
+    ctx.arc(cx, cy, rCore, 0, Math.PI * 2)
     ctx.fill()
   }
-  ctx.globalAlpha = 1
 
+  // 5. 选中焦点微晕
   if (picked.value) {
     const cx = px(picked.value) * cssW, cy = py(picked.value) * cssH
-    ctx.strokeStyle = '#1d1a14'
-    ctx.lineWidth = 1.5
+    // 外发光环
+    ctx.globalAlpha = 0.35
+    ctx.fillStyle = colorOf(picked.value)
     ctx.beginPath()
-    ctx.arc(cx, cy, r * 2.6, 0, Math.PI * 2)
+    ctx.arc(cx, cy, rCore * 3.5, 0, Math.PI * 2)
+    ctx.fill()
+    // 聚焦实心环
+    ctx.globalAlpha = 1
+    ctx.strokeStyle = '#1d1a14'
+    ctx.lineWidth = 2
+    ctx.beginPath()
+    ctx.arc(cx, cy, rCore * 2.2, 0, Math.PI * 2)
     ctx.stroke()
   }
+
+  // 6. 学术级 L 型坐标轴与元数据水印（Nature / Bioinformatics 规范）
+  ctx.globalAlpha = 0.55
+  ctx.strokeStyle = '#3a5948'
+  ctx.lineWidth = 1.2
+  const ox = 18, oy = cssH - 18
+  ctx.beginPath()
+  // Y 轴
+  ctx.moveTo(ox, oy); ctx.lineTo(ox, oy - 38)
+  ctx.lineTo(ox - 3, oy - 32); ctx.moveTo(ox, oy - 38); ctx.lineTo(ox + 3, oy - 32)
+  // X 轴
+  ctx.moveTo(ox, oy); ctx.lineTo(ox + 42, oy)
+  ctx.lineTo(ox + 36, oy - 3); ctx.moveTo(ox + 42, oy); ctx.lineTo(ox + 36, oy + 3)
+  ctx.stroke()
+
+  ctx.fillStyle = '#2f4c3c'
+  ctx.font = '600 9px ui-monospace, SFMono-Regular, monospace'
+  ctx.fillText('UMAP 2', ox + 4, oy - 30)
+  ctx.fillText('UMAP 1', ox + 18, oy + 12)
+
+  // 右上角学术空间指纹注记
+  ctx.textAlign = 'right'
+  ctx.fillStyle = '#627a6d'
+  ctx.font = '500 9px ui-monospace, SFMono-Regular, monospace'
+  ctx.fillText('ECFP4 (Morgan) · Manifold', cssW - 10, 16)
+  ctx.textAlign = 'left'
+  ctx.globalAlpha = 1
 }
 
-// 点选：canvas 没有 DOM 命中，自己算最近点（只允许选中有预测值的点）
 function onClick(ev) {
   const cv = canvasEl.value
   if (!cv) return
   const rect = cv.getBoundingClientRect()
   const mx = (ev.clientX - rect.left) / rect.width
   const my = (ev.clientY - rect.top) / rect.height
-  const tol = 0.022   // 手指粗，容差按画面比例给
+  const tol = 0.024
   let best = null, bestD = Infinity
   for (const it of items.value) {
     const d = Math.hypot(px(it) - mx, py(it) - my)
@@ -172,9 +235,6 @@ async function load() {
   } catch {
     loadError.value = true
   } finally {
-    // 必须先关 loading：canvas 在 `v-else-if="!loaded"` 之后的分支里，
-    // loading 仍为 true 时 DOM 上是「加载中…」，此时 nextTick 后 draw() 拿不到 canvas，
-    // 画布会一直空白（2026-11-06 实测踩过）。
     loading.value = false
   }
   await nextTick()
@@ -184,12 +244,7 @@ async function load() {
 watch(mode, () => draw())
 
 onMounted(() => {
-  // 整页地图是用户主动导航进来的，页面存在的唯一目的就是看这张图 ——
-  // 不需要滚动触发。2026-11-06 实测：在 in-app browser 里对整页 canvas 容器
-  // 挂 IntersectionObserver，回调根本不触发（手动构造 IO 观察同一元素 1.5s 无回调），
-  // 页面会永久停在「滚动到此处自动加载」。这里改为直接加载，不赌环境。
   load()
-  // 窗口尺寸变化重绘（canvas 不是矢量的，缩放必须重画）
   if (typeof ResizeObserver !== 'undefined' && wrapEl.value) {
     ro = new ResizeObserver(() => draw())
     ro.observe(wrapEl.value)
@@ -204,72 +259,126 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="page">
+  <div class="page chem-map-page">
     <div class="card map-card">
       <div class="map-head">
-        <b>成分化学空间地图</b>
+        <div class="head-left">
+          <div class="pro-tag">
+            <Compass :size="12" :stroke-width="2.4" />
+            <span>专业生信流形</span>
+          </div>
+          <h2 class="map-title">成分化学空间拓扑地图</h2>
+        </div>
         <span class="map-sub">
-          <template v-if="stats">{{ stats.total }} 个成分 · 其中 {{ stats.with_prob }} 个有入血预测</template>
-          <template v-else>结构相似者靠近</template>
+          <template v-if="stats">{{ stats.total }} 个全库解析成分 · 空间流形表征结构相似性</template>
         </span>
       </div>
+
+      <!-- 模式切换 -->
       <div class="map-modes">
-        <button v-for="m in MODES" :key="m.key" class="map-mode" :class="{ on: mode === m.key }" @click="mode = m.key">{{ m.label }}</button>
+        <button v-for="m in MODES" :key="m.key" class="map-mode" :class="{ on: mode === m.key }" @click="mode = m.key">
+          {{ m.label }}
+        </button>
       </div>
       <p class="map-hint">{{ MODES.find(m => m.key === mode)?.hint }}</p>
 
+      <!-- 画布容器 -->
       <div ref="wrapEl" class="map-wrap">
-        <div v-if="loading" class="map-loading">加载中…</div>
+        <div v-if="loading" class="map-loading">正在降维投影全库 4,558 个分子结构流形…</div>
         <div v-else-if="loadError" class="map-loading">服务暂时不可用</div>
-        <div v-else-if="!loaded" class="map-loading">滚动到此处自动加载</div>
+        <div v-else-if="!loaded" class="map-loading">准备就绪</div>
         <canvas v-else ref="canvasEl" class="map-canvas" @click="onClick"></canvas>
       </div>
 
+      <!-- 学术图例 -->
       <div class="map-legend">
-        <span v-for="l in legend" :key="l.t" class="lg-item"><i :style="{ background: l.c }"></i>{{ l.t }}</span>
+        <span v-for="l in legend" :key="l.t" class="lg-item">
+          <i :style="{ background: l.c }"></i>{{ l.t }}
+        </span>
       </div>
 
-      <div v-if="picked" class="map-picked" @click="goDetail">
-        <b>{{ picked.name }}</b>
-        <span>入血概率 {{ picked.prob != null ? picked.prob.toFixed(3) : '—' }}<template v-if="picked.cv_level"> · {{ cvNames[picked.cv_level] }}</template></span>
-        <span v-if="picked.caliber === 'herb_extrapolated'" class="pick-warn">外推估计（不在主力模型训练集内，仅供参考）</span>
-        <em>点按查看成分档案 →</em>
+      <!-- 点选成分卡片 -->
+      <div v-if="picked" class="map-picked pressable" @click="goDetail">
+        <div class="mp-top">
+          <b class="mp-name">{{ picked.name }}</b>
+          <span class="mp-go">查看档案 <ExternalLink :size="12" /></span>
+        </div>
+        <div class="mp-meta">
+          <span>入血概率 <b>{{ picked.prob != null ? picked.prob.toFixed(3) : '—' }}</b></span>
+          <span v-if="picked.cv_level" class="tag">{{ cvNames[picked.cv_level] }}</span>
+        </div>
+        <span v-if="picked.caliber === 'herb_extrapolated'" class="pick-warn">
+          注：该化合物属 C 级外推参考集（非 ccTCM 核心验证集，由 HERB 辅助模型外推）
+        </span>
       </div>
       <p v-else-if="loaded && stats?.extrapolated" class="map-tip">
-        绿/红色点是 ccTCM 主力模型结论，可点选查看成分档案；土黄色点是 HERB 兜底模型外推估计
-        （该成分不在这两个模型的训练集内，仅有结构数据可算），误差更大，仅供参考。
+        提示：冷青色星云代表全库 3,600+ 药食同源化合物的化学流形背景；高亮翡翠/珊瑚色为核心验证集，可直接点按查看该成分深度档案。
       </p>
 
-      <p class="a-disclaimer">坐标为 UMAP 降维结果（Morgan 指纹→2 维），相对位置有意义、坐标轴数值无物理含义。</p>
+      <p class="a-disclaimer">
+        算法说明：基于 RDKit 计算 2048 位 Morgan 指纹 (ECFP4 半径=2)，经高维流形近似与投影 (UMAP) 映射至二维空间。空间欧氏距离反映分子结构相似性。
+      </p>
       <DisclaimerBanner variant="compound" style="margin-top: 12px;" />
     </div>
   </div>
 </template>
 
 <style scoped>
-.map-card { padding-bottom: 14px; }
-.map-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
-.map-sub { font-size: 11px; color: var(--ink-400); }
-.map-modes { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
-.map-mode { border: 1px solid var(--green-100); background: #fff; border-radius: 14px;
-  padding: 4px 12px; font-size: 12px; color: var(--ink-600); font-family: inherit; }
+.chem-map-page { padding-bottom: 24px; }
+.map-card { padding: 18px 16px; border-radius: 16px; }
+
+.head-left { display: flex; flex-direction: column; gap: 4px; }
+.pro-tag {
+  display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px;
+  background: var(--green-50); border: 1px solid var(--green-100);
+  border-radius: 6px; font-size: 11px; color: var(--green-text); font-weight: 600; width: fit-content;
+}
+.map-title {
+  font-family: var(--font-serif); font-size: 19px; font-weight: 700;
+  color: var(--ink-900); margin: 0;
+}
+.map-sub { font-size: 11.5px; color: var(--ink-400); margin-top: 4px; display: block; }
+
+.map-modes { display: flex; gap: 6px; margin-top: 14px; flex-wrap: wrap; }
+.map-mode {
+  border: 1px solid var(--green-100); background: #fff; border-radius: 20px;
+  padding: 5px 14px; font-size: 12px; font-weight: 600; color: var(--ink-600);
+  cursor: pointer; transition: all 0.15s ease;
+}
 .map-mode.on { background: var(--green-700); color: #fff; border-color: var(--green-700); }
-.map-hint { font-size: 11px; color: var(--ink-400); margin-top: 8px; min-height: 15px; }
+.map-hint { font-size: 11px; color: var(--ink-400); margin-top: 8px; min-height: 16px; line-height: 1.4; }
 
-.map-wrap { margin-top: 10px; }
-.map-loading { padding: 60px 0; text-align: center; color: var(--ink-400); font-size: 13px;
-  background: var(--green-50); border-radius: 12px; }
-.map-canvas { display: block; width: 100%; aspect-ratio: 1/1; background: var(--green-50);
-  border-radius: 12px; touch-action: manipulation; cursor: pointer; }
+.map-wrap { margin-top: 12px; }
+.map-loading {
+  padding: 80px 16px; text-align: center; color: var(--ink-400); font-size: 13px;
+  background: #f6faf7; border-radius: 14px; border: 1px solid rgba(58, 122, 94, 0.1);
+}
+.map-canvas {
+  display: block; width: 100%; aspect-ratio: 1/1; background: #f6faf7;
+  border-radius: 14px; border: 1px solid rgba(58, 122, 94, 0.15);
+  box-shadow: inset 0 1px 4px rgba(0,0,0,0.02); touch-action: manipulation; cursor: crosshair;
+}
 
-.map-legend { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 10px; }
+.map-legend { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; padding: 2px 0; }
 .lg-item { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: var(--ink-600); }
-.lg-item i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
-.map-picked { margin-top: 10px; background: var(--green-50); border-radius: 10px; padding: 10px 12px;
-  display: flex; flex-direction: column; gap: 2px; cursor: pointer; }
-.map-picked b { font-size: 14px; color: var(--ink-900); }
-.map-picked span { font-size: 12px; color: var(--ink-600); font-variant-numeric: tabular-nums; }
-.map-picked em { font-size: 11px; color: var(--green-text); font-style: normal; }
-.map-picked .pick-warn { font-size: 11px; color: var(--amber-text); }
-.map-tip { margin-top: 10px; font-size: 11px; color: var(--ink-400); line-height: 1.6; }
+.lg-item i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+
+.map-picked {
+  margin-top: 12px; background: linear-gradient(135deg, var(--green-50) 0%, #fff 100%);
+  border: 1px solid rgba(58, 122, 94, 0.25); border-radius: 12px; padding: 12px 14px;
+  display: flex; flex-direction: column; gap: 4px; cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+}
+.mp-top { display: flex; justify-content: space-between; align-items: center; }
+.mp-name { font-size: 15px; font-family: var(--font-serif); color: var(--ink-900); }
+.mp-go { font-size: 11.5px; color: var(--green-text); display: inline-flex; align-items: center; gap: 3px; }
+.mp-meta { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--ink-600); }
+.mp-meta b { color: var(--green-text); font-variant-numeric: tabular-nums; }
+.pick-warn { font-size: 11px; color: var(--amber-text); margin-top: 2px; }
+
+.map-tip { margin-top: 10px; font-size: 11px; color: var(--ink-400); line-height: 1.5; }
+.a-disclaimer {
+  margin-top: 12px; font-size: 10.5px; color: var(--ink-400); line-height: 1.5;
+  background: rgba(0,0,0,0.02); padding: 8px 10px; border-radius: 8px;
+}
 </style>

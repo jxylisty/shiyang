@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import {
-  ShoppingBasket, Sparkles, Search, Check, Camera,
+  ShoppingBasket, Sparkles, Search, Check, Camera, ImagePlus,
   X, Trash2, ChevronDown, ChevronUp, Plus, ArrowDown,
 } from '@lucide/vue'
 import {
@@ -128,6 +128,8 @@ function scheduleMatch() {
 }
 
 onMounted(async () => {
+  document.addEventListener('pointerdown', onDocPointerDown)
+  document.addEventListener('keydown', onDocKeyDown)
   try {
     const saved = JSON.parse(localStorage.getItem(STORE_KEY) || '[]')
     saved.forEach(n => selected.value.add(n))
@@ -139,6 +141,8 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(() => {
+  document.removeEventListener('pointerdown', onDocPointerDown)
+  document.removeEventListener('keydown', onDocKeyDown)
   clearMatchTimer()
   if (photoPreview.value) URL.revokeObjectURL(photoPreview.value)
 })
@@ -347,20 +351,52 @@ function evidenceLevel(r) {
 }
 const evidenceLabel = { A: '临床证据支持', B: '实验数据支持', C: '传统应用记载' }
 
-// ---- 拍照识药 ----
-const photoInput = ref(null)      // <input type=file> 引用
+// ---- 一体化方子识别框（粘贴文字 + 点击「+」上传图片或拍照 + Ctrl+V 贴截图） ----
+const albumInput = ref(null)      // 相册/文件选图 <input type=file>（不带 capture）
+const cameraInput = ref(null)     // 调起相机拍照 <input type=file capture="environment">
+const plusWrapRef = ref(null)     // 「+」菜单包裹层（点击外部自动收起）
+const plusMenuOpen = ref(false)
 const photoLoading = ref(false)
 const photoError = ref('')
-const photoInfo = ref(null)       // { status, text, herbs:[], rejected:[] }
+const photoInfo = ref(null)       // { status, text, herbs:[], rejected:[], corrections:[] }
 const photoPreview = ref('')      // 本地预览 URL（objectURL，用完释放）
 
-function triggerPhoto() {
-  photoInput.value?.click()
+function togglePlusMenu() {
+  if (photoLoading.value) return
+  plusMenuOpen.value = !plusMenuOpen.value
 }
 
-async function onPhotoPicked(e) {
-  const file = e.target.files?.[0]
-  e.target.value = ''            // 允许重复选同一张
+function onDocPointerDown(e) {
+  if (!plusMenuOpen.value) return
+  if (plusWrapRef.value && !plusWrapRef.value.contains(e.target)) {
+    plusMenuOpen.value = false
+  }
+}
+
+function onDocKeyDown(e) {
+  if (e.key === 'Escape' && plusMenuOpen.value) {
+    plusMenuOpen.value = false
+  }
+}
+
+function triggerAlbum() {
+  plusMenuOpen.value = false
+  albumInput.value?.click()
+}
+
+function triggerCamera() {
+  plusMenuOpen.value = false
+  cameraInput.value?.click()
+}
+
+function clearPhoto() {
+  if (photoPreview.value) URL.revokeObjectURL(photoPreview.value)
+  photoPreview.value = ''
+  photoInfo.value = null
+  photoError.value = ''
+}
+
+async function processImageFile(file) {
   if (!file) return
   // 前端先拦一道，省一次失败的请求
   if (!/^image\/(jpeg|jpg|png|webp)$/i.test(file.type)) {
@@ -388,8 +424,36 @@ async function onPhotoPicked(e) {
       ? detail
       : (err?.code === 'ECONNABORTED'
           ? '识别超时了，图片可能太大或服务繁忙，请稍后重试'
-          : '识别失败，请换个角度重拍，或直接把文字粘贴到下面')
+          : '识别失败，请换个角度重拍，或直接在输入框粘贴文字')
   } finally { photoLoading.value = false }
+}
+
+function onPhotoPicked(e) {
+  const file = e.target.files?.[0]
+  e.target.value = ''            // 允许重复选同一张
+  if (file) processImageFile(file)
+}
+
+function onComposerPaste(e) {
+  const items = e.clipboardData?.items
+  if (!items) return
+  for (const it of items) {
+    if (it.kind === 'file' && it.type.startsWith('image/')) {
+      const file = it.getAsFile()
+      if (file) {
+        e.preventDefault()
+        processImageFile(file)
+        return
+      }
+    }
+  }
+}
+
+function onComposerDrop(e) {
+  const file = e.dataTransfer?.files?.[0]
+  if (file && file.type.startsWith('image/')) {
+    processImageFile(file)
+  }
 }
 
 // 把识别出的药材并进输入列表（同名只补克重，不重复添加）
@@ -409,11 +473,11 @@ const emptyPhotoHint = computed(() => {
   const st = photoInfo.value?.status
   if (st === 'no_text') {
     return '这张图里没找到文字。请让方子占满画面、光线均匀、别反光或手抖，再拍一次；'
-      + '也可以直接把文字粘贴到下面的输入框。'
+      + '也可以直接在上方对话框里粘贴药材文字。'
   }
   if (st === 'no_herbs') {
-    return '认到了文字，但里面没有能核实的药材名。请对照上面的原文看看是不是识别错了，'
-      + '或把正确的写法粘贴到下面的输入框。'
+    return '认到了文字，但里面没有能核实的药材名。请对照原文看看是不是识别错了，'
+      + '或直接在对话框输入正确写法。'
   }
   return ''
 })
@@ -753,35 +817,115 @@ watch(() => customResult.value, r => {
         </div>
       </div>
 
-      <!-- 拍照识药 -->
-      <div class="section-title">拍到一个方子？直接传图（最快）</div>
-      <div class="card">
-        <input ref="photoInput" type="file" accept="image/jpeg,image/jpg,image/png,image/webp"
+      <!-- 一体化方子录入对话框（支持粘贴文案 + 点「+」上传图片或拍照识别 + Ctrl+V 贴截图） -->
+      <div class="section-title">智能识别方子</div>
+      <div class="card composer-card">
+        <input ref="albumInput" type="file" accept="image/jpeg,image/jpg,image/png,image/webp"
+               class="photo-input" @change="onPhotoPicked" />
+        <input ref="cameraInput" type="file" accept="image/jpeg,image/jpg,image/png,image/webp"
                capture="environment" class="photo-input" @change="onPhotoPicked" />
-        <div class="photo-row">
-          <button class="btn" :disabled="photoLoading" @click="triggerPhoto">
-            <Camera :size="15" />{{ photoLoading ? '识别中…' : '拍照 / 选图' }}
-          </button>
-          <span class="hint">拍药方、处方笺，或手机上看到的方子截图</span>
+
+        <div class="composer-shell">
+          <!-- 图片附件内嵌预览条 -->
+          <div v-if="photoPreview" class="comp-attachment">
+            <img :src="photoPreview" alt="待识别的方子图片" class="comp-thumb" />
+            <div class="comp-att-body">
+              <span v-if="photoLoading" class="comp-att-status is-loading">
+                <span class="att-spin" aria-hidden="true"></span>
+                <span>正在识别图中方子文字…</span>
+              </span>
+              <span v-else-if="photoInfo?.status === 'ok'" class="comp-att-status is-ok">
+                <Check :size="13" :stroke-width="2.6" />
+                <span>已从图片识别 <b>{{ photoInfo.herbs.length }}</b> 味药材，已填入下方列表</span>
+              </span>
+              <span v-else-if="photoError" class="comp-att-status is-err">{{ photoError }}</span>
+              <span v-else-if="photoInfo" class="comp-att-status">{{ emptyPhotoHint }}</span>
+            </div>
+            <button v-if="!photoLoading" type="button" class="comp-att-clear pressable"
+                    aria-label="移除图片" title="移除图片" @click="clearPhoto">
+              <X :size="14" :stroke-width="2.2" />
+            </button>
+          </div>
+
+          <textarea
+            v-model="pasteText"
+            class="comp-textarea"
+            rows="3"
+            maxlength="2000"
+            placeholder="把网上看到的方子整段粘进来，如：「金银花10g、菊花5g、枸杞8克，煮水代茶饮」；也可点左下角「+」上传图片或拍照识方"
+            @paste="onComposerPaste"
+            @drop.prevent="onComposerDrop"
+            @dragover.prevent
+          ></textarea>
+
+          <!-- 对话框底栏：左下角「+」呼出上传图片/拍照菜单，右下角自动提取药材 -->
+          <div class="comp-toolbar">
+            <div ref="plusWrapRef" class="comp-plus-wrap">
+              <button
+                type="button"
+                class="comp-plus-btn pressable"
+                :class="{ open: plusMenuOpen }"
+                :disabled="photoLoading"
+                :aria-expanded="plusMenuOpen"
+                aria-haspopup="menu"
+                aria-label="上传图片或拍照识别方子"
+                @click="togglePlusMenu"
+              >
+                <Plus :size="18" :stroke-width="2.3" class="comp-plus-ico" />
+              </button>
+              <button
+                type="button"
+                class="comp-plus-tip"
+                :disabled="photoLoading"
+                @click="togglePlusMenu"
+              >
+                {{ photoLoading ? '识别图片中…' : '传图 / 拍照' }}
+              </button>
+
+              <Transition name="plus-pop">
+                <div v-if="plusMenuOpen" class="comp-plus-menu" role="menu">
+                  <button type="button" class="comp-menu-item pressable" role="menuitem" @click="triggerAlbum">
+                    <span class="cmi-ico"><ImagePlus :size="17" :stroke-width="2" /></span>
+                    <span class="cmi-txt">
+                      <b>上传图片</b>
+                      <small>从相册选择方子截图或照片</small>
+                    </span>
+                  </button>
+                  <button type="button" class="comp-menu-item pressable" role="menuitem" @click="triggerCamera">
+                    <span class="cmi-ico"><Camera :size="17" :stroke-width="2" /></span>
+                    <span class="cmi-txt">
+                      <b>拍照识方</b>
+                      <small>打开相机拍摄药方或处方笺</small>
+                    </span>
+                  </button>
+                </div>
+              </Transition>
+            </div>
+
+            <div class="comp-actions">
+              <span class="comp-verify-hint">AI 抽取 · 逐条核对数据源</span>
+              <button
+                type="button"
+                class="btn comp-extract-btn"
+                :disabled="!pasteText.trim() || pasteLoading || photoLoading"
+                @click="parsePaste"
+              >
+                <Sparkles :size="14" :stroke-width="2.2" />
+                {{ pasteLoading ? '解析中…' : '自动提取药材' }}
+              </button>
+            </div>
+          </div>
         </div>
 
-        <div v-if="photoPreview" class="photo-preview-wrap">
-          <img :src="photoPreview" alt="待识别的图片" class="photo-preview" />
-        </div>
+        <p v-if="photoError && !photoPreview" class="submit-error shake">{{ photoError }}</p>
 
-        <p v-if="photoError" class="submit-error shake">{{ photoError }}</p>
-
-        <!-- 识别结果：先给原文供核对，再说明抽到了几味药 -->
+        <!-- 图片识别详情：原文核对 + 形近字自动纠错提示 + 未采用条目 -->
         <div v-if="photoInfo" class="photo-result">
           <template v-if="photoInfo.status === 'ok'">
-            <p class="pf-ok">
-              识别出 <b>{{ photoInfo.herbs.length }}</b> 味药，已填入下方列表（可删改）
-            </p>
             <div class="ocr-box">
               <span class="ocr-label">图片原文（请核对）</span>
               <pre class="ocr-text">{{ photoInfo.text }}</pre>
             </div>
-            <!-- OCR 易认错形近字，纠正过的必须显式告诉用户 -->
             <div v-if="photoInfo.corrections?.length" class="pf-fix" style="margin-top: 8px;">
               <b>已自动纠正 {{ photoInfo.corrections.length }} 处疑似识别错误：</b>
               <ul>
@@ -800,33 +944,18 @@ watch(() => customResult.value, r => {
               </ul>
             </div>
           </template>
-          <template v-else>
-            <p class="pf-none">{{ emptyPhotoHint }}</p>
-            <div v-if="photoInfo.text" class="ocr-box">
+          <template v-else-if="photoInfo.text">
+            <div class="ocr-box">
               <span class="ocr-label">图片原文（供你参考）</span>
               <pre class="ocr-text">{{ photoInfo.text }}</pre>
             </div>
           </template>
         </div>
-      </div>
 
-      <!-- 粘贴文案自动解析 -->
-      <div class="section-title">或者粘贴方子文案</div>
-      <div class="card">
-        <textarea v-model="pasteText" class="paste-box" rows="4"
-                  placeholder="把网上看到的方子整段粘进来，如：「金银花10g、菊花5g、枸杞8克，煮水代茶饮」"
-                  maxlength="2000"></textarea>
-        <div class="paste-row">
-          <button class="btn" :disabled="!pasteText.trim() || pasteLoading" @click="parsePaste">
-            {{ pasteLoading ? '解析中…' : '自动提取药材' }}
-          </button>
-          <span class="hint">AI 抽取，逐条核对数据源</span>
-        </div>
-
-        <!-- 解析结果反馈 -->
+        <!-- 文本解析结果反馈 -->
         <div v-if="pasteInfo" class="paste-feedback">
           <p v-if="pasteInfo.herbs.length" class="pf-ok">
-            已提取 <b>{{ pasteInfo.herbs.length }}</b> 味药材并加入上方列表
+            已提取 <b>{{ pasteInfo.herbs.length }}</b> 味药材并填入下方列表
           </p>
           <p v-else class="pf-none">这段文案里没有识别到可查证的药材</p>
           <div v-if="pasteInfo.rejected.length" class="pf-rej">
@@ -1567,14 +1696,270 @@ watch(() => customResult.value, r => {
 .ci-text b { display: block; font-size: 14px; color: var(--ink-900); margin-bottom: 3px; }
 .ci-text span { font-size: 12px; color: var(--ink-600); line-height: 1.5; }
 
-/* 拍照识药 */
+/* 一体化智能方子录入框（文字粘贴 + 「+」上传图片/拍照识方） */
 .photo-input { display: none; }
-.photo-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.photo-preview-wrap { margin-top: 10px; }
-.photo-preview {
-  max-width: 100%; max-height: 200px; border-radius: 10px;
-  border: 1px solid var(--green-100); object-fit: cover;
+.composer-card { padding: 14px; }
+.composer-shell {
+  border: 1px solid var(--green-100);
+  border-radius: 12px;
+  background: var(--card);
+  box-shadow: inset 0 1px 2px rgba(74, 56, 32, 0.04);
+  transition: border-color var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
 }
+.composer-shell:focus-within {
+  border-color: var(--green-600);
+  box-shadow: 0 0 0 3px rgba(58, 122, 94, 0.10);
+}
+
+/* 对话框内嵌图片预览条 */
+.comp-attachment {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 10px 0;
+  padding: 8px 10px;
+  border-radius: 9px;
+  background: var(--green-50);
+  border: 1px solid rgba(58, 122, 94, 0.18);
+}
+.comp-thumb {
+  width: 48px;
+  height: 48px;
+  border-radius: 7px;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid var(--card-border);
+  background: var(--card);
+}
+.comp-att-body {
+  flex: 1;
+  min-width: 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--ink-600);
+}
+.comp-att-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.comp-att-status.is-loading { color: var(--green-text); font-weight: 500; }
+.comp-att-status.is-ok { color: var(--green-text); }
+.comp-att-status.is-err { color: var(--red-text); }
+.att-spin {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 2px solid rgba(58, 122, 94, 0.24);
+  border-top-color: var(--green-700);
+  animation: spin 0.75s linear infinite;
+  flex-shrink: 0;
+}
+.comp-att-clear {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(120, 95, 60, 0.08);
+  color: var(--ink-600);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background var(--dur-fast) ease, color var(--dur-fast) ease;
+}
+.comp-att-clear:hover {
+  background: var(--red-50);
+  color: var(--red-text);
+}
+
+.comp-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 13px 8px;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  font-family: inherit;
+  line-height: 1.65;
+  color: var(--ink-900);
+  resize: vertical;
+  min-height: 84px;
+  outline: none;
+}
+.comp-textarea::placeholder {
+  color: var(--ink-400);
+}
+
+/* 对话框底栏 */
+.comp-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 10px 9px;
+  border-top: 1px dashed rgba(120, 95, 60, 0.14);
+}
+.comp-plus-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.comp-plus-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid rgba(58, 122, 94, 0.30);
+  background: var(--green-50);
+  color: var(--green-text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background var(--dur-fast) ease, border-color var(--dur-fast) ease, color var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
+}
+.comp-plus-btn:hover:not(:disabled) {
+  background: var(--green-100);
+  border-color: var(--green-600);
+}
+.comp-plus-btn.open {
+  background: var(--green-700);
+  border-color: var(--green-700);
+  color: #fdfaf1;
+  box-shadow: 0 2px 8px rgba(42, 95, 74, 0.26);
+}
+.comp-plus-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.comp-plus-ico {
+  transition: transform 0.22s var(--ease-snap);
+}
+.comp-plus-btn.open .comp-plus-ico {
+  transform: rotate(45deg);
+}
+.comp-plus-tip {
+  border: none;
+  background: none;
+  padding: 4px 2px;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--ink-600);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.comp-plus-tip:hover:not(:disabled) {
+  color: var(--green-text);
+}
+.comp-plus-tip:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* 「+」弹出菜单：上传图片 / 拍照识方 */
+.comp-plus-menu {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 9px);
+  z-index: 35;
+  width: 226px;
+  padding: 6px;
+  border-radius: 12px;
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  box-shadow: 0 10px 28px -6px rgba(42, 56, 48, 0.22), 0 2px 6px rgba(42, 56, 48, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.comp-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 10px;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background var(--dur-fast) ease;
+}
+.comp-menu-item:hover {
+  background: var(--green-50);
+}
+.cmi-ico {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: var(--green-50);
+  border: 1px solid var(--green-100);
+  color: var(--green-text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.comp-menu-item:hover .cmi-ico {
+  background: var(--card);
+  border-color: rgba(58, 122, 94, 0.32);
+}
+.cmi-txt {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.cmi-txt b {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink-900);
+  line-height: 1.3;
+}
+.cmi-txt small {
+  font-size: 11px;
+  color: var(--ink-400);
+  line-height: 1.35;
+  margin-top: 1px;
+}
+
+.plus-pop-enter-active,
+.plus-pop-leave-active {
+  transition: opacity 0.16s ease, transform 0.18s var(--ease-snap);
+  transform-origin: bottom left;
+}
+.plus-pop-enter-from,
+.plus-pop-leave-to {
+  opacity: 0;
+  transform: translateY(6px) scale(0.95);
+}
+
+.comp-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.comp-verify-hint {
+  font-size: 11.5px;
+  color: var(--ink-400);
+  white-space: nowrap;
+}
+.comp-extract-btn {
+  padding: 8px 15px;
+  font-size: 13px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+@media (max-width: 520px) {
+  .comp-verify-hint { display: none; }
+  .comp-toolbar { padding: 6px 8px 8px; }
+}
+
 .photo-result { margin-top: 10px; font-size: 12.5px; line-height: 1.6; }
 /* 识别出的原文：等宽、可复制、限高滚动，方便用户对照核对 */
 .ocr-box {
@@ -1592,15 +1977,6 @@ watch(() => customResult.value, r => {
   max-height: 190px; overflow-y: auto;
 }
 
-/* 粘贴解析 */
-.paste-box {
-  width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 10px;
-  border: 1px solid var(--green-100); font-size: 13.5px; font-family: inherit;
-  line-height: 1.6; color: var(--ink-900); background: var(--card);
-  resize: vertical; outline: none; transition: border-color var(--dur-fast);
-}
-.paste-box:focus { border-color: var(--green-600); }
-.paste-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
 .paste-feedback { margin-top: 10px; font-size: 12.5px; line-height: 1.6; }
 .pf-ok { color: var(--green-text); margin: 0 0 6px; }
 .pf-none { color: var(--ink-600); margin: 0 0 6px; }
@@ -1608,6 +1984,7 @@ watch(() => customResult.value, r => {
 .pf-rej b { display: block; color: var(--amber-text); margin-bottom: 4px; }
 .pf-rej ul { margin: 0; padding-left: 16px; color: var(--ink-600); }
 .pf-rej li { margin-bottom: 2px; }
+.submit-error { margin-top: 10px; padding: 9px 12px; background: var(--red-50); border: 1px solid rgba(176, 74, 58, 0.24); color: var(--red-text); border-radius: 9px; font-size: 13px; line-height: 1.55; }
 
 /* OCR 形近字纠正提示（蓝调，区别于"未采用"的琥珀色警告） */
 .pf-fix { background: var(--green-50); border: 1px solid rgba(58, 122, 94, 0.22); border-radius: 8px; padding: 8px 10px; }
