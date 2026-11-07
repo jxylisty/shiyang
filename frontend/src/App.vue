@@ -268,26 +268,28 @@ const baseUrl = import.meta.env.BASE_URL
 }
 
 /* 暗色模式下的底部导航栏与返回钮适配 */
-:global(:root:is(.van-theme-dark, [data-theme="dark"])) .mobile-tabbar {
+/* 注意：:global(A) B 这种写法在 scoped 块里会被 Vue SFC 编译器丢弃后代 B（实测确认：
+   编译产物只剩 :root:is(...)，.mobile-tabbar 消失），必须把整条选择器写进 :global()。 */
+:global(:root:is(.van-theme-dark, [data-theme="dark"]) .mobile-tabbar) {
   background-color: rgba(42, 38, 31, 0.96);
   background-blend-mode: soft-light;
   box-shadow: 0 -3px 16px rgba(0, 0, 0, 0.36);
 }
-:global(:root:is(.van-theme-dark, [data-theme="dark"])) .mtab-item.active .mtab-icon {
+:global(:root:is(.van-theme-dark, [data-theme="dark"]) .mtab-item.active .mtab-icon) {
   background: rgba(143, 201, 171, 0.16);
   color: var(--green-text);
 }
-:global(:root:is(.van-theme-dark, [data-theme="dark"])) .elder-btn.on {
+:global(:root:is(.van-theme-dark, [data-theme="dark"]) .elder-btn.on) {
   color: #fdfaf1;
 }
 
 /* 长辈大字版下底部导航标签与顶栏按钮同步加大 */
-:global(:root:is([data-fontsize="large"], [data-fontsize="xlarge"])) .mtab-label {
+:global(:root:is([data-fontsize="large"], [data-fontsize="xlarge"]) .mtab-label) {
   font-size: 13px;
   font-weight: 600;
 }
-:global(:root:is([data-fontsize="large"], [data-fontsize="xlarge"])) .elder-btn,
-:global(:root:is([data-fontsize="large"], [data-fontsize="xlarge"])) .top-back {
+:global(:root:is([data-fontsize="large"], [data-fontsize="xlarge"]) .elder-btn),
+:global(:root:is([data-fontsize="large"], [data-fontsize="xlarge"]) .top-back) {
   font-size: 14px;
   min-height: 36px;
 }
