@@ -185,7 +185,7 @@ function onDailyImgErr() {
         <p class="d-one">{{ daily.oneliner }}</p>
         <div class="d-tags">
           <span v-for="s in daily.scenes.slice(0, 3)" :key="s" class="tag">{{ s }}</span>
-          <span v-if="daily.materials?.length" class="d-mat-hint">配料：{{ daily.materials.slice(0, 3).join(' · ') }}</span>
+          <span v-if="daily.materials?.length" class="d-mat-hint">配料：{{ daily.materials.slice(0, 6).join(' · ') }}{{ daily.materials.length > 6 ? ' 等' : '' }}</span>
         </div>
       </div>
     </router-link>

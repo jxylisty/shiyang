@@ -3,7 +3,7 @@
  * 证据链溯源卡（T1-3）：A/B/C 三级证据的可展开列表
  * A=权威出处（方子来源/官方目录）B=实验数据库（含 PMID 直达）C=模型预测
  */
-import { ref, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { BadgeCheck, Database, FlaskConical, ExternalLink, ChevronDown } from '@lucide/vue'
 import { getEvidence } from '../api'
 
@@ -12,6 +12,27 @@ const data = ref(null)
 const open = ref(false)
 
 const ICONS = { A: BadgeCheck, B: Database, C: FlaskConical }
+const LEVELS = ['A', 'B', 'C']
+
+/**
+ * 只取 A/B/C 三个等级对象。
+ * 后端 /evidence/recipe/{id} 的 data 里还带 recipe_id / recipe_name 两个标量键，
+ * 直接 v-for 遍历 data 会把整型当等级对象用，访问 meta.items.length 抛 TypeError，
+ * 整张卡渲染失败（三人试用独立复现）。这里显式投影成等级对象。
+ */
+const groups = computed(() => {
+  const d = data.value
+  if (!d || typeof d !== 'object') return []
+  return LEVELS
+    .filter(lv => d[lv] && typeof d[lv] === 'object')
+    .map(lv => ({
+      lv,
+      name: d[lv].name || '',
+      desc: d[lv].desc || '',
+      color: d[lv].color || '',
+      items: Array.isArray(d[lv].items) ? d[lv].items : [],
+    }))
+})
 
 async function load() {
   try { data.value = (await getEvidence(props.recipeId)).data.data } catch { /* 静默 */ }
@@ -20,11 +41,11 @@ watch(() => props.recipeId, load, { immediate: true })
 </script>
 
 <template>
-  <div class="card ev-card" v-if="data">
+  <div class="card ev-card" v-if="groups.length">
     <button class="ev-head" @click="open = !open">
       <span class="ev-title">证据链与溯源</span>
       <span class="ev-badges">
-        <span v-for="(meta, lv) in data" :key="lv" class="ev-badge" :style="{ '--lv': meta.color }">{{ lv }}</span>
+        <span v-for="g in groups" :key="g.lv" class="ev-badge" :style="{ '--lv': g.color }">{{ g.lv }}</span>
       </span>
       <ChevronDown :size="16" class="ev-arrow" :class="{ flip: open }" />
     </button>
@@ -32,21 +53,21 @@ watch(() => props.recipeId, load, { immediate: true })
     <p class="ev-note" v-if="!open">三级证据：A 权威出处 · B 实验数据库 · C 模型预测（点开看每条出处）</p>
 
     <div v-show="open" class="ev-body">
-      <div v-for="(meta, lv) in data" :key="lv" class="ev-group">
+      <div v-for="g in groups" :key="g.lv" class="ev-group">
         <div class="ev-group-head">
-          <span class="ev-badge big" :style="{ '--lv': meta.color }">{{ lv }}</span>
-          <b>{{ meta.name }}</b>
-          <span class="ev-group-desc">{{ meta.desc }}</span>
+          <span class="ev-badge big" :style="{ '--lv': g.color }">{{ g.lv }}</span>
+          <b>{{ g.name }}</b>
+          <span class="ev-group-desc">{{ g.desc }}</span>
         </div>
         <ul class="ev-list">
-          <li v-for="(item, i) in meta.items" :key="i">
+          <li v-for="(item, i) in g.items" :key="i">
             <span class="ev-what">{{ item.what }}</span>
             <a v-if="item.url" :href="item.url" target="_blank" rel="noopener" class="ev-text link">
               {{ item.text }} <ExternalLink :size="11" class="ev-ext" />
             </a>
             <span v-else class="ev-text">{{ item.text }}</span>
           </li>
-          <li v-if="!meta.items.length" class="ev-empty">暂无</li>
+          <li v-if="!g.items.length" class="ev-empty">暂无</li>
         </ul>
       </div>
       <p class="ev-footnote">等级表示出处类型，不表示疗效强弱；模型预测详见「入血概率怎么算」。</p>

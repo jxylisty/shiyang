@@ -206,7 +206,7 @@ function onCoverErr(r) {
             </div>
             <p class="rc-one">{{ r.oneliner }}</p>
             <div v-if="r.materials?.length" class="rc-mats">
-              <span>配料：</span>{{ r.materials.slice(0, 4).join(' · ') }}
+              <span>配料：</span>{{ r.materials.slice(0, 6).join(' · ') }}{{ r.materials.length > 6 ? ' 等' : '' }}
             </div>
             <div v-if="safetyMap[r.id]?.verdict === 'block'" class="rc-safety block">
               <ShieldAlert :size="12" /> {{ safetyMap[r.id].blocks[0].reason }}<span v-if="safetyMap[r.id].blocks.length > 1"> 等</span>

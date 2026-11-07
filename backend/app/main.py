@@ -138,18 +138,19 @@ def list_recipes(type: str | None = None, scene: str | None = None,
         out.append({"id": r["id"], "name": r["name"], "type": r["type"], "oneliner": r["oneliner"],
                     "scenes": scenes, "constitutions_suitable": suits, "duration": r["duration"],
                     "analysis_ready": bool(r["analysis_ready"])})
-    # 封面用首味配料名（卡片左图），一次查询按 recipe_id 取最小 id 配料
+    # 配料名：materials[0] 仍用于卡片左图（前端取 [0]），其余供「配料：」提示展示前几味。
+    # 旧实现只取 MIN(id) 一味，导致列表卡把关键配料截掉（实测：酸梅茶 5 味含冰糖，
+    # 列表只显示「配料：乌梅」，糖尿病人据此误判为无糖茶）。改为按 id 顺序回全部配料。
     if out:
         ph = ",".join("?" * len(out))
-        first_mat = {}
+        mats = {}
         for row in conn.execute(
                 f"SELECT recipe_id, name FROM rel_recipe_material "
-                f"WHERE recipe_id IN ({ph}) AND id IN "
-                f"(SELECT MIN(id) FROM rel_recipe_material WHERE recipe_id IN ({ph}) GROUP BY recipe_id)",
-                [r["id"] for r in out] * 2).fetchall():
-            first_mat[row["recipe_id"]] = row["name"]
+                f"WHERE recipe_id IN ({ph}) ORDER BY recipe_id, id",
+                [r["id"] for r in out]).fetchall():
+            mats.setdefault(row["recipe_id"], []).append(row["name"])
         for r in out:
-            r["materials"] = [first_mat[r["id"]]] if r["id"] in first_mat else []
+            r["materials"] = mats.get(r["id"], [])
     total = len(out)
     start = (page - 1) * size
     conn.close()
