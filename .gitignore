@@ -47,6 +47,12 @@ Thumbs.db
 # 演示临时产物
 gui-test-screenshots/
 
+# 视觉检测/验收的过程截图（ux-tester、browser 逐页抓图，单次 8-12MB，随测随弃）
+# 只忽略 audit_* 子目录：docs/screenshots/ 根目录下 15 张答辩用高清截图是
+# 86f8768 显式入库的资产，被 README.md 与 docs/答辩材料_视觉资产库与截图清单.md
+# 引用，必须保留，因此不能整目录忽略。
+docs/screenshots/audit_*/
+
 # 本地临时文件
 logs_*.txt
 *.log
