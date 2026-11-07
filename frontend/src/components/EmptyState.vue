@@ -10,7 +10,7 @@ defineProps({
   <div class="empty-motion">
     <div class="cup-wrap" aria-hidden="true">
       <span class="leaf l1"><AppIcon name="herb" :size="15" /></span>
-      <span class="leaf l2"><AppIcon name="leaf" :size="15" /></span>
+      <span class="leaf l2"><AppIcon name="herb" :size="13" /></span>
       <div class="cup">
         <span class="steam s1"></span>
         <span class="steam s2"></span>

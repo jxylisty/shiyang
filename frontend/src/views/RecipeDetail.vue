@@ -269,7 +269,7 @@ async function toggleCheckin() {
             <div v-for="(m, mi) in recipe.materials" :key="m.name" class="mat" :style="{ '--i': mi }">
               <img v-if="!matFailed[m.name]" :src="matImg(m.name)" :alt="m.name" class="m-img" :class="{ loaded: matLoaded[m.name] }" loading="lazy"
                    @load="onMatLoad(m.name)" @error="matFailed[m.name] = true" />
-              <div v-else class="m-img m-img-fallback"><AppIcon :name="m.material_type === 'herb' ? 'herb' : 'leaf'" :size="22" /></div>
+              <div v-else class="m-img m-img-fallback"><AppIcon :name="m.material_type === 'herb' ? 'herb' : 'tea'" :size="22" /></div>
               <div class="m-main">
                 <span class="m-name">{{ m.name }}</span>
                 <span class="m-kind" :class="m.material_type">{{ m.material_type === 'herb' ? '药食同源' : '食材' }}</span>

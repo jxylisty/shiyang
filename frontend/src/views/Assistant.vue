@@ -1,7 +1,7 @@
 <script setup>
 // 「问一问」AI 助手对话页（T3-11）：RAG 限定库内资料 + 强制引用编号
 // 引用卡可点进详情；历史存 localStorage 最多 20 轮；体质快捷注入用本地暂存的测评结果
-import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { ref, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { Check } from '@lucide/vue'
 import AppIcon from '../components/AppIcon.vue'
@@ -16,7 +16,20 @@ const HISTORY_MAX_ROUNDS = 20
 
 const msgs = ref([])        // [{role:'user'|'assistant', content, citations?, no_context?, streaming?, ...}]
 const input = ref('')
+const textareaRef = ref(null)
 const sending = ref(false)
+
+function autoResize() {
+  const el = textareaRef.value
+  if (!el) return
+  el.style.height = 'auto'
+  const nextH = Math.min(Math.max(el.scrollHeight, 24), 140)
+  el.style.height = `${nextH}px`
+}
+
+watch(input, () => {
+  nextTick(autoResize)
+})
 const errTip = ref('')
 const listRef = ref(null)
 const citeImgFailed = ref({})
@@ -205,6 +218,7 @@ function send(text) {
   const q = (text ?? input.value).trim()
   if (!q || sending.value) return
   input.value = ''
+  nextTick(autoResize)
   errTip.value = ''
   clearTick()
 
@@ -595,9 +609,15 @@ onBeforeUnmount(() => { clearTick(); abort?.() })
     </div>
 
     <div class="as-input card">
-      <textarea v-model="input" rows="1" placeholder="问问食养方子/药材/成分…（Enter 发送）"
-                @keydown.enter.exact.prevent="send()" />
-      <button class="as-send pressable" :disabled="sending || !input.trim()" @click="send()">
+      <textarea
+        ref="textareaRef"
+        v-model="input"
+        rows="1"
+        placeholder="问问食养方子/药材/成分…（Enter 发送，Shift+Enter 换行）"
+        @input="autoResize"
+        @keydown.enter.exact.prevent="send()"
+      />
+      <button class="as-send pressable" :disabled="sending || !input.trim()" @click="send()" aria-label="发送问题">
         <AppIcon name="chevron" :size="15" :stroke-width="2.4" />
       </button>
     </div>
@@ -1234,7 +1254,8 @@ onBeforeUnmount(() => { clearTick(); abort?.() })
 .as-input { display: flex; align-items: flex-end; gap: 8px; padding: 10px 12px; position: sticky; bottom: calc(12px + var(--tabbar-offset, 0px)); margin-top: 12px; z-index: 20; }
 .as-input textarea {
   flex: 1; border: none; resize: none; outline: none; background: transparent;
-  font-family: inherit; font-size: 14px; line-height: 1.5; color: var(--ink-900); max-height: 96px;
+  font-family: inherit; font-size: 14px; line-height: 1.5; color: var(--ink-900);
+  min-height: 24px; max-height: 140px; overflow-y: auto; padding: 4px 0;
 }
 .as-send {
   flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%; border: none; cursor: pointer;

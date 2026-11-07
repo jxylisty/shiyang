@@ -125,7 +125,7 @@ function onDailyImgErr() {
       <div class="hero-seal" aria-hidden="true"><span class="seal md">食养</span></div>
       <div class="hero-body">
         <div class="hero-main">
-          <div class="hero-badge"><AppIcon name="leaf" :size="13" /> 大创课题「中药入血成分预测」成果转化</div>
+          <div class="hero-badge"><AppIcon name="brand" :size="13" /> 大创课题「中药入血成分预测」成果转化</div>
           <h1>
             <TextReveal text="药食同源 · 有据可查" /><br/>
             <span class="hero-subline"><TextReveal text="每杯茶饮都有「成分说明书」" :delay="300" /></span>

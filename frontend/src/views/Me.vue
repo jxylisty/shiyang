@@ -263,7 +263,7 @@ function fmtDate(s) { return (s || '').slice(0, 16) }
               <option value="">关系（可选）</option>
               <option v-for="r in RELATIONS" :key="r" :value="r">{{ r }}</option>
             </select>
-            <button class="btn" :disabled="!newMemberName.trim()" @click="addMember">添加</button>
+            <button class="btn fam-btn" :disabled="!newMemberName.trim()" @click="addMember">添加</button>
           </div>
         </div>
 
@@ -527,11 +527,23 @@ function fmtDate(s) { return (s || '').slice(0, 16) }
 .fam-info b { font-size: 14px; }
 .fam-rel { font-size: 11px; color: var(--ink-400); margin-left: 6px; }
 .fam-del { border: none; background: none; color: var(--red-text); font-size: 12px; cursor: pointer; }
-.fam-add { display: flex; gap: 6px; }
-.fam-input { flex: 1; min-width: 0; border: 1.5px solid var(--green-100); border-radius: 10px; padding: 8px 10px;
-             font-size: 13px; background: var(--green-50); color: var(--ink-900); outline: none; }
+.fam-add { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.fam-input { flex: 1 1 140px; min-width: 120px; border: 1.5px solid var(--green-100); border-radius: 10px; padding: 8px 12px;
+             font-size: 13.5px; background: var(--green-50); color: var(--ink-900); outline: none; }
 .fam-input:focus { border-color: var(--green-600); }
-.fam-sel { flex: 0 0 92px; }
+.fam-sel {
+  flex: 1 1 120px; min-width: 110px; padding-right: 28px;
+  appearance: none; -webkit-appearance: none;
+  background-color: var(--green-50);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%233a7a5e' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  cursor: pointer;
+}
+.fam-btn { flex: 0 0 auto; min-height: 37px; padding: 0 16px; }
+:root:is(.van-theme-dark, [data-theme="dark"]) .fam-sel {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238fc9ab' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
 .rec-row b { font-size: 15px; }
 .combined { font-size: 12px; color: var(--amber-text); }
 .date { margin-left: auto; font-size: 12px; color: var(--ink-400); }

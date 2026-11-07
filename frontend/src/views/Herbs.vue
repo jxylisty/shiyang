@@ -189,7 +189,7 @@ const hideImg = (name) => { imgFailed.value[name] = true }
               <span v-if="active.category" class="hd-cat">{{ active.category }}</span>
             </div>
             <div class="hd-catalog" v-if="active.food_catalog_batch">
-              <AppIcon name="leaf" :size="12" />
+              <AppIcon name="herb" :size="12" />
               <span>卫健委药食同源目录 · {{ active.food_catalog_batch }} 年纳入</span>
             </div>
             <div class="hd-props" v-if="active.nature || active.flavors.length">
