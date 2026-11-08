@@ -154,3 +154,20 @@ HBuilderX 图形界面：打开 `shiyang-app5` 项目 → 发行 → 原生App-�
 | APK 结构与签名 | zip 校验通过、含 AndroidManifest、`META-INF/CERT.RSA` 签名存在 |
 | 后端 0.0.0.0 监听 | health / stats / recipes 均 200，APP 侧接口链路可通 |
 | 真机端到端 | **未验证**（本机未连接 Android 设备），装到手机后需人工确认首屏、图片与接口 |
+
+### 2026-11-08 挑战杯版（v2.0.0）
+
+跨度 6 天、160 个文件 / +9096 行的前端改动（含 PR#2 移动端 UX 优化）已全部打进包内。
+
+| 项目 | 结果 |
+|---|---|
+| web 构建 | 通过（RecipeDetail 由 1150KB 降至 541KB，分包优化生效） |
+| app 适配回归 | 未破坏：hash 路由 / `VITE_API_BASE` / `BASE_URL` 三处均在；无 `fetch('/api')` 绕过、无 `href="/xxx"` 根路径跳转 |
+| 数据规模变化 | 药材图 **82 → 146 张**（数据扩容），全部成功转 ASCII 名 |
+| app 构建 | 通过，无中文文件名、免责声明已进包 |
+| 云打包 | 成功，**17.78 MB / 940 条目**（旧版 13.07 MB），版本号 2.0.0 |
+| 包内校验 | 真实前端 `id="app"`、相对资源、146 张图、明文 HTTP 放行、`META-INF/CERT.RSA` 签名 |
+| 新页面 | ChemMap / Pantry / Assistant chunk 均在包内 |
+| 后端接口 | 局域网 health / stats / explain/map(1.05MB) / recipes 全 200 |
+| 真机端到端 | **未验证** |
+
