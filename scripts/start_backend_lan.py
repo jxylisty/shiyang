@@ -19,25 +19,54 @@ ROOT = Path(__file__).resolve().parent.parent
 PORT = 8100
 
 
+def _via_socket():
+    """兜底：靠路由表反推出口地址。
+
+    本机实测 `Get-NetIPAddress` 会报 RPC 失败（HRESULT 0x800706be）——
+    WMI/CIM 层故障时 PowerShell 那条路会静默返回空，只靠它会让人以为没有网卡。
+    """
+    ips = []
+    for probe in ("8.8.8.8", "223.5.5.5", "1.1.1.1"):
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        try:
+            s.connect((probe, 80))
+            ip = s.getsockname()[0]
+            if ip and not ip.startswith("127.") and ip not in ips:
+                ips.append(ip)
+        except Exception:
+            pass
+        finally:
+            s.close()
+    return [(ip, "（socket 探测）") for ip in ips]
+
+
 def lan_ips():
     """列出可能的局域网地址，并标注来源，方便判断哪一个手机能连上。"""
+    out = ""
     try:
-        out = subprocess.run(
+        proc = subprocess.run(
             ["powershell", "-NoProfile", "-Command",
              "Get-NetIPAddress -AddressFamily IPv4 | "
              "Where-Object {$_.IPAddress -notlike '127.*' -and $_.IPAddress -notlike '169.254.*'} | "
              "ForEach-Object { $_.IPAddress + '|' + $_.InterfaceAlias }"],
             capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=30,
-        ).stdout
+        )
+        out = proc.stdout or ""
+        if proc.returncode != 0 or "RPC" in (proc.stderr or "") or "0x800706be" in (proc.stderr or ""):
+            print("（PowerShell 网卡枚举不可用，改用 socket 探测）")
+            out = ""
     except Exception as e:  # 非 Windows 或 PowerShell 不可用
-        print(f"（获取网卡失败：{e}）")
-        return []
+        print(f"（获取网卡失败：{e}，改用 socket 探测）")
+        out = ""
 
     rows = []
     for line in out.strip().splitlines():
         if "|" in line:
             ip, alias = line.split("|", 1)
             rows.append((ip.strip(), alias.strip()))
+
+    if not rows:
+        rows = _via_socket()
 
     def kind(item):
         ip, alias = item
