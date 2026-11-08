@@ -339,18 +339,6 @@ async function runCustomPlain() {
 
 const customClaim = ref('')
 
-// 证据等级：根据数据情况给出综合评级
-function evidenceLevel(r) {
-  // 有临床文献 → A；有靶点/疾病统计显著 → B；只有传统功效 → C
-  const hasClinical = r.herbs?.some(h =>
-    h.targets?.some(t => parseFloat(t.p_value) < 0.001))
-  const hasTargets = (r.all_targets?.length || 0) > 0
-  if (hasClinical) return 'A'
-  if (hasTargets) return 'B'
-  return 'C'
-}
-const evidenceLabel = { A: '临床证据支持', B: '实验数据支持', C: '传统应用记载' }
-
 // ---- 一体化方子识别框（粘贴文字 + 点击「+」上传图片或拍照 + Ctrl+V 贴截图） ----
 const albumInput = ref(null)      // 相册/文件选图 <input type=file>（不带 capture）
 const cameraInput = ref(null)     // 调起相机拍照 <input type=file capture="environment">
@@ -1012,8 +1000,8 @@ watch(() => customResult.value, r => {
         <!-- 一句话结论 -->
         <div class="card cr-summary">
           <div class="crs-top">
-            <span class="crs-badge" :class="'lv-' + evidenceLevel(customResult)">
-              证据等级 · {{ evidenceLabel[evidenceLevel(customResult)] }}
+            <span class="crs-badge lv-B">
+              数据来源 · HERB 数据库
             </span>
           </div>
           <p class="crs-text">
