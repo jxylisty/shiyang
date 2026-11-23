@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, defineAsyncComponent, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { BadgeCheck, Clock, ExternalLink, Star, StarOff, CheckCircle2, ArrowUp, FlaskConical, ShieldAlert } from '@lucide/vue'
 import AppIcon from '../components/AppIcon.vue'
@@ -7,8 +7,6 @@ import { showSuccessToast } from 'vant'
 import { getRecipe, getRecipePlain, getExposure, getPathways, addFavorite, removeFavorite, listFavorites, isLoggedIn, pushHistory, doCheckin, undoCheckin, matImg } from '../api'
 import { afterPaint } from '../utils/motion'
 import AIReport from '../components/AIReport.vue'
-import NetworkGraph from '../components/NetworkGraph.vue'
-import EvidenceChain from '../components/EvidenceChain.vue'
 import SharePoster from '../components/SharePoster.vue'
 import SafetyBanner from '../components/SafetyBanner.vue'
 import FamilyFit from '../components/FamilyFit.vue'
@@ -18,6 +16,10 @@ import DisclaimerBanner from '../components/DisclaimerBanner.vue'
 import PlainCard from '../components/PlainCard.vue'
 import ProModeToggle from '../components/ProModeToggle.vue'
 import { proMode } from '../utils/proMode'
+
+// 专业模式开启后再加载图表，先显示方子详情。
+const NetworkGraph = defineAsyncComponent(() => import('../components/NetworkGraph.vue'))
+const EvidenceChain = defineAsyncComponent(() => import('../components/EvidenceChain.vue'))
 
 const route = useRoute()
 const router = useRouter()

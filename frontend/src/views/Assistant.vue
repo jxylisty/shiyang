@@ -312,11 +312,19 @@ function toggleTrace(m) {
 }
 
 // 引用卡跳转：方子 → 详情，成分 → 词典；药材跳药材图鉴并定位
-function goCite(c) {
+async function goCite(c) {
   if (!c) return
-  if (c.kind === 'recipe') router.push(`/recipes/${c.ref_id}`)
-  else if (c.kind === 'compound') router.push(`/compounds/${encodeURIComponent(c.title)}`)
-  else router.push({ path: '/herbs', query: { h: c.title } })
+  let to
+  if (c.kind === 'recipe') to = { name: 'recipeDetail', params: { id: c.ref_id } }
+  else if (c.kind === 'compound') to = { name: 'compoundDetail', params: { name: c.title } }
+  else to = { name: 'herbs', query: { h: c.title } }
+
+  try {
+    await router.push(to)
+  } catch {
+    // 页面模块加载失败后，从浏览器重新打开详情，以获取最新入口和模块。
+    window.location.assign(router.resolve(to).href)
+  }
 }
 
 // 引用卡封面图：
@@ -581,7 +589,7 @@ onBeforeUnmount(() => { clearTick(); abort?.() })
               <span>参考依据（点击卡片查看详情）</span>
               <span class="as-cites-count">{{ citeStats(m).summary }}</span>
             </div>
-            <button v-for="c in m.citations" :key="c.id" class="as-cite pressable" @click="goCite(c)">
+            <button v-for="c in m.citations" :key="c.id" type="button" class="as-cite pressable" @click="goCite(c)">
               <span class="ac-cover">
                 <img v-if="citeCover(c) && !citeImgFailed[c.id]"
                      :src="citeCover(c)" :alt="c.title" loading="lazy" @error="onCiteImgErr(c)" />
