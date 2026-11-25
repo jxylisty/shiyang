@@ -64,6 +64,11 @@ export const compareRecipes = (a, b) => api.get('/recipes/compare', { params: { 
 // ---- 全局搜索 ----
 export const globalSearch = (q, limit) => api.get('/search', { params: limit ? { q, limit } : { q } })
 
+export const transcribeVoice = (audio, signal) =>
+  api.post('/speech/transcribe', audio, {
+    headers: { 'Content-Type': audio.type }, signal, timeout: 30000,
+  })
+
 // ---- AI 助手对话（SSE，POST；后端 RAG 检索库内资料后流式回答） ----
 export function streamAssistantChat(question, onCitations, onDelta, onDone, onError,
                                     { history = [], constitutionCode = null } = {}) {

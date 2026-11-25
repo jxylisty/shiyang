@@ -6,6 +6,7 @@ import ConstitutionCard from '../components/ConstitutionCard.vue'
 import RecipeRow from '../components/RecipeRow.vue'
 import DisclaimerBanner from '../components/DisclaimerBanner.vue'
 import AppIcon from '../components/AppIcon.vue'
+import VoiceInput from '../components/VoiceInput.vue'
 import { proMode } from '../utils/proMode'
 import { FONT_KEYS, FONT_LABELS, fontScale, setFontScale } from '../utils/fontScale'
 import { getGuestConstitutionRecord, GUEST_EXTRA_KEYS, CODE_NAME } from '../utils/guestArchive'
@@ -259,6 +260,7 @@ function fmtDate(s) { return (s || '').slice(0, 16) }
           <p v-else class="empty" style="padding:8px 0 12px">还没有家庭成员，添加后可在测评页替他们答题</p>
           <div class="fam-add">
             <input v-model="newMemberName" placeholder="称呼，如：妈妈" maxlength="12" class="fam-input" />
+            <VoiceInput v-model="newMemberName" compact :maxlength="12" label="语音输入家庭成员称呼" />
             <select v-model="newMemberRelation" class="fam-input fam-sel">
               <option value="">关系（可选）</option>
               <option v-for="r in RELATIONS" :key="r" :value="r">{{ r }}</option>

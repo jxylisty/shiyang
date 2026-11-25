@@ -11,6 +11,7 @@ import {
 import DisclaimerBanner from '../components/DisclaimerBanner.vue'
 import PlainCard from '../components/PlainCard.vue'
 import ProModeToggle from '../components/ProModeToggle.vue'
+import VoiceInput from '../components/VoiceInput.vue'
 import { proMode } from '../utils/proMode'
 
 const activeTab = ref('own')  // 'own' = 我的茶罐 / 'custom' = 自定义鉴方
@@ -634,6 +635,7 @@ watch(() => customResult.value, r => {
           <button v-if="search" type="button" class="shelf-search-clear" @click="search = ''" aria-label="清空搜索">
             <X :size="14" />
           </button>
+          <VoiceInput v-model="search" compact label="语音搜茶罐食材" />
         </div>
 
         <!-- 横向滑动分类抽屉（搜索时提示跨全库检索，平时按分屉快速定位） -->
@@ -891,6 +893,8 @@ watch(() => customResult.value, r => {
             </div>
 
             <div class="comp-actions">
+              <VoiceInput v-model="pasteText" compact append :maxlength="2000"
+                          :disabled="pasteLoading || photoLoading" label="语音录入方子文案" />
               <span class="comp-verify-hint">AI 抽取 · 逐条核对数据源</span>
               <button
                 type="button"
@@ -964,6 +968,7 @@ watch(() => customResult.value, r => {
         <div class="add-row">
           <input v-model="customInput" class="add-input" placeholder="输入药材名，如：金银花"
                  @keyup.enter="addCustomHerb" />
+          <VoiceInput v-model="customInput" compact label="语音输入药材名" />
           <button class="btn" :disabled="!customInput.trim()" @click="addCustomHerb">添加</button>
         </div>
         <p class="hint" style="margin-top: 8px">

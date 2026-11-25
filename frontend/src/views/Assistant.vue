@@ -7,6 +7,7 @@ import { Check } from '@lucide/vue'
 import AppIcon from '../components/AppIcon.vue'
 import AgentAvatar from '../components/AgentAvatar.vue'
 import DisclaimerBanner from '../components/DisclaimerBanner.vue'
+import VoiceInput from '../components/VoiceInput.vue'
 import { streamAssistantChat, getLocalConstitution, matImg } from '../api'
 import { PHARMACOPOEIA_FUNCTIONS } from '../utils/pharmacopoeiaFunctions'
 
@@ -625,6 +626,7 @@ onBeforeUnmount(() => { clearTick(); abort?.() })
         @input="autoResize"
         @keydown.enter.exact.prevent="send()"
       />
+      <VoiceInput v-model="input" append :disabled="sending" />
       <button class="as-send pressable" :disabled="sending || !input.trim()" @click="send()" aria-label="发送问题">
         <AppIcon name="chevron" :size="15" :stroke-width="2.4" />
       </button>
@@ -1259,9 +1261,9 @@ onBeforeUnmount(() => { clearTick(); abort?.() })
 }
 
 /* 底部输入栏 */
-.as-input { display: flex; align-items: flex-end; gap: 8px; padding: 10px 12px; position: sticky; bottom: calc(12px + var(--tabbar-offset, 0px)); margin-top: 12px; z-index: 20; }
+.as-input { display: flex; align-items: center; gap: 8px; padding: 10px 12px; position: sticky; bottom: calc(12px + var(--tabbar-offset, 0px)); margin-top: 12px; z-index: 20; }
 .as-input textarea {
-  flex: 1; border: none; resize: none; outline: none; background: transparent;
+  flex: 1; min-width: 0; border: none; resize: none; outline: none; background: transparent;
   font-family: inherit; font-size: 14px; line-height: 1.5; color: var(--ink-900);
   min-height: 24px; max-height: 140px; overflow-y: auto; padding: 4px 0;
 }

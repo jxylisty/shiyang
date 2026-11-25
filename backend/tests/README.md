@@ -29,6 +29,7 @@ python -X utf8 -m pytest tests/ -q -k "plain"       # 按名字过滤
 | `test_p0_evidence_chain.py` | 7 | 暴露量×入血概率合并、靶点展示层仅人类蛋白 | **是**：直读真实 `data/shiyang.db`（只读） |
 | `test_assistant_chat.py` | 6 | 助手 SSE 事件序 / mock `stream_chat` / prompt 组装 / 入参校验 | 否 |
 | `test_eval_service.py` | 3 | 食养科学三维指数：入血潜力 / 多靶协同 / 证据强度计算与自洽性 | 否 |
+| `test_speech.py` | 4 | 语音转写路由：正文与格式校验、分块大小上限、转写降级和禁止缓存 | 否（转写打桩） |
 | `conftest.py` | — | autouse 兜底清理：用例失败时也删掉本次新建的测试账号（AGENTS.md §2.7） | — |
 
 ## 三、口径与约束（改测试前必读）

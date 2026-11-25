@@ -4,6 +4,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { showSuccessToast } from 'vant'
 import { login, register, saveSession } from '../api'
 import { getPendingClaimRecord, claimGuestConstitutionIfNeeded } from '../utils/guestArchive'
+import VoiceInput from '../components/VoiceInput.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -65,7 +66,10 @@ function skipLogin() {
       <Transition name="field-grow">
         <div class="field" v-if="mode === 'register'">
           <label>昵称（可选）</label>
-          <input v-model="nickname" placeholder="怎么称呼你" />
+          <div class="nickname-input">
+            <input v-model="nickname" placeholder="怎么称呼你" />
+            <VoiceInput v-model="nickname" compact :disabled="busy" label="语音输入昵称" />
+          </div>
         </div>
       </Transition>
 
@@ -107,6 +111,8 @@ function skipLogin() {
   transition: border-color var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
 }
 .field input:focus { border-color: var(--green-600); box-shadow: 0 0 0 3px var(--green-50); }
+.nickname-input { display: flex; align-items: center; gap: 4px; }
+.nickname-input input { min-width: 0; }
 /* 注册昵称字段展开/收起 */
 .field-grow-enter-active, .field-grow-leave-active { transition: opacity .25s ease, height .25s var(--ease-out-soft), margin .25s ease; }
 .field-grow-enter-from, .field-grow-leave-to { opacity: 0; height: 0 !important; margin-bottom: 0 !important; }

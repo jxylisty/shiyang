@@ -6,6 +6,7 @@ import AppIcon from '../components/AppIcon.vue'
 import { listRecipes, matImg, getSafetyProfiles, safetyCheckBatch, listFavorites, isLoggedIn } from '../api'
 import TermCard from '../components/TermCard.vue'
 import DisclaimerBanner from '../components/DisclaimerBanner.vue'
+import VoiceInput from '../components/VoiceInput.vue'
 
 const route = useRoute()
 const items = ref([])
@@ -140,7 +141,11 @@ function onCoverErr(r) {
     <TermCard style="margin-bottom: 14px;" />
 
     <div class="filter-card card">
-      <van-search v-model="kw" placeholder="搜方子名、体质需求或药材（如：金银花 / 润肺）" @update:model-value="onSearch" class="search-box" />
+      <van-search v-model="kw" placeholder="搜方子名、体质需求或药材（如：金银花 / 润肺）" @update:model-value="onSearch" class="search-box">
+        <template #right-icon>
+          <VoiceInput v-model="kw" compact label="语音搜方子" @update:model-value="onSearch" />
+        </template>
+      </van-search>
 
       <div class="filters">
         <div class="f-row f-type">

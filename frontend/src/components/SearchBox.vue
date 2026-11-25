@@ -5,6 +5,7 @@
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import AppIcon from './AppIcon.vue'
+import VoiceInput from './VoiceInput.vue'
 import { globalSearch } from '../api'
 import { loadHistory as loadSearchHistory, saveHistory as saveSearchHistory, clearHistory as clearSearchHistory, QUICK_WORDS } from '../utils/searchPrefs'
 
@@ -97,6 +98,7 @@ const probColor = (p) => p >= 0.9 ? 'var(--green-700)' : p >= 0.7 ? 'var(--amber
     <div class="gs-input" @click="onBoxClick">
       <AppIcon name="search" :size="15" :stroke-width="2.2" />
       <input ref="inputRef" v-model="q" type="search" placeholder="搜方子 / 药材 / 成分" @input="onInput" @focus="open = true" />
+      <VoiceInput v-model="q" compact label="全站语音搜索" class="gs-voice" @update:model-value="onInput" />
     </div>
     <transition name="gs-fade">
       <div class="gs-panel" v-if="open">
@@ -230,6 +232,7 @@ const probColor = (p) => p >= 0.9 ? 'var(--green-700)' : p >= 0.7 ? 'var(--amber
   /* 中小屏：搜索框收成 34px 圆形搜索钮，点开时浮层展开，不挤占导航与长辈版开关 */
   .gs-input { padding: 8px; border-radius: 50%; }
   .gs-input input { display: none; }
+  .gsearch:not(.expanded) .gs-voice { display: none; }
   .gsearch.expanded {
     position: absolute; right: 12px; top: 50%; translate: 0 -50%; z-index: 35;
   }

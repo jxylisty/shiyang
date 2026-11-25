@@ -10,3 +10,5 @@ python-multipart>=0.0.6
 rapidocr-onnxruntime>=1.3.0
 # 图像预处理（OCR 前转 RGB、尺寸处理）
 Pillow>=9.0
+# 中文语音转写（录音解码使用本机 ffmpeg，模型另行下载）
+sherpa-onnx>=1.12.11,<2

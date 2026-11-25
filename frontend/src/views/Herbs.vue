@@ -5,6 +5,7 @@ import { useRoute } from 'vue-router'
 import { X, Sparkles, FlaskConical, ChevronDown, ArrowRight } from '@lucide/vue'
 import AppIcon from '../components/AppIcon.vue'
 import DisclaimerBanner from '../components/DisclaimerBanner.vue'
+import VoiceInput from '../components/VoiceInput.vue'
 import { listHerbs, matImg } from '../api'
 import { normalizeHerbView } from '../utils/pharmacopoeiaFunctions'
 
@@ -118,7 +119,11 @@ const hideImg = (name) => { imgFailed.value[name] = true }
 <template>
   <div class="page">
     <div class="card search-card">
-      <van-search v-model="kw" placeholder="搜药材名 / 性味 / 归经 / 功效（如：红枣 / 甘 / 脾经 / 养血）" class="search-box" />
+      <van-search v-model="kw" placeholder="搜药材名 / 性味 / 归经 / 功效（如：红枣 / 甘 / 脾经 / 养血）" class="search-box">
+        <template #right-icon>
+          <VoiceInput v-model="kw" compact label="语音搜药材" />
+        </template>
+      </van-search>
       <div class="filter-bar">
         <button v-for="f in FILTERS" :key="f.key" type="button"
                 class="f-pill" :class="{ active: filterKey === f.key }"

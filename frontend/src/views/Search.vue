@@ -5,6 +5,7 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppIcon from '../components/AppIcon.vue'
 import DisclaimerBanner from '../components/DisclaimerBanner.vue'
+import VoiceInput from '../components/VoiceInput.vue'
 import { globalSearch } from '../api'
 import { loadHistory as loadSearchHistory, saveHistory as saveSearchHistory, clearHistory as clearSearchHistory, QUICK_WORDS } from '../utils/searchPrefs'
 
@@ -57,6 +58,9 @@ onMounted(() => { if (q.value.trim()) doSearch() })
     <div class="card s-card">
       <van-search v-model="q" placeholder="搜方子 / 药材 / 成分 / 配料 / 体质" show-action
                   @update:model-value="onInput" @search="submitSearch()" autofocus>
+        <template #right-icon>
+          <VoiceInput v-model="q" compact label="语音搜索" @update:model-value="onInput" />
+        </template>
         <template #action>
           <button class="s-go" @click="submitSearch()">搜索</button>
         </template>

@@ -10,11 +10,12 @@ import sqlite3
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, File, Header, HTTPException, Query, UploadFile
+from fastapi import FastAPI, File, Header, HTTPException, Query, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field
+from starlette.concurrency import run_in_threadpool
 
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -37,6 +38,7 @@ from services import search_service as search
 from services import plain_service as plain
 from services import eval_service as evs
 from services import prob_caliber as pc
+from services import speech_service as speech
 
 DB_PATH = Path(__file__).resolve().parent.parent.parent / "data" / "shiyang.db"
 DISCLAIMER = "本平台内容为健康参考信息，不构成医疗建议，不用于诊断或治疗。"
@@ -69,6 +71,41 @@ app.include_router(open_api.router)
 def ok(data=None, message="success"):
     # 统一在信封层挂免责声明：AGENTS.md 红线要求每个接口响应都带，逐端点补容易漏
     return {"code": 0, "message": message, "data": data, "disclaimer": DISCLAIMER}
+
+
+@app.post("/api/v1/speech/transcribe")
+async def transcribe_speech(request: Request):
+    """Transcribe a short recording to editable text, without storing the audio."""
+    content_type = request.headers.get("content-type", "").split(";", 1)[0].strip().lower()
+    headers = {"Cache-Control": "no-store"}
+
+    def error(status, message):
+        return JSONResponse({"detail": message, "disclaimer": DISCLAIMER}, status_code=status, headers=headers)
+
+    if content_type not in speech.FORMATS:
+        return error(415, "当前录音格式不支持，请使用系统浏览器或键盘输入。")
+    audio = bytearray()
+    try:
+        async with asyncio.timeout(20):
+            async for chunk in request.stream():
+                if len(audio) + len(chunk) > speech.MAX_AUDIO_BYTES:
+                    return error(413, "录音过大，请缩短后重试。")
+                audio.extend(chunk)
+    except TimeoutError:
+        return error(408, "录音上传超时，请重新录制。")
+    if not audio:
+        return error(400, "录音为空，请重新录制。")
+    try:
+        result = await run_in_threadpool(speech.transcribe, bytes(audio), content_type)
+    except speech.InvalidAudio as exc:
+        return error(422, str(exc))
+    except speech.SpeechBusy:
+        return error(429, "语音识别正忙，请稍后重试。")
+    except speech.SpeechUnavailable:
+        return error(503, "语音识别服务暂不可用，可以继续键盘输入。")
+    if not result:
+        return error(422, "没听清，请靠近麦克风重试。")
+    return JSONResponse(ok({"text": result}), headers=headers)
 
 
 # ==================== 体质测评 ====================

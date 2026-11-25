@@ -51,6 +51,13 @@ location /api/ {
 
 `main.py` 当前 `allow_origins=["*"]`（演示口径）。若前后端同域部署（前端打包后由同一域名/反代伺服），建议把 `allow_origins` 收紧为实际域名再上线。
 
+### 语音输入
+
+- 服务端安装 FFmpeg 并加入 PATH，或用 `SHIYANG_FFMPEG` 指定可执行文件。解压 [SenseVoice INT8 模型](https://k2-fsa.github.io/sherpa/onnx/sense-voice/pretrained.html#download) 的 `model.int8.onnx` 与 `tokens.txt` 到仓库的 `data/cache/speech/sensevoice/`，或用 `SHIYANG_SPEECH_MODEL_DIR` 指向包含这两个文件的目录。首次录音请求加载模型。模型缺失时仍可键盘输入。
+- 网页从 HTTPS 域名访问后申请麦克风权限，代理需放行 `POST /api/v1/speech/transcribe` 和 2 MiB 请求体。微信内置浏览器的录音权限需要在演示手机上验收，系统浏览器可独立测试。
+- 安卓 5+App 使用壳工程的 `Audio`、`File` 模块及 `android.permission.RECORD_AUDIO`。使用 `scripts/build_app.py` 构建时，指定手机能访问的后端地址。扫码访问和公开演示推荐使用同一个 HTTPS 后端。
+- 两端把短录音发给自有后端。后端在内存中解码和转写，安卓端读取后删除临时录音文件。语音文字回填后可编辑，发送问答和添加配料由用户确认。
+
 ## 3. 前端部署
 
 ```bash
