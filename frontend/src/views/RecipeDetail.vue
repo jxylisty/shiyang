@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, defineAsyncComponent, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, defineAsyncComponent, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { BadgeCheck, Clock, ExternalLink, Star, StarOff, CheckCircle2, ArrowUp, FlaskConical, ShieldAlert } from '@lucide/vue'
 import AppIcon from '../components/AppIcon.vue'
@@ -81,12 +81,21 @@ onMounted(async () => {
   } catch { error.value = '加载失败' }
   getRecipePlain(route.params.id).then(({ data }) => { plain.value = data.data })
     .catch(() => {}).finally(() => { plainLoading.value = false })
-  getExposure(route.params.id).then(({ data }) => { exposure.value = data.data }).catch(() => {})
-  getPathways(route.params.id).then(({ data }) => { pathways.value = data.data }).catch(() => {})
   syncFavState()
   window.addEventListener('scroll', onScroll, { passive: true })
 })
 onBeforeUnmount(() => window.removeEventListener('scroll', onScroll))
+
+let researchLoading = false
+watch([proMode, recipe], async ([enabled, current]) => {
+  if (!enabled || !current || researchLoading || (exposure.value && pathways.value)) return
+  researchLoading = true
+  await Promise.allSettled([
+    exposure.value || getExposure(current.id).then(({ data }) => { exposure.value = data.data }),
+    pathways.value || getPathways(current.id).then(({ data }) => { pathways.value = data.data }),
+  ])
+  researchLoading = false
+})
 
 function onScroll() {
   showTop.value = window.scrollY > 600
@@ -217,7 +226,7 @@ async function toggleCheckin() {
           <div class="card head">
             <div class="h-body">
               <div class="h-cover">
-                <img v-if="headCover" :src="headCover" :alt="recipe.name" loading="lazy" @error="onHeadCoverErr" />
+                <img v-if="headCover" :src="headCover" :alt="recipe.name" fetchpriority="high" @error="onHeadCoverErr" />
                 <span v-else class="h-cover-fb"><AppIcon :name="recipe.type === '药膳' ? 'dish' : 'tea'" :size="30" /></span>
               </div>
               <div class="h-content">

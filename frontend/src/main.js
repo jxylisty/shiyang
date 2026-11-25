@@ -2,10 +2,14 @@ import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
 import Vant from 'vant'
-// 顺序要紧：Vant 的 `:root,:host` 与我们的 `:root` 特异性相同（都是 0,1,0），
-// 同特异性下后加载者胜出。style.css 必须放在 vant 之后，
-// 否则 --van-primary-color 等主题覆盖会被 Vant 默认值反压（实测解析成默认蓝 #1989fa）。
-import 'vant/lib/index.css'
+// 用到的样式集中加载一次，主题覆盖保持最后。
+import 'vant/es/empty/style/index.mjs'
+import 'vant/es/list/style/index.mjs'
+import 'vant/es/popup/style/index.mjs'
+import 'vant/es/progress/style/index.mjs'
+import 'vant/es/search/style/index.mjs'
+import 'vant/es/toast/style/index.mjs'
+import 'vant/es/dialog/style/index.mjs'
 import './style.css'
 import './utils/fontScale'
 
@@ -13,5 +17,6 @@ import './utils/fontScale'
 const dark = localStorage.getItem('shiyang_theme') === 'dark'
 document.documentElement.classList.toggle('van-theme-dark', dark)
 document.documentElement.dataset.theme = dark ? 'dark' : 'light'
+document.documentElement.classList.toggle('native-app', import.meta.env.MODE === 'app')
 
 createApp(App).use(router).use(Vant).mount('#app')
