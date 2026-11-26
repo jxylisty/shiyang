@@ -296,10 +296,15 @@ function onDocKeyDown(e) {
   }
 }
 
+function onPageHide() {
+  resetPointerState()
+  cancel()
+}
+
 onMounted(() => {
   document.addEventListener('visibilitychange', onHidden)
   document.addEventListener('keydown', onDocKeyDown)
-  window.addEventListener('pagehide', cancel)
+  window.addEventListener('pagehide', onPageHide)
   window.addEventListener('blur', onWindowBlur)
 })
 onBeforeUnmount(() => {
@@ -308,7 +313,7 @@ onBeforeUnmount(() => {
   cancel()
   document.removeEventListener('visibilitychange', onHidden)
   document.removeEventListener('keydown', onDocKeyDown)
-  window.removeEventListener('pagehide', cancel)
+  window.removeEventListener('pagehide', onPageHide)
   window.removeEventListener('blur', onWindowBlur)
 })
 </script>

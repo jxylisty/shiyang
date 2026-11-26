@@ -1,9 +1,12 @@
+<script>
+// 模块级自增计数：保证未传 id 的实例 fallbackId 全局唯一（script setup 内声明会每实例重置）
+let nextInstanceUid = 0
+</script>
+
 <script setup>
 import { computed, onBeforeUnmount, watch } from 'vue'
 import { Square, Volume2 } from '@lucide/vue'
 import { isSpeechSupported, speak, speakingId, stopSpeak } from '../utils/speak'
-
-let nextInstanceUid = 0
 
 const props = defineProps({
   text: { type: [String, Function], required: true },
@@ -32,11 +35,12 @@ const computedAriaLabel = computed(() => {
 })
 
 function onToggle() {
-  if (!supported || !hasText.value) return
+  if (!supported) return
   if (isSpeaking.value) {
     stopSpeak()
     return
   }
+  if (!hasText.value) return
   speak(resolvedText.value, buttonId.value)
 }
 

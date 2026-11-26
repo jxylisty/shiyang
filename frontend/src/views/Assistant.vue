@@ -1330,6 +1330,9 @@ onBeforeUnmount(() => { clearTick(); abort?.(); stopSpeak() })
 .as-voice-btn :deep(.voice-button.is-recording) {
   background: var(--green-700); border-color: var(--green-700); color: #fdfaf1;
 }
+.as-voice-btn :deep(.voice-button.is-recording.is-cancel) {
+  background: var(--cinnabar); border-color: var(--cinnabar); color: #fdfaf1;
+}
 .as-send {
   flex-shrink: 0; width: 46px; height: 46px; border-radius: 50%; border: none; cursor: pointer;
   background: var(--green-700); color: #fdfaf1; display: inline-flex; align-items: center; justify-content: center;
