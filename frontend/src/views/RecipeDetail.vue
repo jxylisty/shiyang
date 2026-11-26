@@ -69,6 +69,17 @@ async function syncFavState() {
   } catch { /* 静默 */ }
 }
 
+function triggerBarsGrow() {
+  if (window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches) {
+    barsGrown.value = true
+    return
+  }
+  barsGrown.value = false
+  afterPaint(() => {
+    if (proMode.value) barsGrown.value = true
+  })
+}
+
 onMounted(async () => {
   try {
     recipe.value = (await getRecipe(route.params.id)).data.data
@@ -80,7 +91,7 @@ onMounted(async () => {
     })
     resetHeadCover()
     // 下一拍再给进度条终值：让 width transition 从 0 播到目标（afterPaint，与骨架屏同款收口）
-    afterPaint(() => { barsGrown.value = true })
+    if (proMode.value) triggerBarsGrow()
   } catch { error.value = '加载失败' }
   getRecipePlain(route.params.id).then(({ data }) => { plain.value = data.data })
     .catch(() => {}).finally(() => { plainLoading.value = false })
@@ -92,6 +103,14 @@ onBeforeUnmount(() => {
   stopSpeak()
 })
 watch(() => route.params.id, () => stopSpeak())
+
+watch(proMode, (enabled) => {
+  if (!enabled) {
+    barsGrown.value = false
+    return
+  }
+  if (recipe.value) triggerBarsGrow()
+})
 
 let researchLoading = false
 watch([proMode, recipe], async ([enabled, current]) => {
@@ -413,6 +432,15 @@ async function toggleCheckin() {
                   <span class="c-name">{{ c.name }}</span>
                   <span class="c-prob" :style="{ color: probColor(c.prob_cctcm) }">{{ c.prob_cctcm }}</span>
                 </div>
+                <div v-if="c.prob_cctcm != null" class="c-bar-track" aria-hidden="true">
+                  <div
+                    class="c-bar-fill"
+                    :style="{
+                      width: barsGrown ? `${Math.max(0, Math.min(100, c.prob_cctcm * 100))}%` : '0%',
+                      backgroundColor: probColor(c.prob_cctcm),
+                    }"
+                  />
+                </div>
                 <div class="c-line2">
                   PU-Learning 预测入血概率
                 </div>
@@ -604,6 +632,11 @@ async function toggleCheckin() {
 .c-rank { width: 20px; height: 20px; border-radius: 50%; background: var(--green-50); color: var(--green-text); font-size: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .c-name { flex: 1; font-size: 14px; font-weight: 600; }
 .c-prob { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.c-bar-track { height: 6px; margin: 6px 0 2px 28px; border-radius: 999px; background: var(--green-100); overflow: hidden; }
+.c-bar-fill { height: 100%; width: 0; border-radius: inherit; transition: width 600ms ease; transition-delay: calc(var(--i, 0) * 60ms); }
+@media (prefers-reduced-motion: reduce) {
+  .c-bar-fill { transition: none; transition-delay: 0ms; }
+}
 .c-line2 { font-size: 12px; color: var(--ink-600); margin: 3px 0 0 28px; }
 .c-radar { margin-left: 8px; color: var(--green-text); }
 

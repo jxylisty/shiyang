@@ -204,6 +204,7 @@ const hiddenCount = computed(() =>
 )
 
 const selectedList = computed(() => [...selected.value])
+const jarFillHeight = computed(() => `${Math.min(selected.value.size / 12, 1) * 100}%`)
 const visibleSelected = computed(() =>
   trayExpanded.value ? selectedList.value : selectedList.value.slice(0, TRAY_COLLAPSE_LIMIT)
 )
@@ -555,9 +556,15 @@ watch(() => customResult.value, r => {
       <!-- 顶部茶罐托盘：空罐给一键组合示例，入罐后紧凑展示并实时汇总可煮数 -->
       <div class="card tray-card">
         <div class="tray-head">
+          <div class="tea-jar" :class="{ filled: selected.size > 0 }" aria-hidden="true">
+            <span class="tea-jar-lid"></span>
+            <span class="tea-jar-body">
+              <span class="tea-jar-fill" :style="{ height: jarFillHeight }"></span>
+            </span>
+          </div>
           <div class="tray-title">
             <span class="tray-dot" :class="{ on: selected.size > 0 }" />
-            <b>已入罐 {{ selected.size }} 味</b>
+            <b>已入罐 <span :key="selected.size" class="tray-count">{{ selected.size }}</span> 味</b>
             <span v-if="loading" class="tray-status">正在配伍…</span>
             <button
               v-else-if="result && selected.size"
@@ -1189,15 +1196,100 @@ watch(() => customResult.value, r => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 10px;
+}
+.tea-jar {
+  width: 34px;
+  height: 40px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+}
+.tea-jar-lid {
+  position: relative;
+  width: 20px;
+  height: 5px;
+  margin-bottom: 1px;
+  border-radius: 3px 3px 1px 1px;
+  border: 1.5px solid rgba(120, 95, 60, 0.28);
+  background: rgba(120, 95, 60, 0.08);
+  transition: border-color 400ms ease, background 400ms ease;
+}
+.tea-jar-lid::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  transform: translateX(-50%);
+  width: 8px;
+  height: 3px;
+  border-radius: 2px 2px 0 0;
+  border: 1.5px solid rgba(120, 95, 60, 0.28);
+  border-bottom: none;
+  background: rgba(120, 95, 60, 0.08);
+  transition: border-color 400ms ease, background 400ms ease;
+}
+.tea-jar.filled .tea-jar-lid,
+.tea-jar.filled .tea-jar-lid::before {
+  border-color: rgba(42, 95, 74, 0.55);
+  background: var(--green-100);
+}
+.tea-jar-body {
+  position: relative;
+  width: 32px;
+  height: 31px;
+  border-radius: 7px 7px 9px 9px;
+  border: 1.5px solid rgba(120, 95, 60, 0.26);
+  background: rgba(120, 95, 60, 0.05);
+  overflow: hidden;
+  transition: border-color 400ms ease, background 400ms ease;
+}
+.tea-jar.filled .tea-jar-body {
+  border-color: rgba(42, 95, 74, 0.55);
+  background: var(--green-50);
+}
+.tea-jar-body::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  width: 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.35);
+  pointer-events: none;
+  z-index: 1;
+}
+.tea-jar-fill {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 0;
+  background: linear-gradient(180deg, var(--green-600) 0%, var(--green-700) 55%, var(--green-900) 100%);
+  transition: height 400ms ease;
 }
 .tray-title {
+  flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 7px;
   font-size: 13.5px;
   color: var(--ink-900);
+}
+@keyframes tray-count-pulse {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.24); }
+  100% { transform: scale(1); }
+}
+.tray-count {
+  display: inline-block;
+  font-variant-numeric: tabular-nums;
+  animation: tray-count-pulse 260ms var(--ease-snap);
 }
 .tray-dot {
   width: 7px;
@@ -1257,12 +1349,35 @@ watch(() => customResult.value, r => {
 .tray-chips {
   margin-top: 10px;
 }
+@keyframes sel-chip-in {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
 .sel-tag {
   background: var(--green-50); color: var(--green-text);
   border: 1px solid rgba(58, 122, 94, 0.28); border-radius: 999px;
   min-height: 44px; padding: 8px 12px 8px 14px; font-size: 13px; font-weight: 500;
   cursor: pointer; display: inline-flex; align-items: center; gap: 5px; margin: 0;
   font-family: inherit;
+  animation: sel-chip-in 180ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tea-jar-lid,
+  .tea-jar-lid::before,
+  .tea-jar-body,
+  .tea-jar-fill {
+    transition: none;
+  }
+  .sel-tag,
+  .tray-count {
+    animation: none;
+  }
 }
 .sel-tag:hover { background: var(--green-100); border-color: var(--green-600); }
 .sel-x { opacity: .65; transition: opacity var(--dur-fast) ease, color var(--dur-fast) ease; }
