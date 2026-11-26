@@ -42,7 +42,18 @@ watch(() => route.meta.title, (t) => { document.title = t ? `${t} · 食养有�
 
 // 路由过渡 JS 钩子（setTimeout 收尾，隐藏页签不卡死）：
 // router._navDir 由 router/index.js 维护，depth 变深 = 前进（新页从右滑入），变浅 = 后退
-const { enter: pageEnter, leave: pageLeave } = makeNavHooks({ getDir: () => router._navDir ?? 0 })
+// 缩短 leave/enter 总时长并收小位移，减轻慢网 out-in 切换时的短暂空白感
+const { enter: pageEnter, leave: pageLeave } = makeNavHooks({
+  getDir: () => router._navDir ?? 0,
+  enterDx: 20,
+  leaveDx: 12,
+  leaveDur: '.10s',
+  leaveDurT: '.12s',
+  leaveTotal: 120,
+  enterDur: '.16s',
+  enterDurT: '.20s',
+  enterTotal: 220,
+})
 
 // ./ 在 web 下等于 /，在 app(file://) 下指向包内目录
 const baseUrl = import.meta.env.BASE_URL
@@ -88,12 +99,14 @@ const baseUrl = import.meta.env.BASE_URL
   </header>
 
   <div class="app-shell">
-    <router-view v-slot="{ Component }">
-      <!-- JS 钩子驱动（见 pageEnter/pageLeave）：setTimeout 收尾，隐藏页签不卡死 -->
-      <transition :css="false" mode="out-in" @enter="pageEnter" @leave="pageLeave">
-        <component :is="Component" :key="route.path" />
-      </transition>
-    </router-view>
+    <main class="app-main">
+      <router-view v-slot="{ Component }">
+        <!-- JS 钩子驱动（见 pageEnter/pageLeave）：setTimeout 收尾，隐藏页签不卡死 -->
+        <transition :css="false" mode="out-in" @enter="pageEnter" @leave="pageLeave">
+          <component :is="Component" :key="route.path" />
+        </transition>
+      </router-view>
+    </main>
     <!-- 页脚收束：回纹压边 + 云纹，给内容较少的页面（登录/测评）一个体面的结束 -->
     <footer class="site-foot">
       <div class="fret-rule tight"></div>

@@ -198,7 +198,11 @@ function onCoverErr(r) {
                      class="card recipe-card with-cover pressable" :style="{ '--i': Math.min(i % 20, 12), '--d': `${Math.min(i % 20, 12) * 40}ms` }"
                      :class="{ 'safety-block': safetyMap[r.id]?.verdict === 'block' }">
           <div class="rc-cover">
-            <img v-if="coverSrc(r)" :src="coverSrc(r)" alt="" loading="lazy" @error="onCoverErr(r)" />
+            <img v-if="coverSrc(r)" :src="coverSrc(r)" alt=""
+                 :loading="i < 6 ? 'eager' : 'lazy'"
+                 :fetchpriority="i < 4 ? 'high' : undefined"
+                 decoding="async"
+                 @error="onCoverErr(r)" />
             <span v-else class="rc-cover-fallback"><AppIcon :name="r.type === '药膳' ? 'dish' : 'tea'" :size="32" /></span>
             <span class="rc-type">{{ r.type }}</span>
             <!-- 已收藏角标：逛库时认出收藏过的（详情页收藏后列表同步可见） -->

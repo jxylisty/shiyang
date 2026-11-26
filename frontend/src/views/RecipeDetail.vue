@@ -42,7 +42,8 @@ const headCoverTry = ref(0)
 const headCover = ref('')
 function resetHeadCover() {
   headCoverTry.value = 0
-  headCover.value = matImg(recipe.value?.materials?.[0]?.name || '')
+  const first = recipe.value?.materials?.[0]?.name
+  headCover.value = first ? matImg(first) : ''
 }
 function onHeadCoverErr() {
   const mats = recipe.value?.materials || []
@@ -226,7 +227,7 @@ async function toggleCheckin() {
           <div class="card head">
             <div class="h-body">
               <div class="h-cover">
-                <img v-if="headCover" :src="headCover" :alt="recipe.name" fetchpriority="high" @error="onHeadCoverErr" />
+                <img v-if="headCover" :src="headCover" :alt="recipe.name" loading="eager" decoding="async" fetchpriority="high" @error="onHeadCoverErr" />
                 <span v-else class="h-cover-fb"><AppIcon :name="recipe.type === '药膳' ? 'dish' : 'tea'" :size="30" /></span>
               </div>
               <div class="h-content">
@@ -278,7 +279,7 @@ async function toggleCheckin() {
           <div class="section-title">配方</div>
           <div class="card">
             <div v-for="(m, mi) in recipe.materials" :key="m.name" class="mat" :style="{ '--i': mi }">
-              <img v-if="!matFailed[m.name]" :src="matImg(m.name)" :alt="m.name" class="m-img" :class="{ loaded: matLoaded[m.name] }" loading="lazy"
+              <img v-if="!matFailed[m.name]" :src="matImg(m.name)" :alt="m.name" class="m-img" :class="{ loaded: matLoaded[m.name] }" loading="lazy" decoding="async"
                    @load="onMatLoad(m.name)" @error="matFailed[m.name] = true" />
               <div v-else class="m-img m-img-fallback"><AppIcon :name="m.material_type === 'herb' ? 'herb' : 'tea'" :size="22" /></div>
               <div class="m-main">
@@ -494,7 +495,7 @@ async function toggleCheckin() {
 
 .h-body { display: flex; gap: 14px; align-items: flex-start; }
 .h-cover {
-  width: 88px; height: 88px; border-radius: 12px; overflow: hidden; flex-shrink: 0;
+  width: 88px; height: 88px; aspect-ratio: 1; border-radius: 12px; overflow: hidden; flex-shrink: 0;
   background: var(--green-100); display: flex; align-items: center; justify-content: center;
   color: var(--green-text);
 }
@@ -521,7 +522,7 @@ async function toggleCheckin() {
 /* 配料行入场错峰 + 图片懒加载淡入 */
 .mat { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed var(--green-50); gap: 10px; animation: rise .4s var(--ease-out-soft) backwards; animation-delay: calc(var(--i) * 40ms); }
 .mat:last-of-type { border-bottom: none; }
-.m-img { width: 44px; height: 44px; border-radius: 10px; object-fit: cover; flex-shrink: 0; background: var(--green-50); opacity: 0; scale: 0.92; transition: opacity .35s ease, scale .35s var(--ease-snap); }
+.m-img { width: 44px; height: 44px; aspect-ratio: 1; border-radius: 10px; object-fit: cover; flex-shrink: 0; background: var(--green-50); opacity: 0; scale: 0.92; transition: opacity .35s ease, scale .35s var(--ease-snap); }
 .m-img.loaded { opacity: 1; scale: 1; }
 .m-img-fallback { display: flex; align-items: center; justify-content: center; color: var(--tile-ink); opacity: 1; scale: 1; }
 .m-main { flex: 1; }

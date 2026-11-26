@@ -149,6 +149,17 @@ a, button, .btn, .card, .tag, .pressable, input, label { touch-action: manipulat
 /* 浅一档骨架变体（原 5 个页面逐字复制，收口为一份） */
 .sk-anim { background: linear-gradient(90deg, var(--green-50) 25%, #e6f1ea 50%, var(--green-50) 75%); background-size: 200% 100%; animation: shimmer 1.3s infinite; }
 
+/* 深色卡片底上的柔和呼吸骨架（用于首页 Hero 统计舱等深绿背景） */
+@keyframes skl-breathe {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 0.92; }
+}
+.skl-dark {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 6px;
+  animation: skl-breathe 1.4s ease-in-out infinite;
+}
+
 /* 按钮 loading 转圈（原 Login/Quiz 各一份，收口为一份） */
 @keyframes spin { to { rotate: 360deg; } }
 .spinner {
@@ -211,9 +222,18 @@ body {
 :root { --topbar-height: 64px; }
 .app-shell {
   max-width: 750px;
+  min-height: 100vh;
   margin: 0 auto;
   padding-top: calc(var(--topbar-height, 52px) + env(safe-area-inset-top, 0px));
   padding-bottom: var(--tabbar-offset);
+  background-color: var(--bg);
+  display: flex;
+  flex-direction: column;
+}
+.app-main {
+  flex: 1 0 auto;
+  min-height: 62vh;
+  background-color: var(--bg);
 }
 
 /* 内容较少的页面（登录/测评）也要撑住版面：给主区域一个最小高度，

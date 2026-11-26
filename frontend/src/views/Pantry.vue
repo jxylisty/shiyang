@@ -16,6 +16,7 @@ import { proMode } from '../utils/proMode'
 
 const activeTab = ref('own')  // 'own' = 我的茶罐 / 'custom' = 自定义鉴方
 const materials = ref([])       // 全部可选食材 [{name, count}]
+const materialsLoading = ref(true)
 const selected = ref(new Set()) // 勾选的食材名
 const search = ref('')
 const activeCat = ref('hot')    // 当前分类抽屉：hot | all | flower | root | grain | fresh | sweet
@@ -138,6 +139,7 @@ onMounted(async () => {
   try {
     materials.value = (await getPantryMaterials()).data.data.items || []
   } catch { error.value = '食材清单加载失败' }
+  finally { materialsLoading.value = false }
   if (selected.value.size) runMatch()
 })
 
@@ -660,10 +662,21 @@ watch(() => customResult.value, r => {
           <button type="button" class="link-reset" @click="search = ''">返回分类浏览</button>
         </div>
 
+        <!-- 食材清单加载骨架（慢网时不闪出空态提示） -->
+        <div v-if="materialsLoading" class="mat-grid" aria-hidden="true">
+          <div v-for="i in 12" :key="i" class="mat-tile mat-tile-skl">
+            <span class="mt-thumb sk-anim"></span>
+            <span class="mt-body">
+              <span class="skl mt-skl-name"></span>
+              <span class="skl mt-skl-sub"></span>
+            </span>
+          </div>
+        </div>
+
         <!-- 原位三列紧凑卡片网格：点击不跳位、大触控热区、带入方频次参考 -->
-        <div v-if="visiblePool.length" class="mat-grid">
+        <div v-else-if="visiblePool.length" class="mat-grid">
           <button
-            v-for="m in visiblePool"
+            v-for="(m, idx) in visiblePool"
             :key="m.name"
             type="button"
             class="mat-tile pressable"
@@ -676,7 +689,8 @@ watch(() => customResult.value, r => {
                 v-if="!imgFailed[m.name]"
                 :src="matImg(m.name)"
                 alt=""
-                loading="lazy"
+                :loading="idx < 12 ? 'eager' : 'lazy'"
+                decoding="async"
                 @error="onImgError(m.name)"
               />
               <span v-else class="mt-fallback">{{ m.name.slice(0, 1) }}</span>
@@ -725,7 +739,7 @@ watch(() => customResult.value, r => {
             <router-link v-for="r in result.suggestions" :key="r.id" :to="`/recipes/${r.id}`"
                          class="card p-item pressable">
               <div class="pi-left">
-                <img :src="matImg(r.hit[0] || '')" alt="" loading="lazy" @error="e => e.target.style.visibility = 'hidden'" />
+                <img v-if="r.hit?.[0]" :src="matImg(r.hit[0])" alt="" loading="lazy" decoding="async" @error="e => e.target.style.visibility = 'hidden'" />
                 <Check :size="16" class="pi-check" />
               </div>
               <div class="pi-main">
@@ -746,7 +760,7 @@ watch(() => customResult.value, r => {
             <router-link v-for="r in result.partial" :key="r.id" :to="`/recipes/${r.id}`"
                          class="card p-item partial pressable">
               <div class="pi-left">
-                <img :src="matImg(r.hit[0] || '')" alt="" loading="lazy" @error="e => e.target.style.visibility = 'hidden'" />
+                <img v-if="r.hit?.[0]" :src="matImg(r.hit[0])" alt="" loading="lazy" decoding="async" @error="e => e.target.style.visibility = 'hidden'" />
               </div>
               <div class="pi-main">
                 <div class="pi-top">
@@ -818,7 +832,7 @@ watch(() => customResult.value, r => {
         <div class="composer-shell">
           <!-- 图片附件内嵌预览条 -->
           <div v-if="photoPreview" class="comp-attachment">
-            <img :src="photoPreview" alt="待识别的方子图片" class="comp-thumb" />
+            <img :src="photoPreview" alt="待识别的方子图片" class="comp-thumb" decoding="async" />
             <div class="comp-att-body">
               <span v-if="photoLoading" class="comp-att-status is-loading">
                 <span class="att-spin" aria-hidden="true"></span>
@@ -1474,6 +1488,7 @@ watch(() => customResult.value, r => {
 .mt-thumb {
   width: 30px;
   height: 30px;
+  aspect-ratio: 1;
   border-radius: 8px;
   overflow: hidden;
   flex-shrink: 0;
@@ -1482,6 +1497,9 @@ watch(() => customResult.value, r => {
   align-items: center;
   justify-content: center;
 }
+.mat-tile-skl { cursor: default; pointer-events: none; }
+.mt-skl-name { display: block; width: 72%; height: 13px; border-radius: 4px; margin-bottom: 3px; }
+.mt-skl-sub { display: block; width: 48%; height: 10px; border-radius: 4px; }
 .mt-thumb img {
   width: 100%;
   height: 100%;
@@ -2075,8 +2093,8 @@ watch(() => customResult.value, r => {
 
 .pantry-list { display: flex; flex-direction: column; gap: 10px; }
 .p-item { display: flex; gap: 12px; padding: 12px; text-decoration: none; color: inherit; position: relative; }
-.pi-left { position: relative; width: 56px; height: 56px; border-radius: 12px; overflow: hidden; flex-shrink: 0;
-           background: linear-gradient(135deg, var(--green-600), var(--green-900)); }
+.pi-left { position: relative; width: 56px; height: 56px; aspect-ratio: 1; border-radius: 12px; overflow: hidden; flex-shrink: 0;
+           background: var(--green-50); }
 .pi-left img { width: 100%; height: 100%; object-fit: cover; }
 .pi-check { position: absolute; right: 2px; bottom: 2px; color: #fff; background: var(--green-600);
             border-radius: 50%; padding: 2px; }

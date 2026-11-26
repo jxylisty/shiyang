@@ -12,9 +12,13 @@ import ForYou from '../components/ForYou.vue'
 import DisclaimerBanner from '../components/DisclaimerBanner.vue'
 
 const stats = ref(null)
+const statsLoading = ref(true)
+const listLoading = ref(true)
 const showcaseRecipes = ref([])   // 证据链专区示例方
 const sleepRecipes = ref([])
 const daily = ref(null)        // 今日推荐
+const dailyLoading = ref(true)
+const scenesLoaded = ref(false)
 const coverTry = ref(0)
 const cover = ref('')
 const fyouActive = ref(false)  // ForYou 渲染出个性化推荐时隐藏通用今日推荐
@@ -66,8 +70,10 @@ onMounted(async () => {
     compoundSrc.value = stats.value.stats.compound
     targetSrc.value = stats.value.stats.target
   }
+  statsLoading.value = false
   if (showcaseR.status === 'fulfilled') showcaseRecipes.value = showcaseR.value.data.data.items
   if (sleepR.status === 'fulfilled') sleepRecipes.value = sleepR.value.data.data.items
+  listLoading.value = false
 
   // 全量方子一次拉取：今日推荐按日期轮换 + 场景卡计数实算
   try {
@@ -76,10 +82,12 @@ onMounted(async () => {
       const day = Math.floor(Date.now() / 86400000)
       daily.value = all[day % all.length]
       coverTry.value = 0
-      cover.value = matImg(daily.value.materials?.[0] || '')
+      cover.value = daily.value.materials?.[0] ? matImg(daily.value.materials[0]) : ''
       for (const s of scenes) s.count = all.filter(r => r.scenes?.includes(s.name)).length
+      scenesLoaded.value = true
     }
   } catch { /* 推荐失败不影响首页 */ }
+  finally { dailyLoading.value = false }
 
   // 时令专区：后端节气引擎按当天日期算当前节气（寿星公式），失败回退写死场景卡
   try {
@@ -162,6 +170,16 @@ function onDailyImgErr() {
             </div>
           </router-link>
         </div>
+        <div v-else-if="statsLoading" class="hero-stats hero-stats-skl" aria-hidden="true">
+          <div v-for="i in 3" :key="i" class="h-stat-pod">
+            <div class="h-stat-icon skl-dark"></div>
+            <div class="h-stat-info">
+              <span class="skl-dark hs-skl-num"></span>
+              <span class="skl-dark hs-skl-lbl"></span>
+              <span class="skl-dark hs-skl-sub"></span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -173,7 +191,7 @@ function onDailyImgErr() {
       <!-- 水印暗字：笺纸上的淡墨大字，宽屏留白处的主要视觉填充 -->
       <span class="d-watermark" aria-hidden="true">食养</span>
       <div class="d-cover">
-        <img v-if="cover" :src="cover" alt="" loading="lazy" @error="onDailyImgErr" />
+        <img v-if="cover" :src="cover" alt="" loading="eager" decoding="async" fetchpriority="high" @error="onDailyImgErr" />
         <span v-else class="d-fallback"><AppIcon :name="daily.type === '药膳' ? 'dish' : 'tea'" :size="36" /></span>
         <span class="d-type">{{ daily.type }}</span>
       </div>
@@ -189,6 +207,15 @@ function onDailyImgErr() {
         </div>
       </div>
     </router-link>
+    <div v-else-if="dailyLoading" class="card daily daily-skl" aria-hidden="true">
+      <div class="d-cover sk-anim"></div>
+      <div class="d-main">
+        <div class="skl" style="width: 96px; height: 20px; margin-bottom: 8px;"></div>
+        <div class="skl" style="width: 56%; height: 20px; margin-bottom: 8px;"></div>
+        <div class="skl" style="width: 92%; height: 14px; margin-bottom: 6px;"></div>
+        <div class="skl" style="width: 68%; height: 14px;"></div>
+      </div>
+    </div>
     </template>
 
     <!-- 场景入口 -->
@@ -198,14 +225,34 @@ function onDailyImgErr() {
         <span class="scene-icon"><AppIcon :name="s.icon" :size="22" /></span>
         <span class="name">{{ s.name }}</span>
         <span class="desc">{{ s.desc }}</span>
-        <span class="scene-foot">{{ s.count }} 方<AppIcon name="chevron" :size="11" :stroke-width="2.4" /></span>
+        <span class="scene-foot">
+          <span v-if="dailyLoading" class="skl scene-count-skl" aria-hidden="true"></span>
+          <template v-else-if="scenesLoaded">{{ s.count }} 方</template>
+          <template v-else>— 方</template>
+          <AppIcon name="chevron" :size="11" :stroke-width="2.4" />
+        </span>
       </router-link>
     </div>
 
     <!-- 时令专区：接后端节气引擎（按当天日期算节气），失败回退到场景卡 -->
     <div class="section-title">时令专区</div>
 
-    <template v-if="termInfo">
+    <template v-if="termLoading">
+      <div class="term-banner card term-skl" aria-hidden="true">
+        <div class="tb-main">
+          <span class="skl" style="width: 28px; height: 28px; border-radius: 50%;"></span>
+          <span class="skl" style="width: 72px; height: 20px;"></span>
+          <span class="skl" style="width: 112px; height: 14px;"></span>
+        </div>
+        <div class="skl" style="width: 86%; height: 14px; margin: 10px 0 12px;"></div>
+        <div class="skl" style="width: 148px; height: 16px; margin-top: 8px;"></div>
+      </div>
+      <HScroll class="season-wrap" aria-hidden="true">
+        <div v-for="i in 4" :key="i" class="season-card sk-anim"></div>
+      </HScroll>
+    </template>
+
+    <template v-else-if="termInfo">
       <div class="term-banner card">
         <div class="tb-main">
           <span class="tb-seal"><AppIcon name="season" :size="14" /></span>
@@ -220,7 +267,7 @@ function onDailyImgErr() {
       </div>
       <HScroll class="season-wrap">
         <router-link v-for="r in termRecipes" :key="r.id" :to="`/recipes/${r.id}`" class="season-card pressable">
-          <img v-if="r.materials?.length" :src="matImg(r.materials[0])" alt="" loading="lazy"
+          <img v-if="r.materials?.length" :src="matImg(r.materials[0])" alt="" loading="lazy" decoding="async"
                @error="e => e.target.style.visibility = 'hidden'" />
           <div class="s-overlay">
             <span class="s-tag">{{ termInfo.scene }}</span>
@@ -233,7 +280,7 @@ function onDailyImgErr() {
 
     <HScroll v-else class="season-wrap">
       <router-link v-for="s in SEASON_SCENES" :key="s.name" :to="`/recipes?scene=${encodeURIComponent(s.name)}`" class="season-card pressable">
-        <img :src="matImg(s.img)" alt="" loading="lazy" />
+        <img :src="matImg(s.img)" alt="" loading="lazy" decoding="async" @error="e => e.target.style.visibility = 'hidden'" />
         <div class="s-overlay">
           <span class="s-tag">{{ s.tag }}</span>
           <b>{{ s.name }}</b>
@@ -269,14 +316,32 @@ function onDailyImgErr() {
           <span class="c-txt">权威出处</span>
         </div>
       </div>
-      <RecipeRow v-for="r in showcaseRecipes" :key="r.id" :recipe="r" />
-      <router-link to="/recipes" class="zone-more">逛逛全部 {{ stats?.stats.recipe ?? '' }} 个方子 →</router-link>
+      <template v-if="listLoading && !showcaseRecipes.length">
+        <div v-for="i in 3" :key="i" class="rr-skl" aria-hidden="true">
+          <span class="skl rr-skl-img"></span>
+          <span class="rr-skl-main">
+            <span class="skl" style="width: 46%; height: 15px;"></span>
+            <span class="skl" style="width: 82%; height: 13px;"></span>
+          </span>
+        </div>
+      </template>
+      <RecipeRow v-else v-for="r in showcaseRecipes" :key="r.id" :recipe="r" />
+      <router-link to="/recipes" class="zone-more">逛逛全部 <span v-if="statsLoading && !stats" class="skl inline-num-skl" aria-hidden="true"></span><template v-else>{{ stats?.stats.recipe ?? '' }}</template> 个方子 →</router-link>
     </div>
 
     <!-- 日常轻养 -->
     <div class="section-title">日常轻养</div>
     <div class="card">
-      <RecipeRow v-for="r in sleepRecipes" :key="r.id" :recipe="r" />
+      <template v-if="listLoading && !sleepRecipes.length">
+        <div v-for="i in 3" :key="i" class="rr-skl" aria-hidden="true">
+          <span class="skl rr-skl-img"></span>
+          <span class="rr-skl-main">
+            <span class="skl" style="width: 46%; height: 15px;"></span>
+            <span class="skl" style="width: 82%; height: 13px;"></span>
+          </span>
+        </div>
+      </template>
+      <RecipeRow v-else v-for="r in sleepRecipes" :key="r.id" :recipe="r" />
     </div>
 
     <!-- 对比实验室特色入口 -->
@@ -301,7 +366,8 @@ function onDailyImgErr() {
       <router-link to="/herbs" class="card asset-card pressable orn-lattice">
         <div class="asset-icon"><AppIcon name="herb" :size="24" /></div>
         <div class="asset-info">
-          <b>{{ stats?.stats.herb ?? '—' }}</b>
+          <span v-if="statsLoading && !stats" class="skl asset-num-skl" aria-hidden="true"></span>
+          <b v-else>{{ stats?.stats.herb ?? '—' }}</b>
           <span>味药材图鉴</span>
           <small>性味归经 · 功效 · 出处</small>
         </div>
@@ -309,7 +375,8 @@ function onDailyImgErr() {
       <router-link to="/compounds" class="card asset-card pressable orn-lattice">
         <div class="asset-icon"><AppIcon name="molecule" :size="24" /></div>
         <div class="asset-info">
-          <b>{{ stats?.stats.compound ?? '—' }}</b>
+          <span v-if="statsLoading && !stats" class="skl asset-num-skl" aria-hidden="true"></span>
+          <b v-else>{{ stats?.stats.compound ?? '—' }}</b>
           <span>个活性成分</span>
           <small>入血概率 · 靶点机制</small>
         </div>
@@ -617,5 +684,22 @@ function onDailyImgErr() {
   transition: transform 0.2s ease;
 }
 .home-lab-card:hover .hlc-go { transform: translateX(3px); background: var(--green-600); color: #fff; }
+
+/* 数据加载骨架占位 */
+.hero-stats-skl .h-stat-pod { pointer-events: none; }
+.hs-skl-num { display: block; width: 48px; height: 20px; margin-bottom: 5px; }
+.hs-skl-lbl { display: block; width: 64px; height: 12px; margin-bottom: 4px; }
+.hs-skl-sub { display: block; width: 78px; height: 11px; }
+.daily-skl { pointer-events: none; }
+.scene-count-skl { display: inline-block; width: 28px; height: 12px; border-radius: 4px; }
+.inline-num-skl { display: inline-block; width: 30px; height: 14px; margin: 0 3px; vertical-align: -2px; border-radius: 4px; }
+.asset-num-skl { display: block; width: 56px; height: 24px; margin-bottom: 4px; border-radius: 6px; }
+.rr-skl {
+  display: flex; align-items: center; gap: 10px; padding: 12px 0;
+  border-bottom: 1px solid var(--green-100);
+}
+.rr-skl:last-of-type { border-bottom: none; }
+.rr-skl-img { width: 44px; height: 44px; border-radius: 10px; flex-shrink: 0; }
+.rr-skl-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
 
 </style>

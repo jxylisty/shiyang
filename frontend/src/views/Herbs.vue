@@ -154,7 +154,11 @@ const hideImg = (name) => { imgFailed.value[name] = true }
                 :style="{ '--d': `${Math.min(i, 20) * 25}ms` }"
                 @click="openHerb(h)">
           <div class="h-img">
-            <img v-if="!imgFailed[h.name]" :src="matImg(h.name)" :alt="h.name" loading="lazy" @error="hideImg(h.name)" />
+            <img v-if="!imgFailed[h.name]" :src="matImg(h.name)" :alt="h.name"
+                 :loading="i < 12 ? 'eager' : 'lazy'"
+                 :fetchpriority="i < 6 ? 'high' : undefined"
+                 decoding="async"
+                 @error="hideImg(h.name)" />
             <span v-else class="h-fallback"><AppIcon name="herb" :size="30" /></span>
             <span v-if="h.category" class="h-cat-badge">{{ h.category }}</span>
           </div>
@@ -185,7 +189,7 @@ const hideImg = (name) => { imgFailed.value[name] = true }
         <!-- 顶部名物头卡 -->
         <div class="hd-head">
           <div class="hd-cover">
-            <img v-if="!imgFailed[active.name]" :src="matImg(active.name)" :alt="active.name" @error="hideImg(active.name)" />
+            <img v-if="!imgFailed[active.name]" :src="matImg(active.name)" :alt="active.name" loading="eager" decoding="async" @error="hideImg(active.name)" />
             <span v-else class="h-fallback"><AppIcon name="herb" :size="34" /></span>
           </div>
           <div class="hd-title-zone">
