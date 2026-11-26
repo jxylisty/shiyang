@@ -639,7 +639,7 @@ onBeforeUnmount(() => { clearTick(); abort?.(); stopSpeak() })
           ref="textareaRef"
           v-model="input"
           rows="1"
-          placeholder="问问食养方子/药材/成分…（Enter 发送，Shift+Enter 换行）"
+          placeholder="问问食养方子、药材或成分…"
           @input="autoResize"
           @keydown.enter.exact.prevent="send()"
         />
@@ -1324,7 +1324,9 @@ onBeforeUnmount(() => { clearTick(); abort?.(); stopSpeak() })
   flex: 1; min-width: 0; border: none; resize: none; outline: none; background: transparent;
   font-family: inherit; font-size: 15px; line-height: 1.5; color: var(--ink-900);
   min-height: 28px; max-height: 140px; overflow-y: auto; padding: 4px 0;
+  scrollbar-width: none;
 }
+.as-input textarea::-webkit-scrollbar { display: none; }
 .as-voice-btn :deep(.voice-button) {
   min-height: 48px; min-width: 48px; padding: 8px 15px;
   background: var(--green-100); color: var(--green-text);
