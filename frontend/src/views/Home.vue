@@ -1,6 +1,6 @@
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
-import { FlaskConical, ArrowRight } from '@lucide/vue'
+import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
+import { FlaskConical, ArrowRight, Mic } from '@lucide/vue'
 import AppIcon from '../components/AppIcon.vue'
 import RecipeRow from '../components/RecipeRow.vue'
 import { getStats, listRecipes, getTermCurrent, matImg, getLocalConstitution } from '../api'
@@ -12,9 +12,13 @@ import ForYou from '../components/ForYou.vue'
 import DisclaimerBanner from '../components/DisclaimerBanner.vue'
 
 const stats = ref(null)
+const statsLoading = ref(true)
+const listLoading = ref(true)
 const showcaseRecipes = ref([])   // 证据链专区示例方
 const sleepRecipes = ref([])
 const daily = ref(null)        // 今日推荐
+const dailyLoading = ref(true)
+const scenesLoaded = ref(false)
 const coverTry = ref(0)
 const cover = ref('')
 const fyouActive = ref(false)  // ForYou 渲染出个性化推荐时隐藏通用今日推荐
@@ -54,7 +58,41 @@ const fmtDate = (d) => {
   return m ? `${Number(m)}月${Number(day)}日` : ''
 }
 
+const prefersReduced = () =>
+  typeof window !== 'undefined' &&
+  window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+
+// hero 数字滚动（useCountUp：source 有值即从当前值滚到目标）
+const recipeSrc = ref(null)
+const compoundSrc = ref(null)
+const targetSrc = ref(null)
+const animatedRecipe = useCountUp(recipeSrc, 900)
+const animatedCompound = useCountUp(compoundSrc, 900)
+const animatedTarget = useCountUp(targetSrc, 900)
+
+const heroEl = ref(null)
+const sceneGridEl = ref(null)
+const scenesVisible = ref(prefersReduced())
+const dailyImgLoaded = ref(false)
+
+let sceneObserver = null
+
 onMounted(async () => {
+  if ('IntersectionObserver' in window) {
+    if (!scenesVisible.value) {
+      sceneObserver = new IntersectionObserver((entries) => {
+        if (entries.some(e => e.isIntersecting)) {
+          scenesVisible.value = true
+          sceneObserver?.disconnect()
+          sceneObserver = null
+        }
+      }, { threshold: 0.08 })
+      if (sceneGridEl.value) sceneObserver.observe(sceneGridEl.value)
+    }
+  } else {
+    scenesVisible.value = true
+  }
+
   const [statsR, showcaseR, sleepR] = await Promise.allSettled([
     getStats(),
     listRecipes({ size: 3 }),
@@ -66,8 +104,10 @@ onMounted(async () => {
     compoundSrc.value = stats.value.stats.compound
     targetSrc.value = stats.value.stats.target
   }
+  statsLoading.value = false
   if (showcaseR.status === 'fulfilled') showcaseRecipes.value = showcaseR.value.data.data.items
   if (sleepR.status === 'fulfilled') sleepRecipes.value = sleepR.value.data.data.items
+  listLoading.value = false
 
   // 全量方子一次拉取：今日推荐按日期轮换 + 场景卡计数实算
   try {
@@ -75,11 +115,14 @@ onMounted(async () => {
     if (all.length) {
       const day = Math.floor(Date.now() / 86400000)
       daily.value = all[day % all.length]
+      dailyImgLoaded.value = false
       coverTry.value = 0
-      cover.value = matImg(daily.value.materials?.[0] || '')
+      cover.value = daily.value.materials?.[0] ? matImg(daily.value.materials[0]) : ''
       for (const s of scenes) s.count = all.filter(r => r.scenes?.includes(s.name)).length
+      scenesLoaded.value = true
     }
   } catch { /* 推荐失败不影响首页 */ }
+  finally { dailyLoading.value = false }
 
   // 时令专区：后端节气引擎按当天日期算当前节气（寿星公式），失败回退写死场景卡
   try {
@@ -92,16 +135,11 @@ onMounted(async () => {
   termLoading.value = false
 })
 
-// hero 数字滚动（useCountUp：source 有值即从当前值滚到目标）
-const recipeSrc = ref(null)
-const compoundSrc = ref(null)
-const targetSrc = ref(null)
-const animatedRecipe = useCountUp(recipeSrc, 800)
-const animatedCompound = useCountUp(compoundSrc, 800)
-const animatedTarget = useCountUp(targetSrc, 800)
+onUnmounted(() => {
+  sceneObserver?.disconnect()
+})
 
 // hero 光斑跟随：桌面端 pointermove 写 CSS 变量（移动端无 hover 不启用）
-const heroEl = ref(null)
 function heroGlow(e) {
   const el = heroEl.value
   if (!el) return
@@ -113,6 +151,7 @@ function heroGlow(e) {
 function onDailyImgErr() {
   const mats = daily.value?.materials || []
   coverTry.value += 1
+  dailyImgLoaded.value = false
   cover.value = coverTry.value < mats.length ? matImg(mats[coverTry.value]) : ''
 }
 </script>
@@ -162,8 +201,30 @@ function onDailyImgErr() {
             </div>
           </router-link>
         </div>
+        <div v-else-if="statsLoading" class="hero-stats hero-stats-skl" aria-hidden="true">
+          <div v-for="i in 3" :key="i" class="h-stat-pod">
+            <div class="h-stat-icon skl-dark"></div>
+            <div class="h-stat-info">
+              <span class="skl-dark hs-skl-num"></span>
+              <span class="skl-dark hs-skl-lbl"></span>
+              <span class="skl-dark hs-skl-sub"></span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
+
+    <!-- 语音问青囊首屏入口卡 -->
+    <router-link to="/assistant" class="card voice-entry pressable orn-lattice">
+      <div class="ve-icon-wrap" aria-hidden="true">
+        <Mic :size="24" :stroke-width="2.2" />
+      </div>
+      <div class="ve-body">
+        <b class="ve-title">按住说话，问青囊</b>
+        <p class="ve-sub">喉咙干、睡不好？说出来就行，不用打字</p>
+      </div>
+      <span class="ve-go" aria-hidden="true"><ArrowRight :size="16" /></span>
+    </router-link>
 
     <!-- 为你推荐（千人千面三态）：有个性化数据时替换通用今日推荐，避免两块推荐并存 -->
     <ForYou @active="fyouActive = true" />
@@ -173,7 +234,8 @@ function onDailyImgErr() {
       <!-- 水印暗字：笺纸上的淡墨大字，宽屏留白处的主要视觉填充 -->
       <span class="d-watermark" aria-hidden="true">食养</span>
       <div class="d-cover">
-        <img v-if="cover" :src="cover" alt="" loading="lazy" @error="onDailyImgErr" />
+        <img v-if="cover" :key="cover" :src="cover" alt="" loading="eager" decoding="async" fetchpriority="high"
+             :class="{ loaded: dailyImgLoaded }" @load="dailyImgLoaded = true" @error="onDailyImgErr" />
         <span v-else class="d-fallback"><AppIcon :name="daily.type === '药膳' ? 'dish' : 'tea'" :size="36" /></span>
         <span class="d-type">{{ daily.type }}</span>
       </div>
@@ -189,23 +251,52 @@ function onDailyImgErr() {
         </div>
       </div>
     </router-link>
+    <div v-else-if="dailyLoading" class="card daily daily-skl" aria-hidden="true">
+      <div class="d-cover sk-anim"></div>
+      <div class="d-main">
+        <div class="skl" style="width: 96px; height: 20px; margin-bottom: 8px;"></div>
+        <div class="skl" style="width: 56%; height: 20px; margin-bottom: 8px;"></div>
+        <div class="skl" style="width: 92%; height: 14px; margin-bottom: 6px;"></div>
+        <div class="skl" style="width: 68%; height: 14px;"></div>
+      </div>
+    </div>
     </template>
 
     <!-- 场景入口 -->
     <div class="section-title">按场景找茶饮</div>
-    <div class="scene-grid">
+    <div ref="sceneGridEl" class="scene-grid" :class="{ 'is-visible': scenesVisible }">
       <router-link v-for="(s, i) in scenes" :key="s.name" :to="`/recipes?scene=${encodeURIComponent(s.name)}`" class="scene card pressable" :style="{ '--i': i, '--tint-bg': s.bg, '--tint-fg': s.fg }">
         <span class="scene-icon"><AppIcon :name="s.icon" :size="22" /></span>
         <span class="name">{{ s.name }}</span>
         <span class="desc">{{ s.desc }}</span>
-        <span class="scene-foot">{{ s.count }} 方<AppIcon name="chevron" :size="11" :stroke-width="2.4" /></span>
+        <span class="scene-foot">
+          <span v-if="dailyLoading" class="skl scene-count-skl" aria-hidden="true"></span>
+          <template v-else-if="scenesLoaded">{{ s.count }} 方</template>
+          <template v-else>— 方</template>
+          <AppIcon name="chevron" :size="11" :stroke-width="2.4" />
+        </span>
       </router-link>
     </div>
 
     <!-- 时令专区：接后端节气引擎（按当天日期算节气），失败回退到场景卡 -->
     <div class="section-title">时令专区</div>
 
-    <template v-if="termInfo">
+    <template v-if="termLoading">
+      <div class="term-banner card term-skl" aria-hidden="true">
+        <div class="tb-main">
+          <span class="skl" style="width: 28px; height: 28px; border-radius: 50%;"></span>
+          <span class="skl" style="width: 72px; height: 20px;"></span>
+          <span class="skl" style="width: 112px; height: 14px;"></span>
+        </div>
+        <div class="skl" style="width: 86%; height: 14px; margin: 10px 0 12px;"></div>
+        <div class="skl" style="width: 148px; height: 16px; margin-top: 8px;"></div>
+      </div>
+      <HScroll class="season-wrap" aria-hidden="true">
+        <div v-for="i in 4" :key="i" class="season-card sk-anim"></div>
+      </HScroll>
+    </template>
+
+    <template v-else-if="termInfo">
       <div class="term-banner card">
         <div class="tb-main">
           <span class="tb-seal"><AppIcon name="season" :size="14" /></span>
@@ -220,7 +311,7 @@ function onDailyImgErr() {
       </div>
       <HScroll class="season-wrap">
         <router-link v-for="r in termRecipes" :key="r.id" :to="`/recipes/${r.id}`" class="season-card pressable">
-          <img v-if="r.materials?.length" :src="matImg(r.materials[0])" alt="" loading="lazy"
+          <img v-if="r.materials?.length" :src="matImg(r.materials[0])" alt="" loading="lazy" decoding="async"
                @error="e => e.target.style.visibility = 'hidden'" />
           <div class="s-overlay">
             <span class="s-tag">{{ termInfo.scene }}</span>
@@ -233,7 +324,7 @@ function onDailyImgErr() {
 
     <HScroll v-else class="season-wrap">
       <router-link v-for="s in SEASON_SCENES" :key="s.name" :to="`/recipes?scene=${encodeURIComponent(s.name)}`" class="season-card pressable">
-        <img :src="matImg(s.img)" alt="" loading="lazy" />
+        <img :src="matImg(s.img)" alt="" loading="lazy" decoding="async" @error="e => e.target.style.visibility = 'hidden'" />
         <div class="s-overlay">
           <span class="s-tag">{{ s.tag }}</span>
           <b>{{ s.name }}</b>
@@ -269,14 +360,32 @@ function onDailyImgErr() {
           <span class="c-txt">权威出处</span>
         </div>
       </div>
-      <RecipeRow v-for="r in showcaseRecipes" :key="r.id" :recipe="r" />
-      <router-link to="/recipes" class="zone-more">逛逛全部 {{ stats?.stats.recipe ?? '' }} 个方子 →</router-link>
+      <template v-if="listLoading && !showcaseRecipes.length">
+        <div v-for="i in 3" :key="i" class="rr-skl" aria-hidden="true">
+          <span class="skl rr-skl-img"></span>
+          <span class="rr-skl-main">
+            <span class="skl" style="width: 46%; height: 15px;"></span>
+            <span class="skl" style="width: 82%; height: 13px;"></span>
+          </span>
+        </div>
+      </template>
+      <RecipeRow v-else v-for="r in showcaseRecipes" :key="r.id" :recipe="r" />
+      <router-link to="/recipes" class="zone-more">逛逛全部 <span v-if="statsLoading && !stats" class="skl inline-num-skl" aria-hidden="true"></span><template v-else>{{ stats?.stats.recipe ?? '' }}</template> 个方子 →</router-link>
     </div>
 
     <!-- 日常轻养 -->
     <div class="section-title">日常轻养</div>
     <div class="card">
-      <RecipeRow v-for="r in sleepRecipes" :key="r.id" :recipe="r" />
+      <template v-if="listLoading && !sleepRecipes.length">
+        <div v-for="i in 3" :key="i" class="rr-skl" aria-hidden="true">
+          <span class="skl rr-skl-img"></span>
+          <span class="rr-skl-main">
+            <span class="skl" style="width: 46%; height: 15px;"></span>
+            <span class="skl" style="width: 82%; height: 13px;"></span>
+          </span>
+        </div>
+      </template>
+      <RecipeRow v-else v-for="r in sleepRecipes" :key="r.id" :recipe="r" />
     </div>
 
     <!-- 对比实验室特色入口 -->
@@ -301,7 +410,8 @@ function onDailyImgErr() {
       <router-link to="/herbs" class="card asset-card pressable orn-lattice">
         <div class="asset-icon"><AppIcon name="herb" :size="24" /></div>
         <div class="asset-info">
-          <b>{{ stats?.stats.herb ?? '—' }}</b>
+          <span v-if="statsLoading && !stats" class="skl asset-num-skl" aria-hidden="true"></span>
+          <b v-else>{{ stats?.stats.herb ?? '—' }}</b>
           <span>味药材图鉴</span>
           <small>性味归经 · 功效 · 出处</small>
         </div>
@@ -309,7 +419,8 @@ function onDailyImgErr() {
       <router-link to="/compounds" class="card asset-card pressable orn-lattice">
         <div class="asset-icon"><AppIcon name="molecule" :size="24" /></div>
         <div class="asset-info">
-          <b>{{ stats?.stats.compound ?? '—' }}</b>
+          <span v-if="statsLoading && !stats" class="skl asset-num-skl" aria-hidden="true"></span>
+          <b v-else>{{ stats?.stats.compound ?? '—' }}</b>
           <span>个活性成分</span>
           <small>入血概率 · 靶点机制</small>
         </div>
@@ -351,16 +462,16 @@ function onDailyImgErr() {
 .hero-badge {
   display: inline-flex; align-items: center; gap: 6px;
   background: rgba(255, 255, 255, 0.14); backdrop-filter: blur(8px);
-  padding: 3px 10px; border-radius: 14px; font-size: 11px;
-  color: #d1ebd9; margin-bottom: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 4px 11px; border-radius: 14px; font-size: 12px;
+  color: #e4f5ea; margin-bottom: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
 }
 .hero h1 {
   font-family: var(--font-serif);
   font-size: 24px; line-height: 1.4; margin-bottom: 8px; letter-spacing: 0.03em;
 }
-.hero-subline { font-size: 18px; font-weight: 500; opacity: 0.92; }
-.hero .sub { font-size: 13px; opacity: .88; margin-bottom: 18px; line-height: 1.55; }
+.hero-subline { font-size: 18px; font-weight: 500; opacity: 0.94; }
+.hero .sub { font-size: 13.5px; opacity: .92; margin-bottom: 18px; line-height: 1.55; }
 .hero-btns { display: flex; gap: 10px; margin-bottom: 18px; }
 .hero .btn {
   background: #fff; color: var(--green-text);
@@ -396,8 +507,8 @@ function onDailyImgErr() {
 }
 .h-stat-info { min-width: 0; width: 100%; }
 .h-stat-info b { display: block; font-size: 19px; font-variant-numeric: tabular-nums; line-height: 1.1; font-family: var(--font-serif); letter-spacing: 0.02em; }
-.h-stat-info span { font-size: 11px; opacity: .92; display: block; margin-top: 2px; white-space: nowrap; }
-.h-stat-info small { font-size: 9.5px; opacity: .66; display: block; margin-top: 1px; line-height: 1.35; }
+.h-stat-info span { font-size: 12px; opacity: .94; display: block; margin-top: 2px; white-space: nowrap; }
+.h-stat-info small { font-size: 11.5px; opacity: .88; display: block; margin-top: 2px; line-height: 1.4; }
 
 /* 今日推荐 */
 .daily {
@@ -425,34 +536,65 @@ function onDailyImgErr() {
   position: relative; width: 100px; min-height: 100px; border-radius: 12px;
   overflow: hidden; background: var(--green-100); flex-shrink: 0;
 }
-.d-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.d-cover img {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+  opacity: 0; transition: opacity 300ms ease;
+}
+.d-cover img.loaded { opacity: 1; }
 .d-fallback { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--tile-ink); }
 .d-type {
-  position: absolute; left: 0; bottom: 0; font-size: 10px; color: #fff;
-  background: rgba(22, 56, 42, 0.82); padding: 1px 8px; border-radius: 0 8px 0 0;
+  position: absolute; left: 0; bottom: 0; font-size: 11.5px; color: #fff;
+  background: rgba(22, 56, 42, 0.86); padding: 2px 8px; border-radius: 0 8px 0 0;
   backdrop-filter: blur(4px);
 }
 .d-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .d-head { margin-bottom: 4px; }
 .d-badge {
-  display: inline-flex; align-items: center; gap: 4px; font-size: 11px;
+  display: inline-flex; align-items: center; gap: 4px; font-size: 12px;
   color: var(--amber-text); background: var(--amber-50);
-  padding: 1px 7px; border-radius: 6px; font-weight: 500;
+  padding: 2px 8px; border-radius: 6px; font-weight: 500;
 }
 .d-name { font-family: var(--font-serif); font-size: 17px; color: var(--ink-900); }
 .d-one {
-  font-size: 13px; color: var(--ink-600); margin: 4px 0 8px; line-height: 1.5;
+  font-size: 13.5px; color: var(--ink-600); margin: 4px 0 8px; line-height: 1.5;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
 .d-tags { margin-top: auto; display: flex; align-items: center; flex-wrap: wrap; gap: 4px; }
-.d-mat-hint { font-size: 11.5px; color: var(--ink-400); margin-left: 4px; }
+.d-mat-hint { font-size: 12px; color: var(--ink-600); margin-left: 4px; }
 
 /* 场景入口 */
 .scene-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 .scene {
   display: flex; flex-direction: column; align-items: center; padding: 15px 6px 13px;
-  text-decoration: none; color: inherit; animation: rise .45s var(--ease-out-soft) backwards;
-  animation-delay: calc(var(--i) * 45ms);
+  text-decoration: none; color: inherit;
+  opacity: 0; transform: translateY(12px);
+}
+.scene-grid.is-visible .scene {
+  animation: scene-rise .42s var(--ease-out-soft) both;
+  animation-delay: calc(var(--i) * 40ms);
+}
+@keyframes scene-rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* 场景卡、今日推荐卡、时令卡按下反馈 */
+a.scene,
+a.daily,
+a.season-card {
+  transition: scale 120ms ease, box-shadow var(--dur-med) ease, border-color var(--dur-med) ease;
+}
+a.scene:active,
+a.daily:active,
+a.season-card:active {
+  scale: 0.98;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .daily { animation: none; }
+  .scene { opacity: 1; transform: none; }
+  .scene-grid.is-visible .scene { animation: none; }
+  .d-cover img { transition: none; }
 }
 .scene-icon {
   display: flex; align-items: center; justify-content: center; width: 42px; height: 42px;
@@ -468,13 +610,13 @@ function onDailyImgErr() {
 }
 .scene:active .scene-icon { scale: 1.12; }
 :root[data-theme="dark"] .scene-icon { background: var(--green-100); color: var(--tile-ink); }
-.scene .name { font-family: var(--font-serif); font-size: 14px; font-weight: 700; color: var(--ink-900); letter-spacing: 0.03em; }
-.scene .desc { font-size: 10.5px; color: var(--ink-400); margin-top: 2px; }
+.scene .name { font-family: var(--font-serif); font-size: 14.5px; font-weight: 700; color: var(--ink-900); letter-spacing: 0.03em; }
+.scene .desc { font-size: 12px; color: var(--ink-600); margin-top: 3px; }
 .scene-foot {
   display: inline-flex; align-items: center; gap: 2px; margin-top: 8px;
-  font-size: 10.5px; color: var(--green-text); font-variant-numeric: tabular-nums;
-  background: var(--green-50); padding: 1px 7px; border-radius: 2px;
-  border: 1px solid rgba(120, 95, 60, 0.1);
+  font-size: 12px; color: var(--green-text); font-variant-numeric: tabular-nums;
+  background: var(--green-50); padding: 2px 8px; border-radius: 2px;
+  border: 1px solid rgba(120, 95, 60, 0.14);
 }
 
 /* 时令横滑：滚动容器与滚动条由 HScroll 提供，这里只写卡片排布 */
@@ -499,11 +641,11 @@ function onDailyImgErr() {
   padding: 10px 12px; background: linear-gradient(180deg, rgba(22,56,42,0) 30%, rgba(22,56,42,.88)); color: #fff;
 }
 .s-tag {
-  align-self: flex-start; font-size: 9.5px; background: rgba(255,255,255,0.22);
-  padding: 1px 6px; border-radius: 4px; margin-bottom: 4px; backdrop-filter: blur(4px);
+  align-self: flex-start; font-size: 11.5px; background: rgba(255,255,255,0.24);
+  padding: 2px 7px; border-radius: 4px; margin-bottom: 4px; backdrop-filter: blur(4px);
 }
-.s-overlay b { font-family: var(--font-serif); font-size: 14.5px; }
-.s-overlay span { font-size: 11px; opacity: .9; }
+.s-overlay b { font-family: var(--font-serif); font-size: 15px; }
+.s-overlay span:not(.s-tag) { font-size: 12px; opacity: .95; }
 .s-one {
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
   line-height: 1.35; margin-top: 1px;
@@ -521,13 +663,13 @@ function onDailyImgErr() {
   background: var(--green-700); color: #fdfaf1;
 }
 .tb-term { font-family: var(--font-serif); font-size: 19px; color: var(--green-text); font-weight: 700; letter-spacing: .04em; }
-.tb-meta { font-size: 11px; color: var(--ink-400); }
-.tb-tip { font-size: 12.5px; color: var(--ink-600); margin: 7px 0 2px; line-height: 1.5; }
-.tb-more { font-size: 12.5px; color: var(--green-text); text-decoration: none; font-weight: 600; }
+.tb-meta { font-size: 12px; color: var(--ink-600); }
+.tb-tip { font-size: 13px; color: var(--ink-600); margin: 7px 0 2px; line-height: 1.55; }
+.tb-more { display: inline-flex; align-items: center; min-height: 44px; font-size: 13.5px; color: var(--green-text); text-decoration: none; font-weight: 600; }
 .tb-more:hover { text-decoration: underline; }
 
 /* 证据链专区 */
-.zone-intro { font-size: 12.5px; color: var(--ink-600); margin-bottom: 12px; line-height: 1.5; }
+.zone-intro { font-size: 13px; color: var(--ink-600); margin-bottom: 12px; line-height: 1.55; }
 .chain-box {
   display: flex; align-items: center; justify-content: space-between;
   background: var(--green-50); border: 1px solid var(--card-border);
@@ -537,14 +679,15 @@ function onDailyImgErr() {
 .chain-node { display: flex; align-items: center; gap: 4px; min-width: 0; }
 .c-step {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0;
-  background: var(--green-700); color: #fdfaf1; font-size: 9.5px; font-weight: 700;
+  width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0;
+  background: var(--green-700); color: #fdfaf1; font-size: 11.5px; font-weight: 700;
 }
 .c-txt { font-size: 11.5px; font-weight: 600; color: var(--green-text); white-space: nowrap; }
-.c-arrow { color: var(--ink-400); font-size: 11px; opacity: 0.55; flex-shrink: 0; }
+.c-arrow { color: var(--ink-600); font-size: 12px; opacity: 0.75; flex-shrink: 0; }
 .zone-more {
-  display: block; text-align: center; font-size: 13.5px; color: var(--green-text);
-  padding: 12px 0 2px; text-decoration: none; font-weight: 600;
+  display: flex; align-items: center; justify-content: center; min-height: 44px;
+  font-size: 14px; color: var(--green-text);
+  padding: 10px 0 2px; text-decoration: none; font-weight: 600;
 }
 
 /* 数据资产入口 */
@@ -560,8 +703,8 @@ function onDailyImgErr() {
   flex-shrink: 0;
 }
 .asset-info b { font-size: 24px; color: var(--green-text); display: block; font-variant-numeric: tabular-nums; line-height: 1.1; }
-.asset-info span { font-size: 13.5px; color: var(--ink-900); font-weight: 600; display: block; margin-top: 2px; }
-.asset-info small { display: block; font-size: 11px; color: var(--ink-400); margin-top: 2px; }
+.asset-info span { font-size: 14px; color: var(--ink-900); font-weight: 600; display: block; margin-top: 2px; }
+.asset-info small { display: block; font-size: 12px; color: var(--ink-600); margin-top: 2px; }
 
 /* 宽屏桌面端适配 */
 @media (min-width: 900px) {
@@ -607,8 +750,8 @@ function onDailyImgErr() {
 }
 .hlc-body { flex: 1; min-width: 0; }
 .hlc-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
-.hlc-head b { font-family: var(--font-serif); font-size: 15.5px; color: var(--ink-900); }
-.hlc-sub { font-size: 12px; color: var(--ink-600); margin: 0; line-height: 1.45; }
+.hlc-head b { font-family: var(--font-serif); font-size: 16px; color: var(--ink-900); }
+.hlc-sub { font-size: 13px; color: var(--ink-600); margin: 0; line-height: 1.5; }
 .hlc-go {
   width: 28px; height: 28px; border-radius: 50%; background: #fff;
   border: 1px solid var(--green-100); display: flex; align-items: center;
@@ -616,5 +759,75 @@ function onDailyImgErr() {
   transition: transform 0.2s ease;
 }
 .home-lab-card:hover .hlc-go { transform: translateX(3px); background: var(--green-600); color: #fff; }
+
+/* 语音问青囊首屏入口卡 */
+.voice-entry {
+  display: flex; align-items: center; gap: 13px;
+  min-height: 64px; padding: 12px 15px; margin-bottom: 14px;
+  text-decoration: none; color: inherit;
+  background: linear-gradient(135deg, var(--card) 48%, var(--green-50) 100%);
+  border: 1px solid rgba(58, 122, 94, 0.28);
+}
+.ve-icon-wrap {
+  width: 46px; height: 46px; border-radius: 12px;
+  background: var(--green-700); color: #fdfaf1;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 3px 10px rgba(42, 95, 74, 0.22);
+}
+.ve-body { flex: 1; min-width: 0; }
+.ve-title {
+  display: block; font-family: var(--font-serif);
+  font-size: 16.5px; font-weight: 700; line-height: 1.35;
+  color: var(--ink-900); letter-spacing: 0.02em;
+}
+.ve-sub {
+  font-size: 13.5px; color: var(--ink-600);
+  margin: 2px 0 0; line-height: 1.45;
+}
+.ve-go {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: var(--card); border: 1px solid var(--green-100);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--green-text); flex-shrink: 0;
+  transition: transform var(--dur-fast) ease, background var(--dur-fast) ease, color var(--dur-fast) ease;
+}
+@media (hover: hover) {
+  .voice-entry:hover .ve-go {
+    transform: translateX(3px);
+    background: var(--green-700);
+    color: #fdfaf1;
+  }
+}
+
+/* 手机首屏路径收紧：保证约 390px 宽下 hero 主按钮与语音入口卡在第一屏可见 */
+@media (max-width: 720px) {
+  .hero { padding: 14px; margin-bottom: 12px; }
+  .hero-seal { top: 12px; right: 12px; }
+  .hero-badge { margin-bottom: 8px; }
+  .hero h1 { font-size: 22px; margin-bottom: 6px; }
+  .hero-subline { font-size: 16.5px; }
+  .hero .sub { margin-bottom: 12px; line-height: 1.5; }
+  .hero-btns { margin-bottom: 14px; }
+  .hero .btn { min-height: 44px; padding: 9px 16px; }
+  .voice-entry { margin-bottom: 12px; }
+}
+
+/* 数据加载骨架占位 */
+.hero-stats-skl .h-stat-pod { pointer-events: none; }
+.hs-skl-num { display: block; width: 48px; height: 20px; margin-bottom: 5px; }
+.hs-skl-lbl { display: block; width: 64px; height: 12px; margin-bottom: 4px; }
+.hs-skl-sub { display: block; width: 78px; height: 11px; }
+.daily-skl { pointer-events: none; }
+.scene-count-skl { display: inline-block; width: 28px; height: 12px; border-radius: 4px; }
+.inline-num-skl { display: inline-block; width: 30px; height: 14px; margin: 0 3px; vertical-align: -2px; border-radius: 4px; }
+.asset-num-skl { display: block; width: 56px; height: 24px; margin-bottom: 4px; border-radius: 6px; }
+.rr-skl {
+  display: flex; align-items: center; gap: 10px; padding: 12px 0;
+  border-bottom: 1px solid var(--green-100);
+}
+.rr-skl:last-of-type { border-bottom: none; }
+.rr-skl-img { width: 44px; height: 44px; border-radius: 10px; flex-shrink: 0; }
+.rr-skl-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
 
 </style>

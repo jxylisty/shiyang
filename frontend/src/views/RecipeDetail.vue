@@ -15,7 +15,9 @@ import ExplainPanel from '../components/ExplainPanel.vue'
 import DisclaimerBanner from '../components/DisclaimerBanner.vue'
 import PlainCard from '../components/PlainCard.vue'
 import ProModeToggle from '../components/ProModeToggle.vue'
+import SpeakButton from '../components/SpeakButton.vue'
 import { proMode } from '../utils/proMode'
+import { stopSpeak } from '../utils/speak'
 
 // 专业模式开启后再加载图表，先显示方子详情。
 const NetworkGraph = defineAsyncComponent(() => import('../components/NetworkGraph.vue'))
@@ -42,7 +44,8 @@ const headCoverTry = ref(0)
 const headCover = ref('')
 function resetHeadCover() {
   headCoverTry.value = 0
-  headCover.value = matImg(recipe.value?.materials?.[0]?.name || '')
+  const first = recipe.value?.materials?.[0]?.name
+  headCover.value = first ? matImg(first) : ''
 }
 function onHeadCoverErr() {
   const mats = recipe.value?.materials || []
@@ -66,6 +69,17 @@ async function syncFavState() {
   } catch { /* 静默 */ }
 }
 
+function triggerBarsGrow() {
+  if (window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches) {
+    barsGrown.value = true
+    return
+  }
+  barsGrown.value = false
+  afterPaint(() => {
+    if (proMode.value) barsGrown.value = true
+  })
+}
+
 onMounted(async () => {
   try {
     recipe.value = (await getRecipe(route.params.id)).data.data
@@ -77,14 +91,26 @@ onMounted(async () => {
     })
     resetHeadCover()
     // 下一拍再给进度条终值：让 width transition 从 0 播到目标（afterPaint，与骨架屏同款收口）
-    afterPaint(() => { barsGrown.value = true })
+    if (proMode.value) triggerBarsGrow()
   } catch { error.value = '加载失败' }
   getRecipePlain(route.params.id).then(({ data }) => { plain.value = data.data })
     .catch(() => {}).finally(() => { plainLoading.value = false })
   syncFavState()
   window.addEventListener('scroll', onScroll, { passive: true })
 })
-onBeforeUnmount(() => window.removeEventListener('scroll', onScroll))
+onBeforeUnmount(() => {
+  window.removeEventListener('scroll', onScroll)
+  stopSpeak()
+})
+watch(() => route.params.id, () => stopSpeak())
+
+watch(proMode, (enabled) => {
+  if (!enabled) {
+    barsGrown.value = false
+    return
+  }
+  if (recipe.value) triggerBarsGrow()
+})
 
 let researchLoading = false
 watch([proMode, recipe], async ([enabled, current]) => {
@@ -153,6 +179,34 @@ const plainSummary = computed(() => {
     s += `，排名前列的成分入血检出倾向都不高`
   }
   return s + '。'
+})
+
+const methodSpeakText = computed(() => {
+  const r = recipe.value
+  if (!r) return ''
+  const parts = []
+  if (r.method?.trim()) parts.push(r.method.trim())
+  if (r.duration?.trim()) parts.push(`参考耗时：${r.duration.trim()}`)
+  return parts.join('。')
+})
+
+const suitableSpeakText = computed(() => {
+  const r = recipe.value
+  if (!r) return ''
+  const parts = []
+  if (r.constitutions_suitable?.length) {
+    parts.push(`适宜体质：${r.constitutions_suitable.join('、')}`)
+  }
+  if (r.constitutions_unsuitable?.length) {
+    parts.push(`不宜体质：${r.constitutions_unsuitable.join('、')}`)
+  }
+  if (r.population?.trim()) {
+    parts.push(`适合人群：${r.population.trim()}`)
+  }
+  if (r.contraindication?.trim()) {
+    parts.push(`注意与禁忌：${r.contraindication.trim()}`)
+  }
+  return parts.join('。')
 })
 
 function gotoLogin() {
@@ -226,7 +280,7 @@ async function toggleCheckin() {
           <div class="card head">
             <div class="h-body">
               <div class="h-cover">
-                <img v-if="headCover" :src="headCover" :alt="recipe.name" fetchpriority="high" @error="onHeadCoverErr" />
+                <img v-if="headCover" :src="headCover" :alt="recipe.name" loading="eager" decoding="async" fetchpriority="high" @error="onHeadCoverErr" />
                 <span v-else class="h-cover-fb"><AppIcon :name="recipe.type === '药膳' ? 'dish' : 'tea'" :size="30" /></span>
               </div>
               <div class="h-content">
@@ -267,7 +321,15 @@ async function toggleCheckin() {
                数据全部来自既有 analysis 字段，纯前端聚合，不新增接口；
                只讲结论与人话，详细数据留在下方专业模式层 -->
           <template v-if="plainSummary">
-            <div class="section-title">成分一句话</div>
+            <div class="section-title">
+              <span>成分一句话</span>
+              <SpeakButton
+                :id="`recipe-${recipe.id}-plain`"
+                :text="plainSummary"
+                aria-label="朗读成分一句话"
+                class="section-speak"
+              />
+            </div>
             <div class="card plain-comp-sum">
               <p class="pcs-line">{{ plainSummary }}</p>
               <p class="pcs-note">「入血概率」是模型预测的成分在血中被检出的倾向，不是口服吸收率，更不是疗效结论。</p>
@@ -278,7 +340,7 @@ async function toggleCheckin() {
           <div class="section-title">配方</div>
           <div class="card">
             <div v-for="(m, mi) in recipe.materials" :key="m.name" class="mat" :style="{ '--i': mi }">
-              <img v-if="!matFailed[m.name]" :src="matImg(m.name)" :alt="m.name" class="m-img" :class="{ loaded: matLoaded[m.name] }" loading="lazy"
+              <img v-if="!matFailed[m.name]" :src="matImg(m.name)" :alt="m.name" class="m-img" :class="{ loaded: matLoaded[m.name] }" loading="lazy" decoding="async"
                    @load="onMatLoad(m.name)" @error="matFailed[m.name] = true" />
               <div v-else class="m-img m-img-fallback"><AppIcon :name="m.material_type === 'herb' ? 'herb' : 'tea'" :size="22" /></div>
               <div class="m-main">
@@ -307,14 +369,32 @@ async function toggleCheckin() {
           </template>
 
           <!-- 做法 -->
-          <div class="section-title">做法</div>
+          <div class="section-title">
+            <span>做法</span>
+            <SpeakButton
+              v-if="methodSpeakText"
+              :id="`recipe-${recipe.id}-method`"
+              :text="methodSpeakText"
+              aria-label="朗读做法"
+              class="section-speak"
+            />
+          </div>
           <div class="card">
             <p class="method">{{ recipe.method }}</p>
             <p v-if="recipe.duration" class="duration"><Clock :size="13" :stroke-width="2" /> {{ recipe.duration }}</p>
           </div>
 
           <!-- 适宜与禁忌 -->
-          <div class="section-title">适宜 / 禁忌</div>
+          <div class="section-title">
+            <span>适宜 / 禁忌</span>
+            <SpeakButton
+              v-if="suitableSpeakText"
+              :id="`recipe-${recipe.id}-suitable`"
+              :text="suitableSpeakText"
+              aria-label="朗读适宜与禁忌"
+              class="section-speak"
+            />
+          </div>
           <div class="card">
             <p v-if="recipe.constitutions_suitable.length"><b>适宜体质：</b>{{ recipe.constitutions_suitable.join('、') }}</p>
             <p v-if="recipe.constitutions_unsuitable.length" style="margin-top:6px"><b>不宜体质：</b>{{ recipe.constitutions_unsuitable.join('、') }}</p>
@@ -351,6 +431,15 @@ async function toggleCheckin() {
                   <span class="c-rank">{{ i + 1 }}</span>
                   <span class="c-name">{{ c.name }}</span>
                   <span class="c-prob" :style="{ color: probColor(c.prob_cctcm) }">{{ c.prob_cctcm }}</span>
+                </div>
+                <div v-if="c.prob_cctcm != null" class="c-bar-track" aria-hidden="true">
+                  <div
+                    class="c-bar-fill"
+                    :style="{
+                      width: barsGrown ? `${Math.max(0, Math.min(100, c.prob_cctcm * 100))}%` : '0%',
+                      backgroundColor: probColor(c.prob_cctcm),
+                    }"
+                  />
                 </div>
                 <div class="c-line2">
                   PU-Learning 预测入血概率
@@ -482,11 +571,11 @@ async function toggleCheckin() {
 }
 
 /* 通路富集 */
-.pw-intro { font-size: 12px; color: var(--ink-600); margin-bottom: 10px; line-height: 1.6; }
-.pw-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 0; border-bottom: 1px dashed var(--green-50); font-size: 12.5px; }
+.pw-intro { font-size: 13px; color: var(--ink-600); margin-bottom: 10px; line-height: 1.6; }
+.pw-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 0; border-bottom: 1px dashed var(--green-50); font-size: 13px; }
 .pw-row:last-of-type { border-bottom: none; }
 .pw-name { font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
-.pw-p { color: var(--ink-400); font-size: 11px; font-variant-numeric: tabular-nums; white-space: nowrap; flex-shrink: 0; }
+.pw-p { color: var(--ink-600); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; flex-shrink: 0; }
 
 /* 加载骨架 */
 .mat-skl { display: flex; align-items: center; gap: 10px; padding: 8px 0; }
@@ -494,7 +583,7 @@ async function toggleCheckin() {
 
 .h-body { display: flex; gap: 14px; align-items: flex-start; }
 .h-cover {
-  width: 88px; height: 88px; border-radius: 12px; overflow: hidden; flex-shrink: 0;
+  width: 88px; height: 88px; aspect-ratio: 1; border-radius: 12px; overflow: hidden; flex-shrink: 0;
   background: var(--green-100); display: flex; align-items: center; justify-content: center;
   color: var(--green-text);
 }
@@ -508,10 +597,10 @@ async function toggleCheckin() {
 }
 .h-top { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
 .h-top h2 { font-family: var(--font-serif); font-size: 22px; font-weight: 700; color: var(--ink-900); letter-spacing: 0.02em; }
-.h-one { font-size: 13px; color: var(--ink-600); margin: 6px 0; }
+.h-one { font-size: 14px; color: var(--ink-600); margin: 6px 0; line-height: 1.55; }
 .tag.lab { display: inline-flex; align-items: center; gap: 3px; background: var(--green-50); color: var(--green-text); border-color: rgba(58, 122, 94, 0.28); font-weight: 500; }
 .h-ops { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; align-items: center; }
-.h-ops :deep(.btn) { padding: 7px 13px; font-size: 13px; border-radius: 9px; gap: 5px; }
+.h-ops :deep(.btn) { min-height: 44px; padding: 8px 14px; font-size: 13.5px; border-radius: 9px; gap: 5px; }
 .h-ops .h-fav { display: inline-flex; align-items: center; gap: 5px; }
 .fav-star { display: inline-flex; }
 .fav-star.pop { animation: pop 0.45s var(--ease-spring); }
@@ -521,69 +610,74 @@ async function toggleCheckin() {
 /* 配料行入场错峰 + 图片懒加载淡入 */
 .mat { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed var(--green-50); gap: 10px; animation: rise .4s var(--ease-out-soft) backwards; animation-delay: calc(var(--i) * 40ms); }
 .mat:last-of-type { border-bottom: none; }
-.m-img { width: 44px; height: 44px; border-radius: 10px; object-fit: cover; flex-shrink: 0; background: var(--green-50); opacity: 0; scale: 0.92; transition: opacity .35s ease, scale .35s var(--ease-snap); }
+.m-img { width: 44px; height: 44px; aspect-ratio: 1; border-radius: 10px; object-fit: cover; flex-shrink: 0; background: var(--green-50); opacity: 0; scale: 0.92; transition: opacity .35s ease, scale .35s var(--ease-snap); }
 .m-img.loaded { opacity: 1; scale: 1; }
 .m-img-fallback { display: flex; align-items: center; justify-content: center; color: var(--tile-ink); opacity: 1; scale: 1; }
 .m-main { flex: 1; }
 .m-name { font-size: 15px; font-weight: 600; }
-.m-kind { font-size: 10px; padding: 1px 7px; border-radius: 8px; background: var(--green-100); color: var(--green-text); margin-left: 8px; }
-.m-nutri { font-size: 10.5px; color: var(--amber-text); margin-left: 6px; cursor: help; }
+.m-kind { font-size: 11.5px; padding: 2px 8px; border-radius: 8px; background: var(--green-100); color: var(--green-text); margin-left: 8px; }
+.m-nutri { font-size: 11.5px; color: var(--amber-text); margin-left: 6px; cursor: help; }
 .m-grams { font-size: 14.5px; font-weight: 700; color: var(--green-text); background: var(--green-50); border: 1px solid var(--green-100); padding: 3px 10px; border-radius: 999px; font-variant-numeric: tabular-nums; white-space: nowrap; flex-shrink: 0; }
 .m-grams small { font-weight: 500; font-size: 0.85em; opacity: 0.85; margin-left: 2px; }
-.m-note { font-size: 11px; color: var(--ink-400); margin-top: 8px; }
+.m-note { font-size: 12px; color: var(--ink-600); margin-top: 8px; }
 
 .method { font-size: 14.5px; line-height: 1.72; }
-.duration { font-size: 12.5px; color: var(--ink-400); margin-top: 6px; display: inline-flex; align-items: center; gap: 4px; }
+.duration { font-size: 13px; color: var(--ink-600); margin-top: 6px; display: inline-flex; align-items: center; gap: 4px; }
 .warn-box { margin-top: 12px; padding: 10px 13px; background: var(--red-50); border: 1px solid rgba(176, 74, 58, 0.22); border-left: 3.5px solid var(--cinnabar); border-radius: 9px; color: var(--red-text); font-size: 13.5px; line-height: 1.65; display: flex; align-items: flex-start; gap: 8px; }
 .warn-ic { flex-shrink: 0; margin-top: 3px; color: var(--cinnabar); }
 
-.a-intro { font-size: 13px; color: var(--ink-600); margin-bottom: 10px; }
+.a-intro { font-size: 13.5px; color: var(--ink-600); margin-bottom: 10px; }
 .comp { padding: 8px 0; border-bottom: 1px dashed var(--green-50); animation: rise .4s var(--ease-out-soft) backwards; animation-delay: calc(var(--i) * 35ms); }
 .c-line1 { display: flex; align-items: center; gap: 8px; }
-.c-rank { width: 18px; height: 18px; border-radius: 50%; background: var(--green-50); color: var(--green-text); font-size: 11px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.c-rank { width: 20px; height: 20px; border-radius: 50%; background: var(--green-50); color: var(--green-text); font-size: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .c-name { flex: 1; font-size: 14px; font-weight: 600; }
 .c-prob { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
-.c-line2 { font-size: 11px; color: var(--ink-400); margin: 3px 0 0 26px; }
+.c-bar-track { height: 6px; margin: 6px 0 2px 28px; border-radius: 999px; background: var(--green-100); overflow: hidden; }
+.c-bar-fill { height: 100%; width: 0; border-radius: inherit; transition: width 600ms ease; transition-delay: calc(var(--i, 0) * 60ms); }
+@media (prefers-reduced-motion: reduce) {
+  .c-bar-fill { transition: none; transition-delay: 0ms; }
+}
+.c-line2 { font-size: 12px; color: var(--ink-600); margin: 3px 0 0 28px; }
 .c-radar { margin-left: 8px; color: var(--green-text); }
 
 .radar-box { margin-top: 14px; background: var(--green-50); border-radius: 10px; padding: 12px 14px; border: 1px solid var(--green-200); }
 .r-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-.r-title { font-size: 13px; font-weight: 700; color: var(--green-text); }
-.r-badge { font-size: 11px; padding: 1px 6px; border-radius: 4px; background: rgba(53, 144, 104, 0.12); color: var(--green-700); }
-.r-details { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--green-200); font-size: 11.5px; color: var(--ink-700); line-height: 1.6; }
+.r-title { font-size: 13.5px; font-weight: 700; color: var(--green-text); }
+.r-badge { font-size: 11.5px; padding: 2px 7px; border-radius: 4px; background: rgba(53, 144, 104, 0.12); color: var(--green-700); }
+.r-details { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--green-200); font-size: 12.5px; color: var(--ink-600); line-height: 1.6; }
 .r-det-item { margin-bottom: 2px; }
-.r-scope { font-size: 10.5px; color: var(--ink-400); margin-top: 8px; line-height: 1.5; }
+.r-scope { font-size: 11.5px; color: var(--ink-600); margin-top: 8px; line-height: 1.55; }
 .r-row { display: flex; align-items: center; gap: 8px; padding: 3px 0; }
-.r-name { width: 56px; font-size: 12px; color: var(--ink-600); }
+.r-name { width: 62px; font-size: 13px; color: var(--ink-600); }
 .r-bar { flex: 1; }
 .r-bar :deep(.van-progress__portion) { border-radius: 4px; transition: width var(--dur-slow) var(--ease-out-soft); }
-.r-val { width: 36px; text-align: right; font-size: 12px; font-variant-numeric: tabular-nums; }
+.r-val { width: 36px; text-align: right; font-size: 13px; font-variant-numeric: tabular-nums; }
 
-.a-targets { font-size: 12px; color: var(--ink-600); margin-top: 12px; }
-.a-disclaimer { font-size: 11px; color: var(--ink-400); margin-top: 10px; line-height: 1.5; }
-.chain-intro { font-size: 12.5px; color: var(--ink-600); margin-bottom: 8px; line-height: 1.55; }
+.a-targets { font-size: 13px; color: var(--ink-600); margin-top: 12px; }
+.a-disclaimer { font-size: 12px; color: var(--ink-600); margin-top: 10px; line-height: 1.55; }
+.chain-intro { font-size: 13px; color: var(--ink-600); margin-bottom: 8px; line-height: 1.55; }
 
 /* 成分一句话（大众层）：说人话，不排数据表 */
 .plain-comp-sum { line-height: 1.7; }
-.pcs-line { font-size: 14px; color: var(--ink-900); font-family: var(--font-serif); font-weight: 600; }
-.pcs-note { font-size: 11.5px; color: var(--ink-400); margin-top: 8px; line-height: 1.55; }
+.pcs-line { font-size: 14.5px; color: var(--ink-900); font-family: var(--font-serif); font-weight: 600; }
+.pcs-note { font-size: 12.5px; color: var(--ink-600); margin-top: 8px; line-height: 1.6; }
 
 /* 暴露量行：成分 / 来源 / 摄入量 / 吸收期望 */
-.exp-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; padding: 7px 0; border-bottom: 1px dashed var(--green-50); font-size: 12.5px; }
+.exp-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; padding: 7px 0; border-bottom: 1px dashed var(--green-50); font-size: 13px; }
 .e-comp { font-weight: 600; }
-.e-src { color: var(--ink-400); font-size: 11.5px; }
+.e-src { color: var(--ink-600); font-size: 12px; }
 .e-val { font-variant-numeric: tabular-nums; color: var(--ink-600); }
-.e-mid { color: var(--ink-400); font-size: 11px; margin-left: 2px; }
-.e-abs { flex-basis: 100%; font-size: 11.5px; color: var(--green-text); font-variant-numeric: tabular-nums; }
+.e-mid { color: var(--ink-600); font-size: 11.5px; margin-left: 2px; }
+.e-abs { flex-basis: 100%; font-size: 12px; color: var(--green-text); font-variant-numeric: tabular-nums; }
 .exp-row:last-child { border-bottom: none; }
 
-.source p { font-size: 13px; color: var(--ink-600); }
-.source a { font-size: 13px; color: var(--green-text); text-decoration: none; display: inline-block; margin-top: 4px; }
+.source p { font-size: 13.5px; color: var(--ink-600); }
+.source a { font-size: 13.5px; color: var(--green-text); text-decoration: none; display: inline-flex; align-items: center; gap: 4px; min-height: 44px; margin-top: 4px; }
 
 /* 返回顶部 */
 .back-top {
   position: fixed; right: max(16px, calc(50% - 375px + 16px)); bottom: calc(28px + var(--tabbar-offset, 0px)); z-index: 30;
-  width: 42px; height: 42px; border: none; border-radius: 50%;
+  width: 44px; height: 44px; border: none; border-radius: 50%;
   background: var(--card); color: var(--green-text); box-shadow: 0 4px 14px rgba(31, 74, 56, 0.18);
   display: flex; align-items: center; justify-content: center; cursor: pointer;
   transition: scale var(--dur-fast) var(--ease-snap);
@@ -591,4 +685,5 @@ async function toggleCheckin() {
 .back-top:active { scale: 0.9; }
 .fade-up-enter-active, .fade-up-leave-active { transition: opacity .25s ease, transform .25s var(--ease-out-soft); }
 .fade-up-enter-from, .fade-up-leave-to { opacity: 0; transform: translateY(10px); }
+.section-speak { margin-left: auto; }
 </style>

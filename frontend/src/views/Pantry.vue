@@ -16,6 +16,7 @@ import { proMode } from '../utils/proMode'
 
 const activeTab = ref('own')  // 'own' = 我的茶罐 / 'custom' = 自定义鉴方
 const materials = ref([])       // 全部可选食材 [{name, count}]
+const materialsLoading = ref(true)
 const selected = ref(new Set()) // 勾选的食材名
 const search = ref('')
 const activeCat = ref('hot')    // 当前分类抽屉：hot | all | flower | root | grain | fresh | sweet
@@ -138,6 +139,7 @@ onMounted(async () => {
   try {
     materials.value = (await getPantryMaterials()).data.data.items || []
   } catch { error.value = '食材清单加载失败' }
+  finally { materialsLoading.value = false }
   if (selected.value.size) runMatch()
 })
 
@@ -202,6 +204,7 @@ const hiddenCount = computed(() =>
 )
 
 const selectedList = computed(() => [...selected.value])
+const jarFillHeight = computed(() => `${Math.min(selected.value.size / 12, 1) * 100}%`)
 const visibleSelected = computed(() =>
   trayExpanded.value ? selectedList.value : selectedList.value.slice(0, TRAY_COLLAPSE_LIMIT)
 )
@@ -553,9 +556,15 @@ watch(() => customResult.value, r => {
       <!-- 顶部茶罐托盘：空罐给一键组合示例，入罐后紧凑展示并实时汇总可煮数 -->
       <div class="card tray-card">
         <div class="tray-head">
+          <div class="tea-jar" :class="{ filled: selected.size > 0 }" aria-hidden="true">
+            <span class="tea-jar-lid"></span>
+            <span class="tea-jar-body">
+              <span class="tea-jar-fill" :style="{ height: jarFillHeight }"></span>
+            </span>
+          </div>
           <div class="tray-title">
             <span class="tray-dot" :class="{ on: selected.size > 0 }" />
-            <b>已入罐 {{ selected.size }} 味</b>
+            <b>已入罐 <span :key="selected.size" class="tray-count">{{ selected.size }}</span> 味</b>
             <span v-if="loading" class="tray-status">正在配伍…</span>
             <button
               v-else-if="result && selected.size"
@@ -660,10 +669,21 @@ watch(() => customResult.value, r => {
           <button type="button" class="link-reset" @click="search = ''">返回分类浏览</button>
         </div>
 
+        <!-- 食材清单加载骨架（慢网时不闪出空态提示） -->
+        <div v-if="materialsLoading" class="mat-grid" aria-hidden="true">
+          <div v-for="i in 12" :key="i" class="mat-tile mat-tile-skl">
+            <span class="mt-thumb sk-anim"></span>
+            <span class="mt-body">
+              <span class="skl mt-skl-name"></span>
+              <span class="skl mt-skl-sub"></span>
+            </span>
+          </div>
+        </div>
+
         <!-- 原位三列紧凑卡片网格：点击不跳位、大触控热区、带入方频次参考 -->
-        <div v-if="visiblePool.length" class="mat-grid">
+        <div v-else-if="visiblePool.length" class="mat-grid">
           <button
-            v-for="m in visiblePool"
+            v-for="(m, idx) in visiblePool"
             :key="m.name"
             type="button"
             class="mat-tile pressable"
@@ -676,7 +696,8 @@ watch(() => customResult.value, r => {
                 v-if="!imgFailed[m.name]"
                 :src="matImg(m.name)"
                 alt=""
-                loading="lazy"
+                :loading="idx < 12 ? 'eager' : 'lazy'"
+                decoding="async"
                 @error="onImgError(m.name)"
               />
               <span v-else class="mt-fallback">{{ m.name.slice(0, 1) }}</span>
@@ -725,7 +746,7 @@ watch(() => customResult.value, r => {
             <router-link v-for="r in result.suggestions" :key="r.id" :to="`/recipes/${r.id}`"
                          class="card p-item pressable">
               <div class="pi-left">
-                <img :src="matImg(r.hit[0] || '')" alt="" loading="lazy" @error="e => e.target.style.visibility = 'hidden'" />
+                <img v-if="r.hit?.[0]" :src="matImg(r.hit[0])" alt="" loading="lazy" decoding="async" @error="e => e.target.style.visibility = 'hidden'" />
                 <Check :size="16" class="pi-check" />
               </div>
               <div class="pi-main">
@@ -746,7 +767,7 @@ watch(() => customResult.value, r => {
             <router-link v-for="r in result.partial" :key="r.id" :to="`/recipes/${r.id}`"
                          class="card p-item partial pressable">
               <div class="pi-left">
-                <img :src="matImg(r.hit[0] || '')" alt="" loading="lazy" @error="e => e.target.style.visibility = 'hidden'" />
+                <img v-if="r.hit?.[0]" :src="matImg(r.hit[0])" alt="" loading="lazy" decoding="async" @error="e => e.target.style.visibility = 'hidden'" />
               </div>
               <div class="pi-main">
                 <div class="pi-top">
@@ -818,7 +839,7 @@ watch(() => customResult.value, r => {
         <div class="composer-shell">
           <!-- 图片附件内嵌预览条 -->
           <div v-if="photoPreview" class="comp-attachment">
-            <img :src="photoPreview" alt="待识别的方子图片" class="comp-thumb" />
+            <img :src="photoPreview" alt="待识别的方子图片" class="comp-thumb" decoding="async" />
             <div class="comp-att-body">
               <span v-if="photoLoading" class="comp-att-status is-loading">
                 <span class="att-spin" aria-hidden="true"></span>
@@ -1132,9 +1153,9 @@ watch(() => customResult.value, r => {
 .pantry-page { padding-bottom: 24px; }
 .head-card { text-align: center; padding: 18px 16px; }
 .p-title { font-size: 18px; display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--green-text); }
-.p-sub { font-size: 12px; color: var(--ink-400); margin-top: 5px; line-height: 1.5; }
-.chip-wrap { display: flex; flex-wrap: wrap; gap: 7px; }
-.hint { font-size: 12px; color: var(--ink-400); line-height: 1.55; }
+.p-sub { font-size: 13px; color: var(--ink-600); margin-top: 5px; line-height: 1.55; }
+.chip-wrap { display: flex; flex-wrap: wrap; gap: 8px; }
+.hint { font-size: 13px; color: var(--ink-600); line-height: 1.55; }
 .cta-bar { margin-top: 14px; display: flex; justify-content: center; }
 .cta-btn { width: 100%; }
 @media (min-width: 540px) {
@@ -1144,14 +1165,14 @@ watch(() => customResult.value, r => {
 
 /* Tab 切换：暖凹槽 + 纸白浮卡 */
 .tab-bar {
-  display: flex; gap: 4px; margin: 0 0 14px;
+  display: flex; gap: 6px; margin: 0 0 14px;
   background: rgba(120, 95, 60, 0.075);
   border: 1px solid var(--card-border);
   border-radius: 12px; padding: 4px;
 }
 .tab-btn {
-  flex: 1; padding: 9px 12px; border: 1px solid transparent; background: transparent;
-  font-size: 13.5px; font-weight: 500; color: var(--ink-600); cursor: pointer;
+  flex: 1; min-height: 44px; padding: 10px 12px; border: 1px solid transparent; background: transparent;
+  font-size: 14px; font-weight: 500; color: var(--ink-600); cursor: pointer;
   border-radius: 9px; transition: all var(--dur-fast) ease; font-family: inherit;
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
 }
@@ -1162,7 +1183,7 @@ watch(() => customResult.value, r => {
   box-shadow: 0 2px 8px -2px rgba(74, 56, 32, 0.12), 0 1px 2px rgba(74, 56, 32, 0.06);
 }
 .tab-new {
-  display: inline-block; font-size: 10px; font-weight: 600; padding: 1px 5px;
+  display: inline-block; font-size: 11.5px; font-weight: 600; padding: 1px 6px;
   background: var(--cinnabar); color: #fbf3e4; border-radius: 6px; line-height: 1.35;
 }
 
@@ -1175,15 +1196,100 @@ watch(() => customResult.value, r => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 10px;
+}
+.tea-jar {
+  width: 34px;
+  height: 40px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+}
+.tea-jar-lid {
+  position: relative;
+  width: 20px;
+  height: 5px;
+  margin-bottom: 1px;
+  border-radius: 3px 3px 1px 1px;
+  border: 1.5px solid rgba(120, 95, 60, 0.28);
+  background: rgba(120, 95, 60, 0.08);
+  transition: border-color 400ms ease, background 400ms ease;
+}
+.tea-jar-lid::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  transform: translateX(-50%);
+  width: 8px;
+  height: 3px;
+  border-radius: 2px 2px 0 0;
+  border: 1.5px solid rgba(120, 95, 60, 0.28);
+  border-bottom: none;
+  background: rgba(120, 95, 60, 0.08);
+  transition: border-color 400ms ease, background 400ms ease;
+}
+.tea-jar.filled .tea-jar-lid,
+.tea-jar.filled .tea-jar-lid::before {
+  border-color: rgba(42, 95, 74, 0.55);
+  background: var(--green-100);
+}
+.tea-jar-body {
+  position: relative;
+  width: 32px;
+  height: 31px;
+  border-radius: 7px 7px 9px 9px;
+  border: 1.5px solid rgba(120, 95, 60, 0.26);
+  background: rgba(120, 95, 60, 0.05);
+  overflow: hidden;
+  transition: border-color 400ms ease, background 400ms ease;
+}
+.tea-jar.filled .tea-jar-body {
+  border-color: rgba(42, 95, 74, 0.55);
+  background: var(--green-50);
+}
+.tea-jar-body::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  width: 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.35);
+  pointer-events: none;
+  z-index: 1;
+}
+.tea-jar-fill {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 0;
+  background: linear-gradient(180deg, var(--green-600) 0%, var(--green-700) 55%, var(--green-900) 100%);
+  transition: height 400ms ease;
 }
 .tray-title {
+  flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 7px;
   font-size: 13.5px;
   color: var(--ink-900);
+}
+@keyframes tray-count-pulse {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.24); }
+  100% { transform: scale(1); }
+}
+.tray-count {
+  display: inline-block;
+  font-variant-numeric: tabular-nums;
+  animation: tray-count-pulse 260ms var(--ease-snap);
 }
 .tray-dot {
   width: 7px;
@@ -1197,20 +1303,21 @@ watch(() => customResult.value, r => {
   box-shadow: 0 0 0 3px rgba(58, 122, 94, 0.14);
 }
 .tray-status {
-  font-size: 11.5px;
-  color: var(--ink-400);
+  font-size: 12px;
+  color: var(--ink-600);
 }
 .tray-jump {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  min-height: 44px;
   border: 1px solid var(--green-100);
   background: var(--green-50);
   color: var(--green-text);
-  font-size: 11.5px;
+  font-size: 12.5px;
   font-weight: 600;
   font-family: inherit;
-  padding: 2px 9px;
+  padding: 6px 12px;
   border-radius: 999px;
   cursor: pointer;
 }
@@ -1223,13 +1330,14 @@ watch(() => customResult.value, r => {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  min-height: 44px;
   border: none;
   background: transparent;
-  color: var(--ink-400);
-  font-size: 12px;
+  color: var(--ink-600);
+  font-size: 13px;
   font-family: inherit;
-  padding: 3px 6px;
-  border-radius: 6px;
+  padding: 6px 10px;
+  border-radius: 8px;
   cursor: pointer;
   transition: color var(--dur-fast) ease, background var(--dur-fast) ease;
 }
@@ -1241,12 +1349,35 @@ watch(() => customResult.value, r => {
 .tray-chips {
   margin-top: 10px;
 }
+@keyframes sel-chip-in {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
 .sel-tag {
   background: var(--green-50); color: var(--green-text);
   border: 1px solid rgba(58, 122, 94, 0.28); border-radius: 999px;
-  padding: 4px 9px 4px 11px; font-size: 12.5px; font-weight: 500;
-  cursor: pointer; display: inline-flex; align-items: center; gap: 4px; margin: 0;
+  min-height: 44px; padding: 8px 12px 8px 14px; font-size: 13px; font-weight: 500;
+  cursor: pointer; display: inline-flex; align-items: center; gap: 5px; margin: 0;
   font-family: inherit;
+  animation: sel-chip-in 180ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tea-jar-lid,
+  .tea-jar-lid::before,
+  .tea-jar-body,
+  .tea-jar-fill {
+    transition: none;
+  }
+  .sel-tag,
+  .tray-count {
+    animation: none;
+  }
 }
 .sel-tag:hover { background: var(--green-100); border-color: var(--green-600); }
 .sel-x { opacity: .65; transition: opacity var(--dur-fast) ease, color var(--dur-fast) ease; }
@@ -1256,8 +1387,9 @@ watch(() => customResult.value, r => {
   border: 1px dashed var(--card-border);
   color: var(--ink-600);
   border-radius: 999px;
-  padding: 4px 10px;
-  font-size: 12px;
+  min-height: 44px;
+  padding: 8px 14px;
+  font-size: 13px;
   font-family: inherit;
   cursor: pointer;
 }
@@ -1268,20 +1400,21 @@ watch(() => customResult.value, r => {
 .preset-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 7px;
-  margin-top: 8px;
+  gap: 8px;
+  margin-top: 10px;
 }
 .preset-pill {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 5px 11px;
+  gap: 5px;
+  min-height: 44px;
+  padding: 8px 14px;
   border-radius: 999px;
-  border: 1px dashed rgba(58, 122, 94, 0.34);
+  border: 1px dashed rgba(58, 122, 94, 0.38);
   background: var(--green-50);
   color: var(--green-text);
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 13.5px;
+  font-weight: 600;
   font-family: inherit;
   cursor: pointer;
   transition: border-color var(--dur-fast) ease, background var(--dur-fast) ease;
@@ -1300,8 +1433,8 @@ watch(() => customResult.value, r => {
   margin: 4px 0 8px;
 }
 .shelf-meta {
-  font-size: 11.5px;
-  color: var(--ink-400);
+  font-size: 12px;
+  color: var(--ink-600);
 }
 .shelf-card {
   padding: 12px;
@@ -1324,7 +1457,7 @@ watch(() => customResult.value, r => {
 }
 .shelf-search-ico {
   flex-shrink: 0;
-  color: var(--ink-400);
+  color: var(--ink-600);
 }
 .shelf-search-input {
   flex: 1;
@@ -1332,17 +1465,17 @@ watch(() => customResult.value, r => {
   border: none;
   outline: none;
   background: transparent;
-  font-size: 13.5px;
+  font-size: 14px;
   font-family: inherit;
   color: var(--ink-900);
 }
 .shelf-search-input::placeholder {
-  color: var(--ink-400);
+  color: var(--ink-600);
 }
 .shelf-search-clear {
   flex-shrink: 0;
-  width: 22px;
-  height: 22px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   border: none;
   background: rgba(120, 95, 60, 0.12);
@@ -1357,7 +1490,7 @@ watch(() => customResult.value, r => {
 .cat-rail {
   display: flex;
   flex-wrap: wrap;
-  gap: 7px 8px;
+  gap: 8px;
   margin: 10px 0 12px;
   padding: 0;
 }
@@ -1366,12 +1499,13 @@ watch(() => customResult.value, r => {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 5px 11px;
+  min-height: 44px;
+  padding: 8px 14px;
   border-radius: 999px;
   border: 1px solid var(--card-border);
   background: transparent;
   color: var(--ink-600);
-  font-size: 12.5px;
+  font-size: 13px;
   font-family: inherit;
   cursor: pointer;
   transition: all var(--dur-fast) ease;
@@ -1387,20 +1521,20 @@ watch(() => customResult.value, r => {
   font-weight: 600;
 }
 .cat-total {
-  font-size: 10.5px;
-  opacity: 0.65;
+  font-size: 11.5px;
+  opacity: 0.8;
   font-variant-numeric: tabular-nums;
 }
 .cat-sel-badge {
-  min-width: 16px;
-  height: 16px;
-  padding: 0 4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
   border-radius: 999px;
   background: var(--green-600);
   color: #fdfaf1;
-  font-size: 10px;
+  font-size: 11.5px;
   font-weight: 700;
-  line-height: 16px;
+  line-height: 18px;
   text-align: center;
   font-variant-numeric: tabular-nums;
 }
@@ -1469,6 +1603,7 @@ watch(() => customResult.value, r => {
 .mt-thumb {
   width: 30px;
   height: 30px;
+  aspect-ratio: 1;
   border-radius: 8px;
   overflow: hidden;
   flex-shrink: 0;
@@ -1477,6 +1612,9 @@ watch(() => customResult.value, r => {
   align-items: center;
   justify-content: center;
 }
+.mat-tile-skl { cursor: default; pointer-events: none; }
+.mt-skl-name { display: block; width: 72%; height: 13px; border-radius: 4px; margin-bottom: 3px; }
+.mt-skl-sub { display: block; width: 48%; height: 10px; border-radius: 4px; }
 .mt-thumb img {
   width: 100%;
   height: 100%;
@@ -1498,7 +1636,7 @@ watch(() => customResult.value, r => {
   gap: 1px;
 }
 .mt-name {
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 600;
   line-height: 1.25;
   color: var(--ink-900);
@@ -1510,9 +1648,9 @@ watch(() => customResult.value, r => {
   color: var(--green-text);
 }
 .mt-sub {
-  font-size: 10px;
-  line-height: 1.2;
-  color: var(--ink-400);
+  font-size: 11.5px;
+  line-height: 1.25;
+  color: var(--ink-600);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1540,13 +1678,14 @@ watch(() => customResult.value, r => {
 
 .shelf-more-btn {
   width: 100%;
+  min-height: 44px;
   margin-top: 10px;
-  padding: 8px 12px;
+  padding: 10px 14px;
   border-radius: 9px;
   border: 1px dashed var(--card-border);
   background: rgba(120, 95, 60, 0.035);
   color: var(--ink-600);
-  font-size: 12.5px;
+  font-size: 13px;
   font-family: inherit;
   display: inline-flex;
   align-items: center;
@@ -1571,23 +1710,24 @@ watch(() => customResult.value, r => {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 5px;
+  gap: 8px;
   margin: 4px 0 6px;
 }
 .pi-miss-label {
-  font-size: 12px;
+  font-size: 12.5px;
   color: var(--ink-600);
 }
 .miss-add-chip {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  padding: 2px 8px;
+  gap: 4px;
+  min-height: 44px;
+  padding: 6px 12px;
   border-radius: 999px;
   border: 1px dashed rgba(176, 124, 46, 0.45);
   background: var(--amber-50);
   color: var(--amber-text);
-  font-size: 11.5px;
+  font-size: 13px;
   font-weight: 600;
   font-family: inherit;
   cursor: pointer;
@@ -1642,12 +1782,12 @@ watch(() => customResult.value, r => {
   min-width: 0;
 }
 .pd-text b {
-  font-size: 12.5px;
+  font-size: 13px;
   color: var(--ink-900);
   line-height: 1.25;
 }
 .pd-text span {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--ink-600);
   white-space: nowrap;
   overflow: hidden;
@@ -1660,9 +1800,10 @@ watch(() => customResult.value, r => {
 }
 .pd-btn {
   flex-shrink: 0;
-  padding: 8px 14px;
+  min-height: 44px;
+  padding: 8px 16px;
   border-radius: 999px;
-  font-size: 12.5px;
+  font-size: 13px;
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -1686,8 +1827,8 @@ watch(() => customResult.value, r => {
   display: flex; align-items: center; justify-content: center; color: var(--green-text);
 }
 .ci-text { flex: 1; min-width: 0; }
-.ci-text b { display: block; font-size: 14px; color: var(--ink-900); margin-bottom: 3px; }
-.ci-text span { font-size: 12px; color: var(--ink-600); line-height: 1.5; }
+.ci-text b { display: block; font-size: 14.5px; color: var(--ink-900); margin-bottom: 3px; }
+.ci-text span { font-size: 13px; color: var(--ink-600); line-height: 1.55; }
 
 /* 一体化智能方子录入框（文字粘贴 + 「+」上传图片/拍照识方） */
 .photo-input { display: none; }
@@ -1749,8 +1890,8 @@ watch(() => customResult.value, r => {
   flex-shrink: 0;
 }
 .comp-att-clear {
-  width: 28px;
-  height: 28px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   border: none;
   background: rgba(120, 95, 60, 0.08);
@@ -1782,7 +1923,7 @@ watch(() => customResult.value, r => {
   outline: none;
 }
 .comp-textarea::placeholder {
-  color: var(--ink-400);
+  color: var(--ink-600);
 }
 
 /* 对话框底栏 */
@@ -1801,8 +1942,8 @@ watch(() => customResult.value, r => {
   gap: 6px;
 }
 .comp-plus-btn {
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   border: 1px solid rgba(58, 122, 94, 0.30);
   background: var(--green-50);
@@ -1837,9 +1978,10 @@ watch(() => customResult.value, r => {
 .comp-plus-tip {
   border: none;
   background: none;
-  padding: 4px 2px;
+  min-height: 44px;
+  padding: 6px 4px;
   font-family: inherit;
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 500;
   color: var(--ink-600);
   cursor: pointer;
@@ -1908,16 +2050,16 @@ watch(() => customResult.value, r => {
   min-width: 0;
 }
 .cmi-txt b {
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--ink-900);
   line-height: 1.3;
 }
 .cmi-txt small {
-  font-size: 11px;
-  color: var(--ink-400);
-  line-height: 1.35;
-  margin-top: 1px;
+  font-size: 12px;
+  color: var(--ink-600);
+  line-height: 1.4;
+  margin-top: 2px;
 }
 
 .plus-pop-enter-active,
@@ -1938,13 +2080,14 @@ watch(() => customResult.value, r => {
   min-width: 0;
 }
 .comp-verify-hint {
-  font-size: 11.5px;
-  color: var(--ink-400);
+  font-size: 12px;
+  color: var(--ink-600);
   white-space: nowrap;
 }
 .comp-extract-btn {
-  padding: 8px 15px;
-  font-size: 13px;
+  min-height: 44px;
+  padding: 8px 16px;
+  font-size: 13.5px;
   border-radius: 999px;
   white-space: nowrap;
 }
@@ -1953,24 +2096,24 @@ watch(() => customResult.value, r => {
   .comp-toolbar { padding: 6px 8px 8px; }
 }
 
-.photo-result { margin-top: 10px; font-size: 12.5px; line-height: 1.6; }
+.photo-result { margin-top: 10px; font-size: 13px; line-height: 1.6; }
 /* 识别出的原文：等宽、可复制、限高滚动，方便用户对照核对 */
 .ocr-box {
   margin-top: 8px; padding: 10px 12px; border-radius: 9px;
   background: var(--green-50); border: 1px solid rgba(58, 122, 94, 0.18);
 }
 .ocr-label {
-  display: block; font-size: 10.5px; font-weight: 600;
+  display: block; font-size: 12px; font-weight: 600;
   color: var(--green-text); margin-bottom: 5px;
 }
 .ocr-text {
-  margin: 0; font-size: 12.5px; line-height: 1.75; color: var(--ink-700);
+  margin: 0; font-size: 13px; line-height: 1.75; color: var(--ink-900);
   font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
   white-space: pre-wrap; word-break: break-word;
   max-height: 190px; overflow-y: auto;
 }
 
-.paste-feedback { margin-top: 10px; font-size: 12.5px; line-height: 1.6; }
+.paste-feedback { margin-top: 10px; font-size: 13px; line-height: 1.6; }
 .pf-ok { color: var(--green-text); margin: 0 0 6px; }
 .pf-none { color: var(--ink-600); margin: 0 0 6px; }
 .pf-rej { background: var(--amber-50); border: 1px solid rgba(176, 124, 46, 0.28); border-radius: 8px; padding: 8px 10px; }
@@ -2004,20 +2147,20 @@ watch(() => customResult.value, r => {
 .cr-name { flex: 1; font-size: 14px; font-weight: 600; color: var(--ink-900); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cr-grams { display: flex; align-items: center; gap: 4px; }
 .cr-grams input {
-  width: 72px; padding: 6px 8px; border: 1px solid var(--green-100);
-  border-radius: 6px; font-size: 12.5px; font-family: inherit; background: var(--card); color: var(--ink-900); text-align: right;
+  width: 78px; min-height: 38px; padding: 6px 8px; border: 1px solid var(--green-100);
+  border-radius: 6px; font-size: 13.5px; font-family: inherit; background: var(--card); color: var(--ink-900); text-align: right;
 }
-.cr-unit { font-size: 12px; color: var(--ink-400); }
+.cr-unit { font-size: 13px; color: var(--ink-600); }
 .cr-del {
-  width: 24px; height: 24px; border-radius: 50%; border: none; background: transparent;
-  color: var(--ink-400); cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+  width: 44px; height: 44px; border-radius: 50%; border: none; background: transparent;
+  color: var(--ink-600); cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
 }
 .cr-del:hover { color: var(--red-text); background: var(--red-50); }
 
 /* 分析结果 */
 .cr-summary { border-left: 4px solid var(--green-600); padding: 14px 16px; }
 .crs-badge {
-  display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;
+  display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12.5px; font-weight: 600;
   background: var(--green-700); color: #fff; margin-bottom: 10px;
 }
 .crs-badge.lv-A { background: #1d6b4c; }
@@ -2025,7 +2168,7 @@ watch(() => customResult.value, r => {
 .crs-badge.lv-C { background: var(--amber-600); }
 .crs-text { font-size: 14px; color: var(--ink-900); line-height: 1.7; margin: 0 0 6px; }
 .crs-text .miss { color: var(--amber-text); }
-.crs-note { font-size: 12px; color: var(--ink-400); margin: 0; }
+.crs-note { font-size: 12.5px; color: var(--ink-600); margin: 0; }
 
 /* 药材卡片 */
 .herb-cards { display: grid; grid-template-columns: 1fr; gap: 10px; }
@@ -2033,67 +2176,67 @@ watch(() => customResult.value, r => {
 .herb-card { padding: 14px; }
 .hc-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px; }
 .hc-name { font-size: 16px; color: var(--ink-900); font-family: var(--font-serif); }
-.hc-py { font-size: 11.5px; color: var(--ink-400); text-transform: capitalize; }
-.hc-prop { font-size: 12px; color: var(--ink-600); display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
-.hc-label { font-size: 11px; color: var(--green-text); font-weight: 600; display: block; margin-bottom: 3px; }
+.hc-py { font-size: 12px; color: var(--ink-600); text-transform: capitalize; }
+.hc-prop { font-size: 13px; color: var(--ink-600); display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+.hc-label { font-size: 12px; color: var(--green-text); font-weight: 600; display: block; margin-bottom: 3px; }
 .hc-label .src-tag {
-  display: inline-block; margin-left: 5px; padding: 0 5px; border-radius: 6px;
-  font-size: 9.5px; font-weight: 500; line-height: 1.6;
+  display: inline-block; margin-left: 5px; padding: 0 6px; border-radius: 6px;
+  font-size: 11.5px; font-weight: 500; line-height: 1.55;
   background: var(--amber-600); color: #fff; vertical-align: middle;
 }
 .hc-func, .hc-indic { margin: 6px 0; }
 .hc-func p, .hc-indic p {
-  font-size: 13px; color: var(--ink-600); line-height: 1.6; margin: 0;
-  font-style: italic; opacity: .9;
+  font-size: 13.5px; color: var(--ink-600); line-height: 1.65; margin: 0;
+  font-style: italic;
 }
 .hc-stats {
   display: flex; gap: 12px; margin-top: 10px; padding-top: 10px;
-  border-top: 1px dashed var(--green-100); font-size: 12px; color: var(--ink-400);
+  border-top: 1px dashed var(--green-100); font-size: 12.5px; color: var(--ink-600);
 }
 
 /* 成分靶点折叠区 */
 .cr-extra { padding: 14px; }
 .cr-section { margin-top: 12px; }
-.cr-section > b { display: block; font-size: 13px; color: var(--ink-900); margin-bottom: 8px; }
+.cr-section > b { display: block; font-size: 13.5px; color: var(--ink-900); margin-bottom: 8px; }
 .ing-tag, .tgt-tag {
-  font-size: 11.5px; background: var(--green-50); border-color: var(--green-100);
+  font-size: 12px; background: var(--green-50); border-color: var(--green-100);
 }
 .ing-tag.multi, .tgt-tag.multi {
   background: var(--green-700); color: #fff; border-color: var(--green-700);
 }
-.ing-tag small, .tgt-tag small { opacity: .85; font-weight: 600; }
+.ing-tag small, .tgt-tag small { opacity: .9; font-weight: 600; }
 
 .pantry-list { display: flex; flex-direction: column; gap: 10px; }
 .p-item { display: flex; gap: 12px; padding: 12px; text-decoration: none; color: inherit; position: relative; }
-.pi-left { position: relative; width: 56px; height: 56px; border-radius: 12px; overflow: hidden; flex-shrink: 0;
-           background: linear-gradient(135deg, var(--green-600), var(--green-900)); }
+.pi-left { position: relative; width: 56px; height: 56px; aspect-ratio: 1; border-radius: 12px; overflow: hidden; flex-shrink: 0;
+           background: var(--green-50); }
 .pi-left img { width: 100%; height: 100%; object-fit: cover; }
 .pi-check { position: absolute; right: 2px; bottom: 2px; color: #fff; background: var(--green-600);
             border-radius: 50%; padding: 2px; }
 .p-item.partial { opacity: .95; }
 .pi-main { flex: 1; min-width: 0; }
-.pi-main b { font-size: 15px; }
+.pi-main b { font-size: 15.5px; }
 .pi-top { display: flex; justify-content: space-between; align-items: center; }
-.cov { font-size: 12px; font-weight: 700; color: var(--amber-text); }
-.pi-one { font-size: 12px; color: var(--ink-600); margin: 3px 0 6px; }
-.pi-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.cov { font-size: 12.5px; font-weight: 700; color: var(--amber-text); }
+.pi-one { font-size: 13px; color: var(--ink-600); margin: 3px 0 6px; line-height: 1.5; }
+.pi-tags { display: flex; flex-wrap: wrap; gap: 6px; }
 .tag.lab { background: var(--green-700); color: #fff; border-color: var(--green-700); }
 
 /* 联网搜索兜底卡片 */
-.wl-spin { font-size: 11.5px; font-weight: 400; color: var(--ink-400); margin-left: 6px; }
+.wl-spin { font-size: 12px; font-weight: 400; color: var(--ink-600); margin-left: 6px; }
 .wl-list { display: flex; flex-direction: column; gap: 10px; }
 .wl-card { padding: 13px 14px; border-left: 3px solid var(--amber-600); }
 .wl-head { display: flex; align-items: center; gap: 7px; margin-bottom: 7px; color: var(--ink-900); }
 .wl-badge {
-  font-size: 9.5px; padding: 1px 6px; border-radius: 6px; line-height: 1.6;
+  font-size: 11.5px; padding: 1px 7px; border-radius: 6px; line-height: 1.55;
   background: var(--amber-600); color: #fff; font-weight: 500;
 }
-.wl-summary { font-size: 13px; color: var(--ink-600); line-height: 1.7; margin: 0 0 8px; }
-.wl-none { font-size: 12.5px; color: var(--ink-400); margin: 0 0 6px; }
-.wl-sources { display: flex; flex-direction: column; gap: 3px; }
-.wl-src-label { font-size: 11px; color: var(--ink-400); font-weight: 600; }
+.wl-summary { font-size: 13.5px; color: var(--ink-600); line-height: 1.7; margin: 0 0 8px; }
+.wl-none { font-size: 13px; color: var(--ink-600); margin: 0 0 6px; }
+.wl-sources { display: flex; flex-direction: column; gap: 4px; }
+.wl-src-label { font-size: 12px; color: var(--ink-600); font-weight: 600; }
 .wl-src {
-  font-size: 12px; color: var(--green-text); text-decoration: none;
+  font-size: 13px; color: var(--green-text); text-decoration: none;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .wl-src:hover { text-decoration: underline; }

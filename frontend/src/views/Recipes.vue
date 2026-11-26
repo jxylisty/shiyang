@@ -198,7 +198,11 @@ function onCoverErr(r) {
                      class="card recipe-card with-cover pressable" :style="{ '--i': Math.min(i % 20, 12), '--d': `${Math.min(i % 20, 12) * 40}ms` }"
                      :class="{ 'safety-block': safetyMap[r.id]?.verdict === 'block' }">
           <div class="rc-cover">
-            <img v-if="coverSrc(r)" :src="coverSrc(r)" alt="" loading="lazy" @error="onCoverErr(r)" />
+            <img v-if="coverSrc(r)" :src="coverSrc(r)" alt=""
+                 :loading="i < 6 ? 'eager' : 'lazy'"
+                 :fetchpriority="i < 4 ? 'high' : undefined"
+                 decoding="async"
+                 @error="onCoverErr(r)" />
             <span v-else class="rc-cover-fallback"><AppIcon :name="r.type === '药膳' ? 'dish' : 'tea'" :size="32" /></span>
             <span class="rc-type">{{ r.type }}</span>
             <!-- 已收藏角标：逛库时认出收藏过的（详情页收藏后列表同步可见） -->
@@ -240,13 +244,13 @@ function onCoverErr(r) {
 .filters { margin-bottom: 6px; }
 
 .f-type {
-  display: inline-flex; background: var(--green-50); border: 1px solid var(--green-100);
-  border-radius: 20px; padding: 2px; margin-bottom: 10px;
+  display: inline-flex; gap: 8px; background: var(--green-50); border: 1px solid var(--green-100);
+  border-radius: 24px; padding: 3px; margin-bottom: 10px;
 }
 .seg-btn {
-  display: inline-flex; align-items: center; gap: 4px;
-  border: none; background: transparent; padding: 5px 14px; font-size: 13px; font-weight: 600;
-  border-radius: 16px; color: var(--ink-600); cursor: pointer;
+  display: inline-flex; align-items: center; gap: 5px;
+  border: none; background: transparent; min-height: 44px; padding: 8px 16px; font-size: 14px; font-weight: 600;
+  border-radius: 20px; color: var(--ink-600); cursor: pointer;
   transition: all var(--dur-fast) ease;
 }
 .seg-btn.active {
@@ -255,33 +259,39 @@ function onCoverErr(r) {
 }
 :root[data-theme="dark"] .seg-btn.active { background: var(--card); color: var(--green-600); }
 
-.f-scenes { display: flex; flex-wrap: wrap; gap: 2px; margin-bottom: 4px; }
+.f-scenes { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
 .f-scenes .tag {
   cursor: pointer; border: 1px solid var(--green-100); background: #fff;
+  min-height: 44px; padding: 8px 14px; margin: 0; font-size: 13.5px;
+  display: inline-flex; align-items: center; border-radius: 10px;
   transition: all var(--dur-fast) ease;
 }
 .f-scenes .tag.active { background: var(--green-700); color: #fff; border-color: var(--green-700); }
 
 .safety-row {
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-  margin-top: 10px; padding: 8px 12px; background: var(--amber-50);
-  border: 1px solid rgba(194, 131, 40, 0.15); border-radius: 10px;
+  margin-top: 10px; padding: 10px 12px; background: var(--amber-50);
+  border: 1px solid rgba(194, 131, 40, 0.18); border-radius: 10px;
 }
-.safety-label { font-size: 11.5px; color: var(--amber-text); display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0; font-weight: 600; }
-.safety-tags { display: flex; flex-wrap: wrap; gap: 4px; }
-.safety-tag { background: #fff; border-color: rgba(194, 131, 40, 0.2); }
+.safety-label { font-size: 13px; color: var(--amber-text); display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0; font-weight: 600; }
+.safety-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+.safety-tag {
+  background: var(--card); color: var(--ink-900); border-color: rgba(194, 131, 40, 0.25);
+  min-height: 44px; padding: 8px 14px; margin: 0; font-size: 13px;
+  display: inline-flex; align-items: center; border-radius: 10px;
+}
 .safety-tag.active { background: var(--amber-600); color: #fff; border-color: var(--amber-600); }
 
 .list-head {
   display: flex; align-items: center; justify-content: space-between;
-  margin: 14px 2px 10px; font-size: 13px; color: var(--ink-400);
+  margin: 14px 2px 10px; font-size: 13.5px; color: var(--ink-600);
 }
 .list-head b { color: var(--ink-900); font-variant-numeric: tabular-nums; }
 .lab-link {
-  font-size: 12px; color: var(--green-text); text-decoration: none;
+  font-size: 13px; color: var(--green-text); text-decoration: none;
   display: inline-flex; align-items: center; gap: 5px; font-weight: 600;
   background: linear-gradient(135deg, var(--green-50) 0%, #fff 100%);
-  padding: 4px 12px; border-radius: 99px;
+  min-height: 44px; padding: 6px 14px; border-radius: 99px;
   border: 1px solid rgba(58, 122, 94, 0.25);
   box-shadow: 0 1px 4px rgba(0,0,0,0.03);
   transition: all 0.2s ease;
@@ -290,9 +300,9 @@ function onCoverErr(r) {
   background: var(--green-600); color: #fff; border-color: var(--green-600);
 }
 .rc-compare-tag {
-  margin-left: auto; display: inline-flex; align-items: center; gap: 3px;
-  font-size: 11px; color: var(--green-text); background: var(--green-50);
-  border: 1px solid var(--green-100); padding: 2px 8px; border-radius: 6px;
+  margin-left: auto; display: inline-flex; align-items: center; gap: 4px;
+  font-size: 12px; color: var(--green-text); background: var(--green-50);
+  border: 1px solid var(--green-100); min-height: 36px; padding: 4px 10px; border-radius: 8px;
   text-decoration: none; transition: all 0.15s ease;
 }
 .rc-compare-tag:hover {
@@ -311,8 +321,8 @@ function onCoverErr(r) {
 .rc-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .rc-cover-fallback { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--tile-ink); }
 .rc-type {
-  position: absolute; left: 0; bottom: 0; font-size: 10px; color: #fff;
-  background: rgba(22, 56, 42, 0.82); padding: 1px 7px; border-radius: 0 8px 0 0;
+  position: absolute; left: 0; bottom: 0; font-size: 11.5px; color: #fff;
+  background: rgba(22, 56, 42, 0.86); padding: 2px 8px; border-radius: 0 8px 0 0;
   backdrop-filter: blur(4px);
 }
 /* 已收藏角标：封面右上角朱砂小星 */
@@ -326,22 +336,22 @@ function onCoverErr(r) {
 .rc-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .rc-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
 .rc-name { font-family: var(--font-serif); font-size: 17px; font-weight: 700; color: var(--ink-900); letter-spacing: 0.02em; }
-.rc-dur { font-size: 11px; color: var(--ink-400); flex-shrink: 0; }
+.rc-dur { font-size: 12px; color: var(--ink-600); flex-shrink: 0; }
 .rc-one {
-  font-size: 13px; color: var(--ink-600); margin: 3px 0 6px; line-height: 1.5;
+  font-size: 13.5px; color: var(--ink-600); margin: 3px 0 6px; line-height: 1.5;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
 .rc-mats {
-  font-size: 11.5px; color: var(--ink-600); margin-bottom: 6px; white-space: nowrap;
-  overflow: hidden; text-overflow: ellipsis; opacity: 0.85;
+  font-size: 12.5px; color: var(--ink-600); margin-bottom: 6px; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
 }
-.rc-mats span { color: var(--ink-400); }
+.rc-mats span { color: var(--ink-600); font-weight: 500; }
 
-.rc-safety { font-size: 11px; margin: 0 0 6px; padding: 4px 8px; border-radius: 8px; display: flex; align-items: center; gap: 4px; line-height: 1.4; }
+.rc-safety { font-size: 12px; margin: 0 0 6px; padding: 5px 9px; border-radius: 8px; display: flex; align-items: center; gap: 4px; line-height: 1.45; }
 .rc-safety.block { background: var(--red-50); color: var(--red-text); }
 .rc-safety.warn { background: var(--amber-50); color: var(--amber-text); }
 
-.rc-bottom { margin-top: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.rc-bottom { margin-top: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .tag.lab {
   display: inline-flex; align-items: center; gap: 3px; background: var(--green-50);
   color: var(--green-text); border-color: var(--green-100); font-weight: 500;

@@ -149,6 +149,17 @@ a, button, .btn, .card, .tag, .pressable, input, label { touch-action: manipulat
 /* 浅一档骨架变体（原 5 个页面逐字复制，收口为一份） */
 .sk-anim { background: linear-gradient(90deg, var(--green-50) 25%, #e6f1ea 50%, var(--green-50) 75%); background-size: 200% 100%; animation: shimmer 1.3s infinite; }
 
+/* 深色卡片底上的柔和呼吸骨架（用于首页 Hero 统计舱等深绿背景） */
+@keyframes skl-breathe {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 0.92; }
+}
+.skl-dark {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 6px;
+  animation: skl-breathe 1.4s ease-in-out infinite;
+}
+
 /* 按钮 loading 转圈（原 Login/Quiz 各一份，收口为一份） */
 @keyframes spin { to { rotate: 360deg; } }
 .spinner {
@@ -208,12 +219,21 @@ body {
   letter-spacing: 0.01em;
 }
 #app { min-height: 100vh; }
-:root { --topbar-height: 52px; }
+:root { --topbar-height: 64px; }
 .app-shell {
   max-width: 750px;
+  min-height: 100vh;
   margin: 0 auto;
   padding-top: calc(var(--topbar-height, 52px) + env(safe-area-inset-top, 0px));
   padding-bottom: var(--tabbar-offset);
+  background-color: var(--bg);
+  display: flex;
+  flex-direction: column;
+}
+.app-main {
+  flex: 1 0 auto;
+  min-height: 62vh;
+  background-color: var(--bg);
 }
 
 /* 内容较少的页面（登录/测评）也要撑住版面：给主区域一个最小高度，
@@ -269,7 +289,7 @@ body {
 }
 .topbar .logo small {
   font-family: var(--font-sans);
-  font-weight: 400; color: var(--ink-400); font-size: 11px; margin-left: 8px; letter-spacing: 0.5px; white-space: nowrap;
+  font-weight: 400; color: var(--ink-600); font-size: 11.5px; margin-left: 8px; letter-spacing: 0.5px; white-space: nowrap;
 }
 .topbar nav { display: flex; align-items: center; gap: 2px; }
 .topbar nav a {
@@ -314,7 +334,7 @@ body {
 @media (max-width: 720px) {
   :root {
     --tabbar-offset: calc(62px + env(safe-area-inset-bottom, 0px));
-    --topbar-height: 48px;
+    --topbar-height: 60px;
   }
   .topbar-inner {
     padding: 8px 12px;
@@ -328,10 +348,10 @@ body {
 
 /* 底部免责声明 */
 .disclaimer {
-  margin: 24px 16px 32px; padding: 11px 16px;
-  background: var(--amber-50); border: 1px solid rgba(176, 124, 46, 0.22);
-  border-radius: 3px; color: var(--amber-text); font-size: 12px; text-align: center;
-  line-height: 1.5;
+  margin: 24px 16px 32px; padding: 12px 16px;
+  background: var(--amber-50); border: 1px solid rgba(176, 124, 46, 0.34);
+  border-radius: 3px; color: var(--ink-900); font-size: 13px; text-align: center;
+  line-height: 1.6;
 }
 
 /* 卡片与通用 */
@@ -415,7 +435,7 @@ body {
   padding: 3px 5px;
   transform: rotate(-3deg);
 }
-.seal.sm { font-size: 10px; padding: 2px 4px; }
+.seal.sm { font-size: 11.5px; padding: 2px 5px; }
 .seal.md { font-size: 13px; padding: 4px 7px; }
 
 /* 暗纹底：万字纹铺在卡片内，极低透明度，只在视觉上「填」住大片留白 */
@@ -462,7 +482,7 @@ body {
 .btn:disabled { opacity: .42; cursor: not-allowed; box-shadow: none; transform: none; }
 
 .tag {
-  display: inline-block; font-size: 11.5px; padding: 2px 10px;
+  display: inline-block; font-size: 12px; padding: 3px 10px;
   border-radius: 6px; background: var(--green-50); color: var(--green-text);
   border: 1px solid rgba(120, 95, 60, 0.14); margin: 2px 4px 2px 0;
   transition: background var(--dur-fast) ease, color var(--dur-fast) ease, border-color var(--dur-fast) ease, scale var(--dur-fast) var(--ease-snap);
@@ -471,13 +491,13 @@ body {
 .tag.warn { background: var(--red-50); color: var(--red-text); border-color: rgba(176, 74, 58, 0.26); }
 .tag.active { background: var(--green-700); color: #fdfaf1; border-color: var(--green-700); }
 
-.empty { text-align: center; color: var(--ink-400); padding: 40px 0; font-size: 14px; }
+.empty { text-align: center; color: var(--ink-600); padding: 40px 0; font-size: 14px; }
 
 /* 共享方子行（原 Home/Me/Quiz/Constitution 各一份拷贝） */
 .recipe-row { display: block; padding: 11px 0; border-bottom: 1px solid var(--green-50); text-decoration: none; }
 .recipe-row:last-of-type { border-bottom: none; }
 .r-name { font-weight: 600; font-size: 15px; color: var(--ink-900); }
-.r-one { font-size: 12.5px; color: var(--ink-600); margin-top: 3px; line-height: 1.45; }
+.r-one { font-size: 13px; color: var(--ink-600); margin-top: 3px; line-height: 1.5; }
 
 /* 桌面大屏适配：布局放宽到 1040px，方子列表两列，详情页内容两栏 */
 @media (min-width: 900px) {
@@ -622,10 +642,14 @@ body {
 :root[data-fontsize="large"] .page .rc-name,
 :root[data-fontsize="large"] .page .m-name,
 :root[data-fontsize="large"] .page .c-name { font-size: 17.5px; }
+:root[data-fontsize="large"] .page .ve-title { font-size: 18px; }
+:root[data-fontsize="large"] .page p.ve-sub { font-size: 15px; line-height: 1.55; }
+:root[data-fontsize="large"] .page .as-voice-hint { font-size: 14px; }
 :root[data-fontsize="large"] .page .d-name,
 :root[data-fontsize="large"] .page .head h2 { font-size: 21px; }
 :root[data-fontsize="large"] .page .q-text { font-size: 20px; line-height: 1.65; }
 :root[data-fontsize="large"] .page .btn { font-size: 16px; min-height: 44px; padding: 10px 20px; }
+:root[data-fontsize="large"] .page .speak-btn { font-size: 15px; min-height: 44px; padding: 8px 15px; }
 :root[data-fontsize="large"] .page .tag,
 :root[data-fontsize="large"] .page .as-chip,
 :root[data-fontsize="large"] .page .cat-tab { font-size: 13.5px; padding: 4px 12px; }
@@ -655,10 +679,14 @@ body {
 :root[data-fontsize="xlarge"] .page .rc-name,
 :root[data-fontsize="xlarge"] .page .m-name,
 :root[data-fontsize="xlarge"] .page .c-name { font-size: 19px; }
+:root[data-fontsize="xlarge"] .page .ve-title { font-size: 19.5px; }
+:root[data-fontsize="xlarge"] .page p.ve-sub { font-size: 16px; line-height: 1.6; }
+:root[data-fontsize="xlarge"] .page .as-voice-hint { font-size: 15px; }
 :root[data-fontsize="xlarge"] .page .d-name,
 :root[data-fontsize="xlarge"] .page .head h2 { font-size: 22.5px; }
 :root[data-fontsize="xlarge"] .page .q-text { font-size: 22px; line-height: 1.7; }
 :root[data-fontsize="xlarge"] .page .btn { font-size: 17px; min-height: 48px; padding: 11px 22px; }
+:root[data-fontsize="xlarge"] .page .speak-btn { font-size: 16px; min-height: 48px; padding: 9px 17px; }
 :root[data-fontsize="xlarge"] .page .tag,
 :root[data-fontsize="xlarge"] .page .as-chip,
 :root[data-fontsize="xlarge"] .page .cat-tab { font-size: 14.5px; padding: 5px 13px; }

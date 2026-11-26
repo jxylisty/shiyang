@@ -18,6 +18,15 @@ const filterKey = ref('all')   // all | warm | neutral | cool | prob
 const active = ref(null)       // 当前打开详情的药材（已归一化）
 const showEnRaw = ref(false)   // 是否展开 HERB 英文原文
 const imgFailed = ref({})
+const imgLoaded = ref({})
+
+const prefersReduced = () =>
+  typeof window !== 'undefined' &&
+  window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+
+const enableStagger = ref(!prefersReduced())
+const filterSwitched = ref(false)
+let staggerTimer = 0
 
 // 桌面端详情用居中弹窗，手机保持底部抽屉（van-popup--bottom 只有 left:0，宽屏下 margin auto 不生效）
 const mqWide = window.matchMedia('(min-width: 720px)')
@@ -56,12 +65,23 @@ async function load() {
     const d = (await listHerbs('')).data.data
     allItems.value = (d.items || []).map(normalizeHerbView)
     syncQueryHerb()
+    if (enableStagger.value) {
+      clearTimeout(staggerTimer)
+      staggerTimer = setTimeout(() => { enableStagger.value = false }, 800)
+    }
   } catch {
     loadError.value = true
     allItems.value = []
   } finally {
     loading.value = false
   }
+}
+
+function selectFilter(key) {
+  if (filterKey.value === key) return
+  enableStagger.value = false
+  filterSwitched.value = true
+  filterKey.value = key
 }
 
 function syncQueryHerb() {
@@ -105,15 +125,19 @@ function closeHerb() {
   active.value = null
 }
 
+watch(kw, () => { enableStagger.value = false })
+
 onMounted(() => {
   mqWide.addEventListener('change', onMqChange)
   load()
 })
 onUnmounted(() => {
   mqWide.removeEventListener('change', onMqChange)
+  clearTimeout(staggerTimer)
 })
 
 const hideImg = (name) => { imgFailed.value[name] = true }
+const markImgLoaded = (name) => { imgLoaded.value[name] = true }
 </script>
 
 <template>
@@ -127,7 +151,7 @@ const hideImg = (name) => { imgFailed.value[name] = true }
       <div class="filter-bar">
         <button v-for="f in FILTERS" :key="f.key" type="button"
                 class="f-pill" :class="{ active: filterKey === f.key }"
-                @click="filterKey = f.key">
+                @click="selectFilter(f.key)">
           {{ f.label }}
         </button>
       </div>
@@ -148,13 +172,20 @@ const hideImg = (name) => { imgFailed.value[name] = true }
       <p class="count">
         共 <b>{{ shownItems.length }}</b><template v-if="shownItems.length !== allItems.length"> / {{ allItems.length }}</template> 味药食同源药材
       </p>
-      <div class="herb-grid">
+      <div class="herb-grid" :key="filterKey" :class="{ 'grid-fade': filterSwitched }">
         <button v-for="(h, i) in shownItems" :key="h.id" type="button"
                 class="card herb-card pressable"
-                :style="{ '--d': `${Math.min(i, 20) * 25}ms` }"
+                :class="{ 'herb-stagger': enableStagger && i < 12 }"
+                :style="enableStagger && i < 12 ? { '--d': `${i * 30}ms` } : undefined"
                 @click="openHerb(h)">
           <div class="h-img">
-            <img v-if="!imgFailed[h.name]" :src="matImg(h.name)" :alt="h.name" loading="lazy" @error="hideImg(h.name)" />
+            <img v-if="!imgFailed[h.name]" :src="matImg(h.name)" :alt="h.name"
+                 :loading="i < 12 ? 'eager' : 'lazy'"
+                 :fetchpriority="i < 6 ? 'high' : undefined"
+                 decoding="async"
+                 :class="{ loaded: imgLoaded[h.name] }"
+                 @load="markImgLoaded(h.name)"
+                 @error="hideImg(h.name)" />
             <span v-else class="h-fallback"><AppIcon name="herb" :size="30" /></span>
             <span v-if="h.category" class="h-cat-badge">{{ h.category }}</span>
           </div>
@@ -185,7 +216,7 @@ const hideImg = (name) => { imgFailed.value[name] = true }
         <!-- 顶部名物头卡 -->
         <div class="hd-head">
           <div class="hd-cover">
-            <img v-if="!imgFailed[active.name]" :src="matImg(active.name)" :alt="active.name" @error="hideImg(active.name)" />
+            <img v-if="!imgFailed[active.name]" :src="matImg(active.name)" :alt="active.name" loading="eager" decoding="async" @error="hideImg(active.name)" />
             <span v-else class="h-fallback"><AppIcon name="herb" :size="34" /></span>
           </div>
           <div class="hd-title-zone">
@@ -310,13 +341,22 @@ const hideImg = (name) => { imgFailed.value[name] = true }
 @media (min-width: 600px) { .herb-grid { grid-template-columns: repeat(4, 1fr); gap: 12px; } }
 @media (min-width: 900px) { .herb-grid { grid-template-columns: repeat(5, 1fr); gap: 14px; } }
 
+@keyframes grid-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.herb-grid.grid-fade { animation: grid-fade-in 150ms ease; }
+
 /* 列表网格小卡片 */
 .herb-card {
   padding: 10px 9px 11px; text-align: center; cursor: pointer;
   border: 1px solid var(--card-border); font: inherit;
   display: flex; flex-direction: column; align-items: center; gap: 4px; margin-bottom: 0;
   min-width: 0;
-  animation: rise .4s var(--ease-out-soft) backwards; animation-delay: var(--d, 0ms);
+}
+.herb-card.herb-stagger {
+  animation: rise .38s var(--ease-out-soft) backwards;
+  animation-delay: var(--d, 0ms);
 }
 @media (hover: hover) {
   .herb-card:hover {
@@ -332,7 +372,18 @@ const hideImg = (name) => { imgFailed.value[name] = true }
   background: var(--green-50); margin-bottom: 4px; position: relative;
   border: 1px solid rgba(120, 95, 60, 0.10);
 }
-.h-img img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .35s var(--ease-out-soft); }
+.h-img img {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+  opacity: 0;
+  transition: opacity 250ms ease, transform .35s var(--ease-out-soft);
+}
+.h-img img.loaded { opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .herb-card.herb-stagger,
+  .herb-grid.grid-fade { animation: none; }
+  .h-img img { transition: none; }
+}
 .h-fallback { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--tile-ink); }
 .h-cat-badge {
   position: absolute; right: 5px; bottom: 5px;
