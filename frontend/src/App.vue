@@ -79,7 +79,7 @@ const baseUrl = import.meta.env.BASE_URL
           :title="isElderMode ? '当前为长辈大字版，点击恢复标准字号' : '开启长辈大字版（放大全站文字并精简复杂图表）'"
           @click="toggleElderMode"
         >
-          <AppIcon name="fontSize" :size="14" :stroke-width="2.1" />
+          <AppIcon name="fontSize" :size="16" :stroke-width="2.1" />
           <span>{{ isElderMode ? '标准字' : '长辈版' }}</span>
         </button>
         <SearchBox />
@@ -131,13 +131,14 @@ const baseUrl = import.meta.env.BASE_URL
 .top-back {
   display: none;
   align-items: center;
-  gap: 2px;
-  padding: 6px 10px 6px 7px;
+  gap: 3px;
+  min-height: 44px;
+  padding: 8px 12px 8px 9px;
   border-radius: 999px;
   border: 1px solid var(--card-border);
   background: var(--card);
   color: var(--green-text);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   font-family: inherit;
   cursor: pointer;
@@ -149,7 +150,7 @@ const baseUrl = import.meta.env.BASE_URL
 .topbar-actions {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   flex-shrink: 0;
 }
 
@@ -157,18 +158,19 @@ const baseUrl = import.meta.env.BASE_URL
 .elder-btn {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 5px 11px;
-  min-height: 32px;
+  gap: 5px;
+  padding: 8px 14px;
+  min-height: 44px;
   border-radius: 999px;
-  border: 1px solid rgba(58, 122, 94, 0.28);
-  background: var(--green-50);
+  border: 1.5px solid var(--green-600);
+  background: var(--green-100);
   color: var(--green-text);
-  font-size: 12.5px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 700;
   font-family: inherit;
   white-space: nowrap;
   cursor: pointer;
+  box-shadow: 0 1px 4px rgba(42, 95, 74, 0.14);
   transition: background var(--dur-fast) ease, color var(--dur-fast) ease, border-color var(--dur-fast) ease;
 }
 .elder-btn:hover {
@@ -238,7 +240,7 @@ const baseUrl = import.meta.env.BASE_URL
     transition: background var(--dur-fast) ease, color var(--dur-fast) ease;
   }
   .mtab-label {
-    font-size: 11.5px;
+    font-size: 12px;
     font-weight: 500;
     line-height: 1.2;
     white-space: nowrap;
@@ -293,8 +295,13 @@ const baseUrl = import.meta.env.BASE_URL
   font-size: 14px;
   min-height: 36px;
 }
+:global(:root:is([data-fontsize="large"], [data-fontsize="xlarge"]) .elder-btn),
+:global(:root:is([data-fontsize="large"], [data-fontsize="xlarge"]) .top-back) {
+  font-size: 15px;
+  min-height: 44px;
+}
 
-.img-credit { display: inline-block; margin-top: 2px; font-size: 11px; opacity: .9; }
+.img-credit { display: inline-block; margin-top: 4px; font-size: 12px; opacity: 1; }
 .img-credit a { color: inherit; }
 .site-foot { margin: 34px 16px 0; }
 /* 页脚回纹与云纹之间留出呼吸位，避免两条装饰叠在一起 */

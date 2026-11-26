@@ -119,7 +119,7 @@ onBeforeUnmount(() => {
     <button
       type="button"
       class="voice-button"
-      :class="{ 'is-recording': phase === 'recording' }"
+      :class="{ 'is-recording': phase === 'recording', 'is-compact': compact }"
       :disabled="phase === 'opening' || phase === 'transcribing' || (disabled && phase === 'idle')"
       :aria-label="label"
       :aria-pressed="phase === 'recording'"
@@ -127,9 +127,9 @@ onBeforeUnmount(() => {
       @click.stop="start"
       @keydown.esc.stop="cancel"
     >
-      <Square v-if="phase === 'recording'" :size="17" />
-      <LoaderCircle v-else-if="phase !== 'idle'" :size="18" class="voice-spin" />
-      <Mic v-else :size="19" />
+      <Square v-if="phase === 'recording'" :size="20" />
+      <LoaderCircle v-else-if="phase !== 'idle'" :size="21" class="voice-spin" />
+      <Mic v-else :size="22" />
       <span v-if="!compact">{{ label }}</span>
     </button>
     <span class="voice-status" aria-live="polite">
@@ -141,14 +141,15 @@ onBeforeUnmount(() => {
 <style scoped>
 .voice-control { display: inline-flex; flex: none; vertical-align: middle; }
 .voice-button {
-  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-  min-width: 44px; min-height: 44px; padding: 0 8px; border: 0; border-radius: 10px;
-  background: transparent; color: var(--green-text); cursor: pointer;
-  font: inherit; font-size: 13px; font-weight: 600; white-space: nowrap;
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  min-width: 44px; min-height: 44px; padding: 8px 14px; border: 1px solid rgba(58, 122, 94, 0.28); border-radius: 12px;
+  background: var(--green-50); color: var(--green-text); cursor: pointer;
+  font: inherit; font-size: 14.5px; font-weight: 700; white-space: nowrap;
 }
-.voice-button:hover, .voice-button:focus-visible { background: var(--green-50); }
+.voice-button.is-compact { padding: 0 10px; }
+.voice-button:hover, .voice-button:focus-visible { background: var(--green-100); border-color: var(--green-600); }
 .voice-button:disabled { opacity: .58; cursor: default; }
-.voice-button.is-recording { background: var(--green-700); color: white; }
+.voice-button.is-recording { background: var(--green-700); border-color: var(--green-700); color: white; }
 .voice-status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 .voice-spin { animation: voice-spin .8s linear infinite; }
 @keyframes voice-spin { to { transform: rotate(360deg); } }

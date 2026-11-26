@@ -628,7 +628,7 @@ onBeforeUnmount(() => { clearTick(); abort?.() })
       />
       <VoiceInput v-model="input" append :disabled="sending" />
       <button class="as-send pressable" :disabled="sending || !input.trim()" @click="send()" aria-label="发送问题">
-        <AppIcon name="chevron" :size="15" :stroke-width="2.4" />
+        <AppIcon name="chevron" :size="18" :stroke-width="2.4" />
       </button>
     </div>
     <DisclaimerBanner variant="ai" style="margin-top: 14px;" />
@@ -643,22 +643,22 @@ onBeforeUnmount(() => { clearTick(); abort?.() })
 .as-title { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; font-size: 16px; font-weight: 700; color: var(--ink-900); font-family: var(--font-serif); }
 .as-persona-badge {
   font-family: var(--font-sans);
-  font-size: 10.5px;
+  font-size: 11.5px;
   font-weight: 600;
   color: var(--green-text);
   background: var(--green-50);
   border: 1px solid var(--green-100);
-  padding: 1px 8px;
+  padding: 2px 8px;
   border-radius: 999px;
-  line-height: 17px;
+  line-height: 18px;
 }
-.as-clear { margin-left: auto; border: none; background: none; color: var(--ink-400); font-size: 12px; cursor: pointer; font-family: inherit; transition: color var(--dur-fast) ease; }
+.as-clear { margin-left: auto; border: none; background: none; color: var(--ink-600); font-size: 13px; min-height: 36px; padding: 4px 8px; cursor: pointer; font-family: inherit; transition: color var(--dur-fast) ease; }
 .as-clear:hover { color: var(--cinnabar); }
-.as-sub { font-size: 12px; color: var(--ink-400); margin: 4px 0 0; line-height: 1.55; }
+.as-sub { font-size: 13px; color: var(--ink-600); margin: 4px 0 0; line-height: 1.55; }
 .as-const { margin-top: 10px; padding-top: 9px; border-top: 1px dashed var(--card-border); }
-.as-switch { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink-600); cursor: pointer; }
+.as-switch { display: inline-flex; align-items: center; gap: 7px; min-height: 44px; font-size: 13.5px; color: var(--ink-600); cursor: pointer; }
 .as-switch input { accent-color: var(--green-600); }
-.as-const-tip { margin: 4px 0 0 22px; font-size: 11px; color: var(--ink-400); }
+.as-const-tip { margin: 2px 0 0 22px; font-size: 12px; color: var(--ink-600); }
 
 .as-list { display: flex; flex-direction: column; gap: 14px; min-height: 40vh; }
 
@@ -669,16 +669,17 @@ onBeforeUnmount(() => { clearTick(); abort?.() })
   justify-content: center;
   margin-bottom: 10px;
 }
-.as-empty-title { font-family: var(--font-serif); font-size: 16px; font-weight: 700; color: var(--ink-900); }
-.as-empty-sub { font-size: 12.5px; color: var(--ink-400); max-width: 440px; margin: 6px auto 0; line-height: 1.65; }
-.as-chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 14px; }
+.as-empty-title { font-family: var(--font-serif); font-size: 17px; font-weight: 700; color: var(--ink-900); }
+.as-empty-sub { font-size: 13.5px; color: var(--ink-600); max-width: 440px; margin: 6px auto 0; line-height: 1.65; }
+.as-chips { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 16px; }
 .as-chip {
-  display: inline-flex; align-items: center; gap: 5px;
-  border: 1px solid var(--green-100); background: var(--green-50); color: var(--ink-600);
-  font-size: 13px; font-family: inherit; padding: 6px 13px; border-radius: 999px; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px;
+  min-height: 44px;
+  border: 1px solid var(--green-100); background: var(--green-50); color: var(--ink-900);
+  font-size: 14px; font-weight: 500; font-family: inherit; padding: 8px 16px; border-radius: 999px; cursor: pointer;
   transition: border-color var(--dur-fast) ease, color var(--dur-fast) ease, background var(--dur-fast) ease;
 }
-.as-chip svg { color: var(--ink-400); opacity: .7; transition: transform var(--dur-fast) ease; }
+.as-chip svg { color: var(--ink-600); opacity: .85; transition: transform var(--dur-fast) ease; }
 .as-chip:hover { border-color: var(--green-600); color: var(--green-text); }
 .as-chip:hover svg { transform: translateX(2px); color: var(--green-600); opacity: 1; }
 
@@ -693,8 +694,8 @@ onBeforeUnmount(() => { clearTick(); abort?.() })
   background: var(--card);
   border: 1px solid var(--card-border);
   border-radius: 14px;
-  padding: 11px 14px;
-  font-size: 14px;
+  padding: 12px 15px;
+  font-size: 14.5px;
   line-height: 1.78;
   color: var(--ink-900);
   box-shadow: var(--shadow-sm);
@@ -723,7 +724,7 @@ onBeforeUnmount(() => { clearTick(); abort?.() })
 }
 .as-agent-name {
   font-family: var(--font-serif);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--ink-900);
   letter-spacing: 0.02em;
@@ -732,27 +733,27 @@ onBeforeUnmount(() => { clearTick(); abort?.() })
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  font-size: 10.5px;
+  font-size: 11.5px;
   font-weight: 600;
   color: var(--green-text);
   background: var(--green-50);
   border: 1px solid var(--green-100);
-  padding: 1px 7px;
+  padding: 2px 8px;
   border-radius: 999px;
-  line-height: 17px;
+  line-height: 18px;
 }
 .as-timer-pill {
   margin-left: auto;
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-size: 11px;
+  font-size: 12px;
   font-variant-numeric: tabular-nums;
-  color: var(--ink-400);
+  color: var(--ink-600);
   background: rgba(120, 95, 60, 0.06);
-  padding: 1px 8px;
+  padding: 2px 9px;
   border-radius: 999px;
-  line-height: 17px;
+  line-height: 18px;
 }
 .as-live-dot {
   width: 6px;
@@ -770,15 +771,16 @@ onBeforeUnmount(() => { clearTick(); abort?.() })
   display: inline-flex;
   align-items: center;
   gap: 5px;
+  min-height: 36px;
   border: 1px solid var(--card-border);
   background: rgba(120, 95, 60, 0.045);
   color: var(--ink-600);
-  font-size: 11px;
+  font-size: 12px;
   font-family: inherit;
   font-variant-numeric: tabular-nums;
-  padding: 1px 8px;
+  padding: 4px 10px;
   border-radius: 999px;
-  line-height: 17px;
+  line-height: 18px;
   cursor: pointer;
   transition: border-color var(--dur-fast) ease, background var(--dur-fast) ease, color var(--dur-fast) ease;
 }
@@ -790,10 +792,10 @@ onBeforeUnmount(() => { clearTick(); abort?.() })
 .as-done-check {
   color: var(--green-600);
   font-weight: 700;
-  font-size: 10px;
+  font-size: 11.5px;
 }
 .as-trace-arrow {
-  color: var(--ink-400);
+  color: var(--ink-600);
   transform: rotate(90deg);
   transition: transform var(--dur-fast) var(--ease-out-soft);
 }
@@ -816,14 +818,14 @@ onBeforeUnmount(() => { clearTick(); abort?.() })
   display: flex;
   align-items: baseline;
   gap: 6px;
-  font-size: 11.5px;
-  line-height: 1.5;
+  font-size: 12.5px;
+  line-height: 1.55;
   color: var(--ink-600);
 }
 .td-dot {
   flex-shrink: 0;
   color: var(--green-600);
-  font-size: 10.5px;
+  font-size: 11.5px;
   font-weight: 700;
 }
 
@@ -940,9 +942,9 @@ onBeforeUnmount(() => { clearTick(); abort?.() })
 }
 .tk-sub {
   margin-top: 2px;
-  font-size: 11.5px;
-  line-height: 1.45;
-  color: var(--ink-400);
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--ink-600);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -997,8 +999,8 @@ onBeforeUnmount(() => { clearTick(); abort?.() })
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 11px;
-  color: var(--ink-400);
+  font-size: 12px;
+  color: var(--ink-600);
   white-space: nowrap;
   transition: color var(--dur-fast) ease;
 }
@@ -1010,16 +1012,16 @@ onBeforeUnmount(() => { clearTick(); abort?.() })
   color: var(--ink-600);
 }
 .tk-step-node {
-  width: 15px;
-  height: 15px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 9.5px;
+  font-size: 11.5px;
   font-weight: 700;
   background: rgba(120, 95, 60, 0.08);
-  color: var(--ink-400);
+  color: var(--ink-600);
 }
 .tk-step.done .tk-step-node {
   background: var(--green-100);
@@ -1078,25 +1080,25 @@ onBeforeUnmount(() => { clearTick(); abort?.() })
   margin-top: 9px;
 }
 .tk-hits-label {
-  font-size: 11px;
-  color: var(--ink-400);
+  font-size: 12px;
+  color: var(--ink-600);
 }
 .tk-hit-chip {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 2px 7px;
+  padding: 2px 8px;
   border-radius: 999px;
   background: var(--card);
   border: 1px solid var(--green-100);
-  font-size: 11px;
+  font-size: 12px;
   color: var(--ink-600);
-  line-height: 16px;
+  line-height: 18px;
   animation: tkChipIn 0.32s var(--ease-out-soft) backwards;
   animation-delay: var(--delay, 0ms);
 }
 .tk-hit-id {
-  font-size: 9.5px;
+  font-size: 11.5px;
   font-weight: 700;
   color: var(--green-text);
 }
@@ -1145,16 +1147,16 @@ onBeforeUnmount(() => { clearTick(); abort?.() })
   align-items: center;
   justify-content: center;
   margin: 0 2px;
-  padding: 0 5px;
-  height: 17px;
+  padding: 0 6px;
+  height: 20px;
   border-radius: 4px;
   border: 1px solid var(--green-100);
   background: var(--green-50);
   color: var(--green-text);
-  font-size: 10.5px;
+  font-size: 11.5px;
   font-weight: 700;
   font-family: var(--font-sans);
-  line-height: 15px;
+  line-height: 18px;
   vertical-align: 1px;
   cursor: pointer;
   transition: background var(--dur-fast) ease, border-color var(--dur-fast) ease, color var(--dur-fast) ease;
@@ -1181,13 +1183,13 @@ onBeforeUnmount(() => { clearTick(); abort?.() })
   50% { opacity: 0.22; transform: scaleY(0.84); }
 }
 
-.as-err { margin-top: 6px; font-size: 12px; color: var(--cinnabar); }
+.as-err { margin-top: 6px; font-size: 13px; color: var(--cinnabar); }
 
 /* ============ 引用卡片列表 ============ */
 .as-cites {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   margin-top: 11px;
   border-top: 1px dashed var(--card-border);
   padding-top: 9px;
@@ -1196,8 +1198,8 @@ onBeforeUnmount(() => { clearTick(); abort?.() })
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 11px;
-  color: var(--ink-400);
+  font-size: 12px;
+  color: var(--ink-600);
   margin-bottom: 1px;
 }
 .as-cites-count {
@@ -1205,9 +1207,9 @@ onBeforeUnmount(() => { clearTick(); abort?.() })
   font-weight: 600;
 }
 .as-cite {
-  display: flex; align-items: center; gap: 10px; text-align: left; width: 100%;
+  display: flex; align-items: center; gap: 10px; text-align: left; width: 100%; min-height: 44px;
   border: 1px solid var(--card-border); background: rgba(120, 95, 60, 0.025); border-radius: 10px;
-  padding: 8px 10px; cursor: pointer; font-family: inherit;
+  padding: 10px 12px; cursor: pointer; font-family: inherit;
   transition: border-color var(--dur-fast) ease, background var(--dur-fast) ease;
 }
 .as-cite:hover { border-color: var(--green-600); background: var(--green-50); }
@@ -1222,14 +1224,14 @@ onBeforeUnmount(() => { clearTick(); abort?.() })
 .ac-top-line { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .ac-id {
   flex-shrink: 0;
-  font-size: 10px; font-weight: 700; color: var(--green-text);
+  font-size: 11.5px; font-weight: 700; color: var(--green-text);
   background: var(--green-50); border: 1px solid var(--green-100);
-  border-radius: 4px; padding: 0 5px; line-height: 15px;
+  border-radius: 4px; padding: 0 6px; line-height: 17px;
 }
 .as-cite:hover .ac-id { background: var(--card); }
-.ac-title { font-size: 13px; font-weight: 600; color: var(--ink-900); font-family: var(--font-serif); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ac-sub { font-size: 11px; color: var(--ink-400); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.as-cite svg { flex-shrink: 0; color: var(--ink-400); }
+.ac-title { font-size: 14px; font-weight: 600; color: var(--ink-900); font-family: var(--font-serif); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ac-sub { font-size: 12px; color: var(--ink-600); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.as-cite svg { flex-shrink: 0; color: var(--ink-600); }
 
 /* 停止生成胶囊按钮 */
 .as-stop { display: flex; justify-content: center; margin-top: 2px; }
@@ -1237,12 +1239,13 @@ onBeforeUnmount(() => { clearTick(); abort?.() })
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  min-height: 44px;
   border: 1px solid var(--card-border);
   background: var(--card);
   color: var(--ink-600);
-  font-size: 12px;
+  font-size: 13.5px;
   font-family: inherit;
-  padding: 6px 15px;
+  padding: 8px 18px;
   border-radius: 999px;
   box-shadow: var(--shadow-sm);
   cursor: pointer;
@@ -1264,11 +1267,11 @@ onBeforeUnmount(() => { clearTick(); abort?.() })
 .as-input { display: flex; align-items: center; gap: 8px; padding: 10px 12px; position: sticky; bottom: calc(12px + var(--tabbar-offset, 0px)); margin-top: 12px; z-index: 20; }
 .as-input textarea {
   flex: 1; min-width: 0; border: none; resize: none; outline: none; background: transparent;
-  font-family: inherit; font-size: 14px; line-height: 1.5; color: var(--ink-900);
-  min-height: 24px; max-height: 140px; overflow-y: auto; padding: 4px 0;
+  font-family: inherit; font-size: 15px; line-height: 1.5; color: var(--ink-900);
+  min-height: 28px; max-height: 140px; overflow-y: auto; padding: 4px 0;
 }
 .as-send {
-  flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%; border: none; cursor: pointer;
+  flex-shrink: 0; width: 44px; height: 44px; border-radius: 50%; border: none; cursor: pointer;
   background: var(--green-700); color: #fdfaf1; display: inline-flex; align-items: center; justify-content: center;
 }
 .as-send:disabled { opacity: .4; cursor: not-allowed; }
@@ -1278,7 +1281,7 @@ onBeforeUnmount(() => { clearTick(); abort?.() })
 @media (max-width: 520px) {
   .as-bubble, .as-bubble.is-thinking { max-width: 89%; width: auto; }
   .tk-steps { gap: 4px; }
-  .tk-step { font-size: 10.5px; }
+  .tk-step { font-size: 11.5px; }
 }
 
 /* 减弱动态效果无障碍兼容 */
