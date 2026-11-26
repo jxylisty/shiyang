@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { FlaskConical, ArrowRight, Mic } from '@lucide/vue'
 import AppIcon from '../components/AppIcon.vue'
 import RecipeRow from '../components/RecipeRow.vue'
@@ -58,7 +58,41 @@ const fmtDate = (d) => {
   return m ? `${Number(m)}月${Number(day)}日` : ''
 }
 
+const prefersReduced = () =>
+  typeof window !== 'undefined' &&
+  window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+
+// hero 数字滚动（useCountUp：source 有值即从当前值滚到目标）
+const recipeSrc = ref(null)
+const compoundSrc = ref(null)
+const targetSrc = ref(null)
+const animatedRecipe = useCountUp(recipeSrc, 900)
+const animatedCompound = useCountUp(compoundSrc, 900)
+const animatedTarget = useCountUp(targetSrc, 900)
+
+const heroEl = ref(null)
+const sceneGridEl = ref(null)
+const scenesVisible = ref(prefersReduced())
+const dailyImgLoaded = ref(false)
+
+let sceneObserver = null
+
 onMounted(async () => {
+  if ('IntersectionObserver' in window) {
+    if (!scenesVisible.value) {
+      sceneObserver = new IntersectionObserver((entries) => {
+        if (entries.some(e => e.isIntersecting)) {
+          scenesVisible.value = true
+          sceneObserver?.disconnect()
+          sceneObserver = null
+        }
+      }, { threshold: 0.08 })
+      if (sceneGridEl.value) sceneObserver.observe(sceneGridEl.value)
+    }
+  } else {
+    scenesVisible.value = true
+  }
+
   const [statsR, showcaseR, sleepR] = await Promise.allSettled([
     getStats(),
     listRecipes({ size: 3 }),
@@ -81,6 +115,7 @@ onMounted(async () => {
     if (all.length) {
       const day = Math.floor(Date.now() / 86400000)
       daily.value = all[day % all.length]
+      dailyImgLoaded.value = false
       coverTry.value = 0
       cover.value = daily.value.materials?.[0] ? matImg(daily.value.materials[0]) : ''
       for (const s of scenes) s.count = all.filter(r => r.scenes?.includes(s.name)).length
@@ -100,16 +135,11 @@ onMounted(async () => {
   termLoading.value = false
 })
 
-// hero 数字滚动（useCountUp：source 有值即从当前值滚到目标）
-const recipeSrc = ref(null)
-const compoundSrc = ref(null)
-const targetSrc = ref(null)
-const animatedRecipe = useCountUp(recipeSrc, 800)
-const animatedCompound = useCountUp(compoundSrc, 800)
-const animatedTarget = useCountUp(targetSrc, 800)
+onUnmounted(() => {
+  sceneObserver?.disconnect()
+})
 
 // hero 光斑跟随：桌面端 pointermove 写 CSS 变量（移动端无 hover 不启用）
-const heroEl = ref(null)
 function heroGlow(e) {
   const el = heroEl.value
   if (!el) return
@@ -121,6 +151,7 @@ function heroGlow(e) {
 function onDailyImgErr() {
   const mats = daily.value?.materials || []
   coverTry.value += 1
+  dailyImgLoaded.value = false
   cover.value = coverTry.value < mats.length ? matImg(mats[coverTry.value]) : ''
 }
 </script>
@@ -203,7 +234,8 @@ function onDailyImgErr() {
       <!-- 水印暗字：笺纸上的淡墨大字，宽屏留白处的主要视觉填充 -->
       <span class="d-watermark" aria-hidden="true">食养</span>
       <div class="d-cover">
-        <img v-if="cover" :src="cover" alt="" loading="eager" decoding="async" fetchpriority="high" @error="onDailyImgErr" />
+        <img v-if="cover" :key="cover" :src="cover" alt="" loading="eager" decoding="async" fetchpriority="high"
+             :class="{ loaded: dailyImgLoaded }" @load="dailyImgLoaded = true" @error="onDailyImgErr" />
         <span v-else class="d-fallback"><AppIcon :name="daily.type === '药膳' ? 'dish' : 'tea'" :size="36" /></span>
         <span class="d-type">{{ daily.type }}</span>
       </div>
@@ -232,7 +264,7 @@ function onDailyImgErr() {
 
     <!-- 场景入口 -->
     <div class="section-title">按场景找茶饮</div>
-    <div class="scene-grid">
+    <div ref="sceneGridEl" class="scene-grid" :class="{ 'is-visible': scenesVisible }">
       <router-link v-for="(s, i) in scenes" :key="s.name" :to="`/recipes?scene=${encodeURIComponent(s.name)}`" class="scene card pressable" :style="{ '--i': i, '--tint-bg': s.bg, '--tint-fg': s.fg }">
         <span class="scene-icon"><AppIcon :name="s.icon" :size="22" /></span>
         <span class="name">{{ s.name }}</span>
@@ -504,7 +536,11 @@ function onDailyImgErr() {
   position: relative; width: 100px; min-height: 100px; border-radius: 12px;
   overflow: hidden; background: var(--green-100); flex-shrink: 0;
 }
-.d-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.d-cover img {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+  opacity: 0; transition: opacity 300ms ease;
+}
+.d-cover img.loaded { opacity: 1; }
 .d-fallback { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--tile-ink); }
 .d-type {
   position: absolute; left: 0; bottom: 0; font-size: 11.5px; color: #fff;
@@ -530,8 +566,35 @@ function onDailyImgErr() {
 .scene-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 .scene {
   display: flex; flex-direction: column; align-items: center; padding: 15px 6px 13px;
-  text-decoration: none; color: inherit; animation: rise .45s var(--ease-out-soft) backwards;
-  animation-delay: calc(var(--i) * 45ms);
+  text-decoration: none; color: inherit;
+  opacity: 0; transform: translateY(12px);
+}
+.scene-grid.is-visible .scene {
+  animation: scene-rise .42s var(--ease-out-soft) both;
+  animation-delay: calc(var(--i) * 40ms);
+}
+@keyframes scene-rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* 场景卡、今日推荐卡、时令卡按下反馈 */
+a.scene,
+a.daily,
+a.season-card {
+  transition: scale 120ms ease, box-shadow var(--dur-med) ease, border-color var(--dur-med) ease;
+}
+a.scene:active,
+a.daily:active,
+a.season-card:active {
+  scale: 0.98;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .daily { animation: none; }
+  .scene { opacity: 1; transform: none; }
+  .scene-grid.is-visible .scene { animation: none; }
+  .d-cover img { transition: none; }
 }
 .scene-icon {
   display: flex; align-items: center; justify-content: center; width: 42px; height: 42px;
