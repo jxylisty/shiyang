@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { showConfirmDialog } from 'vant'
 import {
   ShoppingBasket, Sparkles, Search, Check, Camera, ImagePlus,
@@ -283,6 +283,7 @@ const customResult = ref(null)
 const customPlain = ref(null)
 const customPlainLoading = ref(false)
 const customPlainError = ref('')
+const editingGramIdx = ref(-1)
 
 const customCanAnalyze = computed(() =>
   customHerbs.value.length > 0 && customHerbs.value.every(h => h.name.trim()))
@@ -301,11 +302,25 @@ function addCustomHerb() {
 
 function removeCustomHerb(idx) {
   customHerbs.value.splice(idx, 1)
+  if (editingGramIdx.value === idx) editingGramIdx.value = -1
+  else if (editingGramIdx.value > idx) editingGramIdx.value -= 1
 }
 
 function updateGrams(idx, val) {
   const v = parseFloat(val)
-  customHerbs.value[idx].grams = isNaN(v) ? null : v
+  customHerbs.value[idx].grams = isNaN(v) || v <= 0 ? null : v
+}
+
+function openGramEdit(idx) {
+  editingGramIdx.value = idx
+  nextTick(() => {
+    const el = document.querySelector(`.cr-grams-input[data-idx="${idx}"]`)
+    el?.focus()
+  })
+}
+
+function closeGramEdit(idx) {
+  if (editingGramIdx.value === idx) editingGramIdx.value = -1
 }
 
 async function runCustomAnalyze() {
@@ -1022,18 +1037,31 @@ watch(() => customResult.value, r => {
           <button class="btn" :disabled="!customInput.trim()" @click="addCustomHerb">添加</button>
         </div>
         <p class="hint" style="margin-top: 8px">
-          提示：逐味添加，支持中药名和食材名。数据来自 HERB 数据库（herb.ac.cn）
+          提示：逐味添加，支持中药名和食材名；克重未知可不填，不影响分析。数据来自 HERB 数据库（herb.ac.cn）
         </p>
 
         <!-- 已添加的药材列表 -->
         <div v-if="customHerbs.length" class="custom-list">
           <div v-for="(h, i) in customHerbs" :key="i" class="custom-row">
             <span class="cr-name">{{ h.name }}</span>
-            <div class="cr-grams">
-              <input type="number" min="0" step="0.5" placeholder="克重（选填）"
-                     :value="h.grams ?? ''" @input="e => updateGrams(i, e.target.value)" />
+            <div v-if="editingGramIdx === i" class="cr-grams editing">
+              <input type="number" min="0" step="0.5" placeholder="克重"
+                     class="cr-grams-input" :data-idx="i"
+                     :value="h.grams ?? ''"
+                     @input="e => updateGrams(i, e.target.value)"
+                     @blur="closeGramEdit(i)"
+                     @keyup.enter="closeGramEdit(i)" />
               <span class="cr-unit">g</span>
             </div>
+            <button v-else-if="h.grams != null" type="button" class="cr-gram-chip has-val"
+                    aria-label="修改克重" @click="openGramEdit(i)">
+              {{ h.grams }} g
+            </button>
+            <button v-else type="button" class="cr-gram-chip empty"
+                    aria-label="选填克重" @click="openGramEdit(i)">
+              <Plus :size="12" :stroke-width="2.2" />
+              <span>克重</span>
+            </button>
             <button type="button" class="cr-del" aria-label="移除该药材" @click="removeCustomHerb(i)">
               <X :size="14" :stroke-width="2" />
             </button>
@@ -2176,18 +2204,44 @@ watch(() => customResult.value, r => {
 /* 自定义药材列表 */
 .custom-list { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
 .custom-row {
-  display: flex; align-items: center; gap: 8px; padding: 8px 10px;
-  background: var(--green-50); border-radius: 8px; border: 1px solid var(--green-100);
+  display: flex; align-items: center; gap: 8px; padding: 7px 10px;
+  background: var(--green-50); border-radius: 10px; border: 1px solid var(--green-100);
 }
 .cr-name { flex: 1; font-size: 14px; font-weight: 600; color: var(--ink-900); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.cr-grams { display: flex; align-items: center; gap: 4px; }
-.cr-grams input {
-  width: 78px; min-height: 38px; padding: 6px 8px; border: 1px solid var(--green-100);
-  border-radius: 6px; font-size: 13.5px; font-family: inherit; background: var(--card); color: var(--ink-900); text-align: right;
+.cr-grams.editing {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 8px; border-radius: 999px;
+  background: var(--card); border: 1.5px solid var(--green-600);
+}
+.cr-grams-input {
+  width: 54px; min-height: 30px; padding: 2px 4px; border: none; outline: none;
+  font-size: 13.5px; font-family: inherit; background: transparent; color: var(--ink-900); text-align: right;
 }
 .cr-unit { font-size: 13px; color: var(--ink-600); }
+.cr-gram-chip {
+  display: inline-flex; align-items: center; gap: 3px;
+  min-height: 32px; padding: 4px 10px; border-radius: 999px;
+  font-size: 12.5px; font-family: inherit; cursor: pointer; white-space: nowrap;
+  transition: background var(--dur-fast), border-color var(--dur-fast), color var(--dur-fast);
+}
+.cr-gram-chip.empty {
+  background: transparent;
+  border: 1px dashed rgba(42, 95, 74, 0.28);
+  color: var(--ink-600);
+}
+.cr-gram-chip.empty:hover {
+  background: var(--card);
+  border-color: var(--green-600);
+  color: var(--green-text);
+}
+.cr-gram-chip.has-val {
+  background: var(--card);
+  border: 1px solid var(--green-200, rgba(42, 95, 74, 0.25));
+  color: var(--green-text);
+  font-weight: 600;
+}
 .cr-del {
-  width: 44px; height: 44px; border-radius: 50%; border: none; background: transparent;
+  width: 36px; height: 36px; border-radius: 50%; border: none; background: transparent;
   color: var(--ink-600); cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
 }
 .cr-del:hover { color: var(--red-text); background: var(--red-50); }
