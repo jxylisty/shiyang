@@ -1,6 +1,6 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
-import { FlaskConical, ArrowRight } from '@lucide/vue'
+import { FlaskConical, ArrowRight, Mic } from '@lucide/vue'
 import AppIcon from '../components/AppIcon.vue'
 import RecipeRow from '../components/RecipeRow.vue'
 import { getStats, listRecipes, getTermCurrent, matImg, getLocalConstitution } from '../api'
@@ -182,6 +182,18 @@ function onDailyImgErr() {
         </div>
       </div>
     </div>
+
+    <!-- 语音问青囊首屏入口卡 -->
+    <router-link to="/assistant" class="card voice-entry pressable orn-lattice">
+      <div class="ve-icon-wrap" aria-hidden="true">
+        <Mic :size="24" :stroke-width="2.2" />
+      </div>
+      <div class="ve-body">
+        <b class="ve-title">按住说话，问青囊</b>
+        <p class="ve-sub">喉咙干、睡不好？说出来就行，不用打字</p>
+      </div>
+      <span class="ve-go" aria-hidden="true"><ArrowRight :size="16" /></span>
+    </router-link>
 
     <!-- 为你推荐（千人千面三态）：有个性化数据时替换通用今日推荐，避免两块推荐并存 -->
     <ForYou @active="fyouActive = true" />
@@ -684,6 +696,59 @@ function onDailyImgErr() {
   transition: transform 0.2s ease;
 }
 .home-lab-card:hover .hlc-go { transform: translateX(3px); background: var(--green-600); color: #fff; }
+
+/* 语音问青囊首屏入口卡 */
+.voice-entry {
+  display: flex; align-items: center; gap: 13px;
+  min-height: 64px; padding: 12px 15px; margin-bottom: 14px;
+  text-decoration: none; color: inherit;
+  background: linear-gradient(135deg, var(--card) 48%, var(--green-50) 100%);
+  border: 1px solid rgba(58, 122, 94, 0.28);
+}
+.ve-icon-wrap {
+  width: 46px; height: 46px; border-radius: 12px;
+  background: var(--green-700); color: #fdfaf1;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 3px 10px rgba(42, 95, 74, 0.22);
+}
+.ve-body { flex: 1; min-width: 0; }
+.ve-title {
+  display: block; font-family: var(--font-serif);
+  font-size: 16.5px; font-weight: 700; line-height: 1.35;
+  color: var(--ink-900); letter-spacing: 0.02em;
+}
+.ve-sub {
+  font-size: 13.5px; color: var(--ink-600);
+  margin: 2px 0 0; line-height: 1.45;
+}
+.ve-go {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: var(--card); border: 1px solid var(--green-100);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--green-text); flex-shrink: 0;
+  transition: transform var(--dur-fast) ease, background var(--dur-fast) ease, color var(--dur-fast) ease;
+}
+@media (hover: hover) {
+  .voice-entry:hover .ve-go {
+    transform: translateX(3px);
+    background: var(--green-700);
+    color: #fdfaf1;
+  }
+}
+
+/* 手机首屏路径收紧：保证约 390px 宽下 hero 主按钮与语音入口卡在第一屏可见 */
+@media (max-width: 720px) {
+  .hero { padding: 14px; margin-bottom: 12px; }
+  .hero-seal { top: 12px; right: 12px; }
+  .hero-badge { margin-bottom: 8px; }
+  .hero h1 { font-size: 22px; margin-bottom: 6px; }
+  .hero-subline { font-size: 16.5px; }
+  .hero .sub { margin-bottom: 12px; line-height: 1.5; }
+  .hero-btns { margin-bottom: 14px; }
+  .hero .btn { min-height: 44px; padding: 9px 16px; }
+  .voice-entry { margin-bottom: 12px; }
+}
 
 /* 数据加载骨架占位 */
 .hero-stats-skl .h-stat-pod { pointer-events: none; }

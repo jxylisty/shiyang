@@ -12,6 +12,7 @@ const props = defineProps({
   append: Boolean,
   maxlength: Number,
   disabled: Boolean,
+  iconSize: { type: Number, default: 22 },
 })
 const emit = defineEmits(['update:modelValue'])
 const phase = ref('idle')
@@ -127,9 +128,9 @@ onBeforeUnmount(() => {
       @click.stop="start"
       @keydown.esc.stop="cancel"
     >
-      <Square v-if="phase === 'recording'" :size="20" />
-      <LoaderCircle v-else-if="phase !== 'idle'" :size="21" class="voice-spin" />
-      <Mic v-else :size="22" />
+      <Square v-if="phase === 'recording'" :size="Math.max(20, iconSize - 2)" />
+      <LoaderCircle v-else-if="phase !== 'idle'" :size="Math.max(21, iconSize - 1)" class="voice-spin" />
+      <Mic v-else :size="iconSize" />
       <span v-if="!compact">{{ label }}</span>
     </button>
     <span class="voice-status" aria-live="polite">
@@ -142,6 +143,7 @@ onBeforeUnmount(() => {
 .voice-control { display: inline-flex; flex: none; vertical-align: middle; }
 .voice-button {
   display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  flex-shrink: 0;
   min-width: 44px; min-height: 44px; padding: 8px 14px; border: 1px solid rgba(58, 122, 94, 0.28); border-radius: 12px;
   background: var(--green-50); color: var(--green-text); cursor: pointer;
   font: inherit; font-size: 14.5px; font-weight: 700; white-space: nowrap;

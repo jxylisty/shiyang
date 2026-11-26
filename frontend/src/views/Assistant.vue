@@ -3,7 +3,7 @@
 // 引用卡可点进详情；历史存 localStorage 最多 20 轮；体质快捷注入用本地暂存的测评结果
 import { ref, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { Check } from '@lucide/vue'
+import { Check, Mic } from '@lucide/vue'
 import AppIcon from '../components/AppIcon.vue'
 import AgentAvatar from '../components/AgentAvatar.vue'
 import DisclaimerBanner from '../components/DisclaimerBanner.vue'
@@ -618,18 +618,24 @@ onBeforeUnmount(() => { clearTick(); abort?.() })
     </div>
 
     <div class="as-input card">
-      <textarea
-        ref="textareaRef"
-        v-model="input"
-        rows="1"
-        placeholder="问问食养方子/药材/成分…（Enter 发送，Shift+Enter 换行）"
-        @input="autoResize"
-        @keydown.enter.exact.prevent="send()"
-      />
-      <VoiceInput v-model="input" append :disabled="sending" />
-      <button class="as-send pressable" :disabled="sending || !input.trim()" @click="send()" aria-label="发送问题">
-        <AppIcon name="chevron" :size="18" :stroke-width="2.4" />
-      </button>
+      <div class="as-voice-hint">
+        <Mic :size="14" :stroke-width="2.3" />
+        <span>试试语音问</span>
+      </div>
+      <div class="as-input-row">
+        <textarea
+          ref="textareaRef"
+          v-model="input"
+          rows="1"
+          placeholder="问问食养方子/药材/成分…（Enter 发送，Shift+Enter 换行）"
+          @input="autoResize"
+          @keydown.enter.exact.prevent="send()"
+        />
+        <VoiceInput v-model="input" append :disabled="sending" :icon-size="24" class="as-voice-btn" />
+        <button class="as-send pressable" :disabled="sending || !input.trim()" @click="send()" aria-label="发送问题">
+          <AppIcon name="chevron" :size="18" :stroke-width="2.4" />
+        </button>
+      </div>
     </div>
     <DisclaimerBanner variant="ai" style="margin-top: 14px;" />
   </div>
@@ -1264,14 +1270,38 @@ onBeforeUnmount(() => { clearTick(); abort?.() })
 }
 
 /* 底部输入栏 */
-.as-input { display: flex; align-items: center; gap: 8px; padding: 10px 12px; position: sticky; bottom: calc(12px + var(--tabbar-offset, 0px)); margin-top: 12px; z-index: 20; }
+.as-input {
+  display: flex; flex-direction: column; gap: 7px; padding: 10px 12px;
+  position: sticky; bottom: calc(12px + var(--tabbar-offset, 0px)); margin-top: 12px; z-index: 20;
+}
+.as-voice-hint {
+  align-self: flex-start;
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 10px; border-radius: 999px;
+  background: var(--amber-50); color: var(--amber-text);
+  border: 1px solid rgba(176, 124, 46, 0.36);
+  font-size: 12.5px; font-weight: 700; line-height: 1.35;
+}
+.as-input-row {
+  display: flex; align-items: center; gap: 8px; min-width: 0;
+}
 .as-input textarea {
   flex: 1; min-width: 0; border: none; resize: none; outline: none; background: transparent;
   font-family: inherit; font-size: 15px; line-height: 1.5; color: var(--ink-900);
   min-height: 28px; max-height: 140px; overflow-y: auto; padding: 4px 0;
 }
+.as-voice-btn :deep(.voice-button) {
+  min-height: 48px; min-width: 48px; padding: 8px 15px;
+  background: var(--green-100); color: var(--green-text);
+  border: 1.5px solid var(--green-600);
+  font-size: 15px;
+  box-shadow: 0 2px 6px rgba(42, 95, 74, 0.14);
+}
+.as-voice-btn :deep(.voice-button.is-recording) {
+  background: var(--green-700); border-color: var(--green-700); color: #fdfaf1;
+}
 .as-send {
-  flex-shrink: 0; width: 44px; height: 44px; border-radius: 50%; border: none; cursor: pointer;
+  flex-shrink: 0; width: 46px; height: 46px; border-radius: 50%; border: none; cursor: pointer;
   background: var(--green-700); color: #fdfaf1; display: inline-flex; align-items: center; justify-content: center;
 }
 .as-send:disabled { opacity: .4; cursor: not-allowed; }

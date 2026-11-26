@@ -642,6 +642,9 @@ body {
 :root[data-fontsize="large"] .page .rc-name,
 :root[data-fontsize="large"] .page .m-name,
 :root[data-fontsize="large"] .page .c-name { font-size: 17.5px; }
+:root[data-fontsize="large"] .page .ve-title { font-size: 18px; }
+:root[data-fontsize="large"] .page p.ve-sub { font-size: 15px; line-height: 1.55; }
+:root[data-fontsize="large"] .page .as-voice-hint { font-size: 14px; }
 :root[data-fontsize="large"] .page .d-name,
 :root[data-fontsize="large"] .page .head h2 { font-size: 21px; }
 :root[data-fontsize="large"] .page .q-text { font-size: 20px; line-height: 1.65; }
@@ -675,6 +678,9 @@ body {
 :root[data-fontsize="xlarge"] .page .rc-name,
 :root[data-fontsize="xlarge"] .page .m-name,
 :root[data-fontsize="xlarge"] .page .c-name { font-size: 19px; }
+:root[data-fontsize="xlarge"] .page .ve-title { font-size: 19.5px; }
+:root[data-fontsize="xlarge"] .page p.ve-sub { font-size: 16px; line-height: 1.6; }
+:root[data-fontsize="xlarge"] .page .as-voice-hint { font-size: 15px; }
 :root[data-fontsize="xlarge"] .page .d-name,
 :root[data-fontsize="xlarge"] .page .head h2 { font-size: 22.5px; }
 :root[data-fontsize="xlarge"] .page .q-text { font-size: 22px; line-height: 1.7; }

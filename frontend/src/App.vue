@@ -282,6 +282,19 @@ const baseUrl = import.meta.env.BASE_URL
   }
 }
 
+@media (max-width: 860px) {
+  /* 手机与窄屏下顶栏搜索钮与展开后的语音搜索按钮均保证 >=44px 触控区 */
+  .topbar-actions :deep(.gsearch:not(.expanded) .gs-input) {
+    min-width: 44px;
+    min-height: 44px;
+    justify-content: center;
+  }
+  .topbar-actions :deep(.gs-voice .voice-button) {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
 /* 暗色模式下的底部导航栏与返回钮适配 */
 /* 注意：:global(A) B 这种写法在 scoped 块里会被 Vue SFC 编译器丢弃后代 B（实测确认：
    编译产物只剩 :root:is(...)，.mobile-tabbar 消失），必须把整条选择器写进 :global()。 */
