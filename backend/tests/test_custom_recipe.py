@@ -277,6 +277,39 @@ def test_web_lookup_empty_name():
     assert hs.web_lookup_herb("   ")["status"] == "error"
 
 
+def test_web_lookup_uses_dedicated_relay_with_only_the_herb_name(monkeypatch):
+    relay_url = "http://relay.example/search"
+    monkeypatch.setenv("SHIYANG_WEB_SEARCH_URL", relay_url)
+    monkeypatch.setenv("SHIYANG_WEB_SEARCH_KEY", "relay-secret")
+    monkeypatch.setattr(hs, "_web_lookup_get", lambda name: None)
+    monkeypatch.setattr(hs, "_web_lookup_put", lambda *args: None)
+    calls = []
+
+    class Reply:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {
+                "choices": [{"message": {"content": "搜索摘要"}}],
+                "web_search": [{"link": "https://example.org/reference"}],
+            }
+
+    def post(url, *, headers, json, timeout):
+        calls.append((url, headers["Authorization"], json))
+        return Reply()
+
+    monkeypatch.setattr(hs.requests, "post", post)
+    result = _data(client.post(
+        "/api/v1/custom-recipe/web-lookup",
+        json={"name": "测试用药材"},
+        headers={"X-AI-Key": "visitor-secret"},
+    ))
+    assert calls == [(relay_url, "Bearer relay-secret", {"name": "测试用药材"})]
+    assert result["status"] == "ok"
+    assert result["sources"][0]["url"] == "https://example.org/reference"
+
+
 def test_web_lookup_endpoint_validation():
     assert client.post("/api/v1/custom-recipe/web-lookup", json={"name": ""}).status_code == 400
     assert client.post("/api/v1/custom-recipe/web-lookup",

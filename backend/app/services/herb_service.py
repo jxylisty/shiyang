@@ -1200,21 +1200,33 @@ def web_lookup_herb(name: str, api_key: str | None = None) -> dict:
     if cached:
         return {"status": "ok", "name": name, **cached, "from_cache": True}
 
-    key = (api_key or "").strip() or os.environ.get("SHIYANG_AI_KEY") or "zerogate"
+    lookup_url = (os.environ.get("SHIYANG_WEB_SEARCH_URL") or "").strip()
+    if lookup_url:
+        key = (os.environ.get("SHIYANG_WEB_SEARCH_KEY") or "").strip()
+        if not key:
+            return {"status": "error", "name": name, "summary_cn": None, "sources": []}
+        payload = {"name": name}
+        timeout = (5, 55)
+    else:
+        lookup_url = f"{AI_BASE_URL.rstrip('/')}/chat/completions"
+        key = (api_key or "").strip() or os.environ.get("SHIYANG_AI_KEY") or "zerogate"
+        payload = {
+            "model": "web-search",
+            "messages": [
+                {"role": "system", "content": _WEB_LOOKUP_PROMPT},
+                {"role": "user", "content": f"药材/食材名：{name}"},
+            ],
+            "temperature": 0.3,
+            "stream": False,
+        }
+        timeout = WEB_SEARCH_TIMEOUT
+
     try:
         r = requests.post(
-            f"{AI_BASE_URL.rstrip('/')}/chat/completions",
+            lookup_url,
             headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
-            json={
-                "model": "web-search",
-                "messages": [
-                    {"role": "system", "content": _WEB_LOOKUP_PROMPT},
-                    {"role": "user", "content": f"药材/食材名：{name}"},
-                ],
-                "temperature": 0.3,
-                "stream": False,
-            },
-            timeout=WEB_SEARCH_TIMEOUT,
+            json=payload,
+            timeout=timeout,
         )
         r.raise_for_status()
         d = r.json()

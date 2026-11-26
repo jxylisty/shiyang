@@ -128,7 +128,7 @@ export const parseRecipeImage = (file) => {
   return api.post('/custom-recipe/parse-image', fd, { timeout: 90000 })
 }
 export const webLookupHerb = (name) =>
-  api.post('/custom-recipe/web-lookup', { name })
+  api.post('/custom-recipe/web-lookup', { name }, { timeout: 95000 })
 export const getCustomPlain = (herbs) =>
   api.post('/custom-recipe/plain', { herbs })
 
