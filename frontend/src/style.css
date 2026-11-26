@@ -711,3 +711,9 @@ body {
 :root:is(.van-theme-dark, [data-theme="dark"]) .sk-anim {
   background: linear-gradient(90deg, var(--green-50) 25%, var(--green-100) 50%, var(--green-50) 75%);
 }
+
+/* 隐藏浏览器原生 search 输入框自带的清除叉号，避免与自定义清除按钮重复显示 */
+input[type="search"]::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+}
