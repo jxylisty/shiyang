@@ -255,10 +255,17 @@ async function submit() {
       }).catch(() => {})
     }
     window.scrollTo({ top: 0, behavior: 'smooth' })
-    afterPaint(() => {
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches) {
       revealed.value = true
-      animateScores(res.judged.results)
-    })
+      shownScores.value = Object.fromEntries(
+        Object.entries(res.judged.results).map(([k, v]) => [k, Math.round(v.score)])
+      )
+    } else {
+      afterPaint(() => {
+        revealed.value = true
+        animateScores(res.judged.results)
+      })
+    }
   } catch (e) {
     error.value = '提交失败，请检查网络后重试（您的作答已保留）'
   } finally { submitting.value = false }
@@ -301,6 +308,7 @@ const lrDate = computed(() => {
     <!-- 结果页 -->
     <template v-if="result">
       <div class="card result-hero pop-card">
+        <span class="hero-seal" aria-hidden="true">体质</span>
         <p class="label">您的体质倾向</p>
         <h2>{{ mainName || '多体质兼夹' }}</h2>
         <p v-if="result.main_constitution" class="principle">{{ result.main_constitution.principle }}</p>
@@ -317,7 +325,16 @@ const lrDate = computed(() => {
 
       <div class="section-title rise" style="--i: 1">九种体质得分</div>
       <div class="card rise" style="--i: 2">
-        <div v-for="(v, code) in result.judged.results" :key="code" class="score-row">
+        <div
+          v-for="(v, code) in result.judged.results"
+          :key="code"
+          class="score-row"
+          :class="{
+            'top-hit':
+              v.result !== '否' &&
+              code === Object.entries(result.judged.results).reduce((m, e) => (e[1].score > m[1].score ? e : m), ['', { score: -Infinity }])[0]
+          }"
+        >
           <span class="s-name">{{ NAME[code] }}</span>
           <van-progress class="s-bar" :percentage="revealed ? Math.round(v.score) : 0" color="var(--green-600)" track-color="#d7e8df" :show-pivot="false" />
           <span class="s-val">{{ shownScores[code] ?? 0 }}</span>
@@ -780,9 +797,54 @@ const lrDate = computed(() => {
 .q-skl-opt { height: 42px; border-radius: 10px; }
 
 /* 结果页揭示 */
+@keyframes hero-reveal {
+  from {
+    opacity: 0;
+    filter: blur(6px);
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: scale(1);
+  }
+}
 .result-hero { text-align: center; padding: 26px 16px; animation: rise .5s var(--ease-out-soft) backwards; }
+.result-hero > :not(.hero-seal) { position: relative; z-index: 1; }
+.hero-seal {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1.5px solid var(--cinnabar);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  writing-mode: vertical-rl;
+  font-family: var(--font-serif);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  color: var(--cinnabar);
+  opacity: 0.22;
+  transform: rotate(12deg);
+  pointer-events: none;
+  user-select: none;
+  z-index: 0;
+}
+.hero-seal::before {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  border: 1px solid currentColor;
+  opacity: 0.65;
+}
 .result-hero .label { font-size: 12px; color: var(--ink-400); }
-.result-hero h2 { font-family: var(--font-serif); font-size: 26px; font-weight: 700; color: var(--green-text); margin: 6px 0; animation: pop .55s var(--ease-spring) .25s backwards; }
+.result-hero h2 { font-family: var(--font-serif); font-size: 26px; font-weight: 700; color: var(--green-text); margin: 6px 0; animation: hero-reveal 500ms ease-out both; }
 .result-hero .principle { font-size: 13px; color: var(--ink-600); }
 .combined { margin-top: 8px; font-size: 12px; color: var(--amber-text); }
 .guest-claim-tip {
@@ -794,10 +856,24 @@ const lrDate = computed(() => {
 .guest-claim-tip a { color: var(--green-text); font-weight: 600; text-decoration: none; }
 .guest-claim-tip a:hover { text-decoration: underline; }
 
-.score-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; }
+.score-row { display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-left: 3px solid transparent; border-radius: 6px; }
+.score-row.top-hit { background: var(--green-50); border-left-color: var(--cinnabar); }
+.score-row.top-hit .s-name { color: var(--green-text); font-weight: 700; }
+:global(:root:is(.van-theme-dark, [data-theme="dark"]) .quiz-page .score-row.top-hit) { background: rgba(143, 201, 171, 0.10); }
 .s-name { width: 42px; font-size: 13px; color: var(--ink-600); }
 .s-bar { flex: 1; }
 .s-bar :deep(.van-progress__portion) { transition: width var(--dur-slow) var(--ease-out-soft); }
+
+@media (prefers-reduced-motion: reduce) {
+  .result-hero,
+  .result-hero h2,
+  .rise {
+    animation: none;
+  }
+  .s-bar :deep(.van-progress__portion) {
+    transition: none;
+  }
+}
 .s-val { width: 34px; text-align: right; font-size: 12px; color: var(--ink-600); font-variant-numeric: tabular-nums; }
 .s-tag { width: 44px; font-size: 11px; color: var(--ink-400); text-align: center; }
 .s-tag.hit { color: var(--green-text); font-weight: 600; }

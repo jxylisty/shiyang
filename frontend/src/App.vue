@@ -30,6 +30,8 @@ const MOBILE_TABS = [
   { to: '/me', name: '我的', icon: 'user', match: (p) => ['/me', '/login', '/quiz', '/constitution', '/report', '/open-api'].some(x => p.startsWith(x)) },
 ]
 
+const activeIndex = computed(() => MOBILE_TABS.findIndex(t => t.match(route.path)))
+
 const ROOT_PATHS = new Set(['/', '/recipes', '/pantry', '/herbs', '/compounds', '/assistant', '/me'])
 const isSubPage = computed(() => !ROOT_PATHS.has(route.path))
 
@@ -119,6 +121,12 @@ const baseUrl = import.meta.env.BASE_URL
 
   <!-- 手机端底部固定中文导航栏（<=720px 显示） -->
   <nav class="mobile-tabbar" aria-label="手机底部导航">
+    <span
+      v-if="activeIndex >= 0"
+      class="mtab-slider"
+      :style="{ '--tab-index': activeIndex }"
+      aria-hidden="true"
+    ></span>
     <router-link
       v-for="t in MOBILE_TABS"
       :key="t.to"
@@ -217,6 +225,7 @@ const baseUrl = import.meta.env.BASE_URL
     right: 0;
     bottom: 0;
     z-index: 45;
+    container-type: inline-size;
     display: grid;
     grid-template-columns: repeat(6, minmax(0, 1fr));
     padding: 5px 4px calc(5px + env(safe-area-inset-bottom, 0px));
@@ -227,6 +236,18 @@ const baseUrl = import.meta.env.BASE_URL
     -webkit-backdrop-filter: blur(12px) saturate(1.06);
     border-top: 1px solid var(--card-border);
     box-shadow: 0 -3px 16px rgba(74, 56, 32, 0.08);
+  }
+  .mtab-slider {
+    position: absolute;
+    left: calc(4px + (100% - 8px) / 12);
+    bottom: calc(6px + env(safe-area-inset-bottom, 0px));
+    width: 12px;
+    height: 2px;
+    border-radius: 999px;
+    background: var(--cinnabar);
+    pointer-events: none;
+    transform: translateX(calc(var(--tab-index, 0) * (100cqw - 8px) / 6 - 50%));
+    transition: transform 260ms var(--ease-out-soft);
   }
 
   .mtab-item {
@@ -250,7 +271,7 @@ const baseUrl = import.meta.env.BASE_URL
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    transition: background var(--dur-fast) ease, color var(--dur-fast) ease;
+    transition: background var(--dur-fast) ease, color var(--dur-fast) ease, transform 180ms var(--ease-out-soft);
   }
   .mtab-label {
     font-size: 12px;
@@ -264,21 +285,18 @@ const baseUrl = import.meta.env.BASE_URL
   .mtab-item.active .mtab-icon {
     background: var(--green-100);
     color: var(--green-700);
+    transform: scale(1.08);
   }
   .mtab-item.active .mtab-label {
     font-weight: 700;
     color: var(--green-text);
   }
-  .mtab-item.active::after {
-    content: "";
-    position: absolute;
-    bottom: 1px;
-    left: 50%;
-    width: 12px;
-    height: 2px;
-    border-radius: 999px;
-    background: var(--cinnabar);
-    transform: translateX(-50%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mtab-slider,
+  .mtab-icon {
+    transition: none;
   }
 }
 
