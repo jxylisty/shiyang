@@ -17,7 +17,7 @@ const props = defineProps({
   maxlength: Number,
   disabled: Boolean,
   iconSize: { type: Number, default: 22 },
-  hold: { type: Boolean, default: false },
+  hold: { type: Boolean, default: true },
 })
 const emit = defineEmits(['update:modelValue'])
 
