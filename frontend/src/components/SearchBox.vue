@@ -98,7 +98,7 @@ const probColor = (p) => p >= 0.9 ? 'var(--green-700)' : p >= 0.7 ? 'var(--amber
     <div class="gs-input" @click="onBoxClick">
       <AppIcon name="search" :size="15" :stroke-width="2.2" />
       <input ref="inputRef" v-model="q" type="search" placeholder="搜方子 / 药材 / 成分" @input="onInput" @focus="open = true" />
-      <VoiceInput v-model="q" compact label="全站语音搜索" class="gs-voice" @update:model-value="onInput" />
+      <VoiceInput v-model="q" compact hold label="全站语音搜索" class="gs-voice" @update:model-value="onInput" />
     </div>
     <transition name="gs-fade">
       <div class="gs-panel" v-if="open">

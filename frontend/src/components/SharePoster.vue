@@ -31,7 +31,8 @@ watch(show, async (open) => {
     const [, data] = await Promise.all([waitForCanvas(canvasEl), getRecipe(props.recipeId)])
     recipeName.value = data.data.name || ''
     await draw(data.data)
-  } catch {
+  } catch (e) {
+    console.error('[SharePoster]', e)
     failed.value = true
   } finally { busy.value = false }
 })
@@ -143,7 +144,6 @@ function download() {
   <van-popup v-model:show="show" :position="isWide ? 'center' : 'bottom'" round :class="{ 'wide-popup': isWide }">
     <div class="poster-wrap">
       <p class="p-title">分享海报</p>
-      <canvas ref="canvasEl" style="display:none"></canvas>
       <div v-if="busy" class="p-status">
         <span class="p-spinner"></span>
         正在生成海报…
@@ -159,6 +159,7 @@ function download() {
       </div>
     </div>
   </van-popup>
+  <canvas ref="canvasEl" style="display:none"></canvas>
   <button class="btn ghost poster-trigger" @click="show = true"><Share2 :size="14" :stroke-width="2.2" /> 生成分享海报</button>
 </template>
 

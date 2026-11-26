@@ -634,10 +634,6 @@ onBeforeUnmount(() => { clearTick(); abort?.(); stopSpeak() })
     </div>
 
     <div class="as-input card">
-      <div class="as-voice-hint">
-        <Mic :size="14" :stroke-width="2.3" />
-        <span>按住说话试试</span>
-      </div>
       <div class="as-input-row">
         <textarea
           ref="textareaRef"
@@ -647,10 +643,16 @@ onBeforeUnmount(() => { clearTick(); abort?.(); stopSpeak() })
           @input="autoResize"
           @keydown.enter.exact.prevent="send()"
         />
-        <VoiceInput v-model="input" append hold :disabled="sending" :icon-size="24" class="as-voice-btn" />
         <button class="as-send pressable" :disabled="sending || !input.trim()" @click="send()" aria-label="发送问题">
           <AppIcon name="chevron" :size="18" :stroke-width="2.4" />
         </button>
+      </div>
+      <div class="as-voice-row">
+        <div class="as-voice-hint">
+          <Mic :size="14" :stroke-width="2.3" />
+          <span>按住说话试试</span>
+        </div>
+        <VoiceInput v-model="input" append hold :disabled="sending" :icon-size="22" class="as-voice-btn" />
       </div>
     </div>
     <DisclaimerBanner variant="ai" style="margin-top: 14px;" />
@@ -1304,8 +1306,11 @@ onBeforeUnmount(() => { clearTick(); abort?.(); stopSpeak() })
   display: flex; flex-direction: column; gap: 7px; padding: 10px 12px;
   position: sticky; bottom: calc(12px + var(--tabbar-offset, 0px)); margin-top: 12px; z-index: 20;
 }
+.as-voice-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding-top: 6px; border-top: 1px dashed rgba(120, 95, 60, 0.14);
+}
 .as-voice-hint {
-  align-self: flex-start;
   display: inline-flex; align-items: center; gap: 5px;
   padding: 3px 10px; border-radius: 999px;
   background: var(--amber-50); color: var(--amber-text);
@@ -1313,7 +1318,7 @@ onBeforeUnmount(() => { clearTick(); abort?.(); stopSpeak() })
   font-size: 12.5px; font-weight: 700; line-height: 1.35;
 }
 .as-input-row {
-  display: flex; align-items: center; gap: 8px; min-width: 0;
+  display: flex; align-items: flex-end; gap: 8px; min-width: 0;
 }
 .as-input textarea {
   flex: 1; min-width: 0; border: none; resize: none; outline: none; background: transparent;

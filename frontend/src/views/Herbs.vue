@@ -143,9 +143,9 @@ const markImgLoaded = (name) => { imgLoaded.value[name] = true }
 <template>
   <div class="page">
     <div class="card search-card">
-      <van-search v-model="kw" placeholder="搜药材名 / 性味 / 归经 / 功效（如：红枣 / 甘 / 脾经 / 养血）" class="search-box">
+      <van-search v-model="kw" placeholder="搜药材 / 性味 / 功效（如：红枣）" class="search-box">
         <template #right-icon>
-          <VoiceInput v-model="kw" compact label="语音搜药材" />
+          <VoiceInput v-model="kw" compact hold label="语音搜药材" />
         </template>
       </van-search>
       <div class="filter-bar">

@@ -56,8 +56,8 @@ const CNAME = { pinghe: '平和质', qixu: '气虚质', yangxu: '阳虚质', yin
     <template v-if="report">
       <!-- 概览 -->
       <div class="card ov">
-        <div class="ov-item"><b>{{ report.checkin_days }}</b><span>打卡天数</span></div>
-        <div class="ov-item"><b>{{ report.streak }}</b><span>连续天数</span></div>
+        <div class="ov-item"><b>{{ report.checkin_days ?? 0 }}</b><span>打卡天数</span></div>
+        <div class="ov-item"><b>{{ report.streak ?? 0 }}</b><span>连续天数</span></div>
         <div class="ov-item"><b>{{ report.recipes_tried }}</b><span>喝过方子</span></div>
         <div class="ov-item"><b>{{ report.compounds_covered }}</b><span>覆盖成分</span></div>
         <div class="ov-item"><b>{{ report.targets_covered }}</b><span>覆盖靶点</span></div>

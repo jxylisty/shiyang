@@ -564,7 +564,7 @@ const onlyBMaterials = computed(() => {
         <div class="picker-search-wrap">
           <Search :size="14" class="ps-icon" />
           <input v-model="pickerSearch" type="text" placeholder="搜索方子名称、配料或适用场景…" class="picker-search-input" />
-          <VoiceInput v-if="pickerShow" v-model="pickerSearch" compact label="语音搜索对比方子" />
+          <VoiceInput v-if="pickerShow" v-model="pickerSearch" compact hold label="语音搜索对比方子" />
         </div>
 
         <div class="picker-list">

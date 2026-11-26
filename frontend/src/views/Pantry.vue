@@ -644,7 +644,7 @@ watch(() => customResult.value, r => {
           <button v-if="search" type="button" class="shelf-search-clear" @click="search = ''" aria-label="清空搜索">
             <X :size="14" />
           </button>
-          <VoiceInput v-model="search" compact label="语音搜茶罐食材" />
+          <VoiceInput v-model="search" compact hold label="语音搜茶罐食材" />
         </div>
 
         <!-- 横向滑动分类抽屉（搜索时提示跨全库检索，平时按分屉快速定位） -->
@@ -1932,9 +1932,10 @@ watch(() => customResult.value, r => {
 /* 对话框底栏 */
 .comp-toolbar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px 10px;
   padding: 7px 10px 9px;
   border-top: 1px dashed rgba(120, 95, 60, 0.14);
 }
@@ -2096,7 +2097,9 @@ watch(() => customResult.value, r => {
 }
 @media (max-width: 520px) {
   .comp-verify-hint { display: none; }
-  .comp-toolbar { padding: 6px 8px 8px; }
+  .comp-toolbar { padding: 6px 8px 8px; gap: 6px; }
+  .comp-actions { gap: 6px; }
+  .comp-extract-btn { padding: 8px 12px; font-size: 13px; }
 }
 
 .photo-result { margin-top: 10px; font-size: 13px; line-height: 1.6; }

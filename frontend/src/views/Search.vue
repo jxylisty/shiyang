@@ -59,7 +59,7 @@ onMounted(() => { if (q.value.trim()) doSearch() })
       <van-search v-model="q" placeholder="搜方子 / 药材 / 成分 / 配料 / 体质" show-action
                   @update:model-value="onInput" @search="submitSearch()" autofocus>
         <template #right-icon>
-          <VoiceInput v-model="q" compact label="语音搜索" @update:model-value="onInput" />
+          <VoiceInput v-model="q" compact hold label="语音搜索" @update:model-value="onInput" />
         </template>
         <template #action>
           <button class="s-go" @click="submitSearch()">搜索</button>
