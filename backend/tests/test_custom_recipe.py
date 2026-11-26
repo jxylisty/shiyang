@@ -228,6 +228,82 @@ def test_parse_image_endpoint_checks_mime_and_size():
 
 # ---------- 联网搜索兜底（离线：模型调用用 monkeypatch 注入） ----------
 
+WEB_BRIEF = (
+    "是什么｜这是一种常见食材。\n"
+    "怎么看｜网上有相关说法，人体证据有限。\n"
+    "要注意｜把它当日常食材，别用来替代治疗。"
+)
+
+
+def test_web_lookup_rewrites_legacy_cache_without_searching_again(monkeypatch):
+    sources = [{"title": "检索来源", "url": "https://example.org/source"}]
+    old_text = "## 原来的联网报告\n" + "冗长内容。" * 100
+    cached = {"summary_cn": old_text, "sources": sources}
+    calls = []
+    monkeypatch.setattr(hs, "_web_lookup_get", lambda name: cached)
+    monkeypatch.setattr(hs, "_web_lookup_put",
+                        lambda name, summary, sources: cached.update(summary_cn=summary, sources=sources))
+
+    class Reply:
+        def raise_for_status(self): pass
+        def json(self):
+            return {"choices": [{"message": {"content": WEB_BRIEF}}]}
+
+    def post(url, **kwargs):
+        calls.append((url, kwargs["json"]))
+        return Reply()
+
+    monkeypatch.setattr(hs.requests, "post", post)
+    first = hs.web_lookup_herb("测试药材")
+    second = hs.web_lookup_herb("测试药材")
+    assert first["summary_cn"] == second["summary_cn"] == WEB_BRIEF
+    assert first["sources"] == second["sources"] == sources
+    assert second["from_cache"] is True
+    assert len(calls) == 1
+    assert calls[0][1]["model"] == hs.AI_MODEL
+    assert old_text in calls[0][1]["messages"][-1]["content"]
+
+
+def test_web_lookup_hides_long_report_when_ai_summary_fails(monkeypatch):
+    sources = [{"title": "检索来源", "url": "https://example.org/source"}]
+    raw = "# 搜索原始长报告"
+    monkeypatch.setattr(hs, "_web_lookup_get", lambda name: {"summary_cn": raw, "sources": sources})
+
+    class Reply:
+        def raise_for_status(self): pass
+        def json(self):
+            return {"choices": [{"message": {"content": raw}}]}
+
+    monkeypatch.setattr(hs.requests, "post", lambda *args, **kwargs: Reply())
+    result = hs.web_lookup_herb("测试药材")
+    assert result["status"] == "summary_unavailable"
+    assert result["summary_cn"] is None
+    assert result["sources"] == sources
+
+
+def test_web_brief_uses_private_summary_endpoint_when_configured(monkeypatch):
+    monkeypatch.setenv("SHIYANG_WEB_SUMMARY_URL", "http://relay.example/summarize")
+    monkeypatch.setenv("SHIYANG_WEB_SEARCH_KEY", "relay-secret")
+    sent = []
+
+    class Reply:
+        def raise_for_status(self): pass
+        def json(self):
+            lines = [line + "｜" for line in WEB_BRIEF.splitlines()]
+            return {"choices": [{"message": {"content": "\n".join(lines)}}]}
+
+    def post(url, *, headers, json, timeout):
+        sent.append((url, headers["Authorization"], json))
+        return Reply()
+
+    monkeypatch.setattr(hs.requests, "post", post)
+    sources = [{"title": "检索出处", "url": "https://example.org/source"}]
+    assert hs._generate_web_lookup_brief("测试药材", "原始报告", sources, "visitor-secret") == WEB_BRIEF
+    assert sent == [("http://relay.example/summarize", "Bearer relay-secret", {
+        "name": "测试药材", "report": "原始报告", "source_titles": "检索出处",
+    })]
+
+
 def test_web_lookup_returns_sources_from_web_search(monkeypatch):
     """来源必须只取网关 web_search[]，正文不能替代来源"""
     class _Resp:
@@ -242,6 +318,9 @@ def test_web_lookup_returns_sources_from_web_search(monkeypatch):
                 ],
             }
     monkeypatch.setattr(hs.requests, "post", lambda *a, **k: _Resp())
+    monkeypatch.setattr(hs, "_web_lookup_get", lambda name: None)
+    monkeypatch.setattr(hs, "_web_lookup_put", lambda *args: None)
+    monkeypatch.setattr(hs, "_generate_web_lookup_brief", lambda *args: WEB_BRIEF, raising=False)
     # 用不会被真实缓存命中的名字（web_lookup 有 30 天缓存，真实药名可能已缓存）
     r = hs.web_lookup_herb("测试用药材AAA")
     assert r["status"] == "ok"
@@ -283,6 +362,7 @@ def test_web_lookup_uses_dedicated_relay_with_only_the_herb_name(monkeypatch):
     monkeypatch.setenv("SHIYANG_WEB_SEARCH_KEY", "relay-secret")
     monkeypatch.setattr(hs, "_web_lookup_get", lambda name: None)
     monkeypatch.setattr(hs, "_web_lookup_put", lambda *args: None)
+    monkeypatch.setattr(hs, "_generate_web_lookup_brief", lambda *args: WEB_BRIEF, raising=False)
     calls = []
 
     class Reply:

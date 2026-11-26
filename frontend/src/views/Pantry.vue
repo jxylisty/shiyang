@@ -1091,12 +1091,15 @@ watch(() => customResult.value, r => {
               </div>
               <template v-if="webLookups[n]">
                 <p v-if="webLookups[n].status === 'ok'" class="wl-summary">{{ webLookups[n].summary_cn }}</p>
+                <p v-else-if="webLookups[n].status === 'summary_unavailable'" class="wl-none">
+                  已找到资料，白话说明暂时无法生成。可先查看下方来源。
+                </p>
                 <p v-else-if="webLookups[n].status === 'no_result'" class="wl-none">
                   没有搜到可靠来源的介绍，请谨慎对待这个名字——它可能是误写、自创名或极冷门的叫法。
                 </p>
                 <p v-else class="wl-none">联网查询失败，可稍后重试。</p>
                 <div v-if="webLookups[n].sources?.length" class="wl-sources">
-                  <span class="wl-src-label">来源（真实搜索结果）：</span>
+                  <span class="wl-src-label">资料来源</span>
                   <a v-for="(s, i) in webLookups[n].sources" :key="i" :href="s.url" target="_blank"
                      rel="noopener noreferrer" class="wl-src">{{ s.title || s.url }}</a>
                 </div>
@@ -2231,7 +2234,7 @@ watch(() => customResult.value, r => {
   font-size: 11.5px; padding: 1px 7px; border-radius: 6px; line-height: 1.55;
   background: var(--amber-600); color: #fff; font-weight: 500;
 }
-.wl-summary { font-size: 13.5px; color: var(--ink-600); line-height: 1.7; margin: 0 0 8px; }
+.wl-summary { font-size: 15px; color: var(--ink-600); line-height: 1.8; margin: 0 0 8px; white-space: pre-line; }
 .wl-none { font-size: 13px; color: var(--ink-600); margin: 0 0 6px; }
 .wl-sources { display: flex; flex-direction: column; gap: 4px; }
 .wl-src-label { font-size: 12px; color: var(--ink-600); font-weight: 600; }
