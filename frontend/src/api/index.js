@@ -121,9 +121,10 @@ export const analyzeCustomRecipe = (herbs, claim) =>
 export const parseCustomRecipeText = (text) =>
   api.post('/custom-recipe/parse-text', { text })
 // 拍照/截图 → OCR 取文字 → 抽药材+克重
-export const parseRecipeImage = (file) => {
+export const parseRecipeImage = (file, allowCloud = false) => {
   const fd = new FormData()
   fd.append('file', file)
+  if (allowCloud) fd.append('allow_cloud', 'true')
   // 后端 OCR 超时 60s，这里留更长，否则前端先掐断、拿不到后端的友好提示
   return api.post('/custom-recipe/parse-image', fd, { timeout: 90000 })
 }

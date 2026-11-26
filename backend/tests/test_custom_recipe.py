@@ -153,6 +153,45 @@ def test_ocr_empty_image():
     assert hs.extract_text_from_image(b"")["status"] == "error"
 
 
+def test_image_endpoint_requires_opt_in_before_uploading_image_to_vision(monkeypatch):
+    monkeypatch.setenv("SHIYANG_VISION_MODEL", "vision/demo")
+    monkeypatch.setattr(hs, "_ocr_with_rapidocr", lambda image: {"text": "", "engine": "rapidocr"})
+    calls = []
+
+    def vision(image, mime, api_key):
+        calls.append((image, mime))
+        return {"status": "no_text", "text": None, "model": "vision/demo", "error": None}
+
+    monkeypatch.setattr(hs, "_ocr_with_vision", vision)
+    image = {"file": ("recipe.png", b"test-image", "image/png")}
+    path = "/api/v1/custom-recipe/parse-image"
+    local = _data(client.post(path, files=image))
+    assert local["status"] == "cloud_available"
+    assert calls == []
+    consented = _data(client.post(path, files=image, data={"allow_cloud": "true"}))
+    assert consented["status"] == "no_text"
+    assert calls == [(b"test-image", "image/png")]
+
+
+def test_image_fallback_uses_configured_model(monkeypatch):
+    monkeypatch.setenv("SHIYANG_VISION_MODEL", "vision/demo")
+    sent = []
+
+    class Reply:
+        def raise_for_status(self): pass
+        def json(self):
+            return {"choices": [{"message": {"content": "陈皮 5g"}}]}
+
+    def post(*args, **kwargs):
+        sent.append(kwargs["json"]["model"])
+        return Reply()
+
+    monkeypatch.setattr(hs.requests, "post", post)
+    result = hs._ocr_with_vision(b"test-image", "image/png", None)
+    assert result["model"] == "vision/demo"
+    assert sent == ["vision/demo"]
+
+
 def test_parse_image_reuses_formula_parser(monkeypatch):
     """OCR 出文字后必须复用 parse_formula_text 的复核逻辑（库外名字被拒）"""
     # 第一次调用是 OCR，其余是 parse_formula_text 的模型调用

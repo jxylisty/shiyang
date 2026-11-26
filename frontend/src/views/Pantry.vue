@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
+import { showConfirmDialog } from 'vant'
 import {
   ShoppingBasket, Sparkles, Search, Check, Camera, ImagePlus,
   X, Trash2, ChevronDown, ChevronUp, Plus, ArrowDown,
@@ -352,6 +353,7 @@ const photoLoading = ref(false)
 const photoError = ref('')
 const photoInfo = ref(null)       // { status, text, herbs:[], rejected:[], corrections:[] }
 const photoPreview = ref('')      // 本地预览 URL（objectURL，用完释放）
+const photoFile = ref(null)
 
 function togglePlusMenu() {
   if (photoLoading.value) return
@@ -384,12 +386,13 @@ function triggerCamera() {
 function clearPhoto() {
   if (photoPreview.value) URL.revokeObjectURL(photoPreview.value)
   photoPreview.value = ''
+  photoFile.value = null
   photoInfo.value = null
   photoError.value = ''
 }
 
-async function processImageFile(file) {
-  if (!file) return
+async function processImageFile(file, allowCloud = false) {
+  if (!file || photoLoading.value) return
   // 前端先拦一道，省一次失败的请求
   if (!/^image\/(jpeg|jpg|png|webp)$/i.test(file.type)) {
     photoError.value = '请上传 JPG / PNG / WEBP 格式的图片'
@@ -401,11 +404,12 @@ async function processImageFile(file) {
   }
   if (photoPreview.value) URL.revokeObjectURL(photoPreview.value)
   photoPreview.value = URL.createObjectURL(file)
+  photoFile.value = file
   photoLoading.value = true
   photoError.value = ''
   photoInfo.value = null
   try {
-    photoInfo.value = (await parseRecipeImage(file)).data.data
+    photoInfo.value = (await parseRecipeImage(file, allowCloud)).data.data
     // 识别成功就直接把药材填进去（用户看到原文，可自行删改）
     if (photoInfo.value?.status === 'ok') adoptParsedHerbs(photoInfo.value.herbs)
   } catch (err) {
@@ -418,6 +422,21 @@ async function processImageFile(file) {
           ? '识别超时了，图片可能太大或服务繁忙，请稍后重试'
           : '识别失败，请换个角度重拍，或直接在输入框粘贴文字')
   } finally { photoLoading.value = false }
+}
+
+async function retryPhotoInCloud() {
+  const file = photoFile.value
+  if (!file || photoLoading.value) return
+  try {
+    await showConfirmDialog({
+      title: '云端补识别',
+      message: '图片将发送给第三方视觉模型。仅上传可公开的茶方，请先遮住姓名、电话等个人信息。',
+      confirmButtonText: '确认发送',
+    })
+  } catch {
+    return
+  }
+  if (photoFile.value === file) await processImageFile(file, true)
 }
 
 function onPhotoPicked(e) {
@@ -850,6 +869,10 @@ watch(() => customResult.value, r => {
                 <span>已从图片识别 <b>{{ photoInfo.herbs.length }}</b> 味药材，已填入下方列表</span>
               </span>
               <span v-else-if="photoError" class="comp-att-status is-err">{{ photoError }}</span>
+              <div v-else-if="photoInfo?.status === 'cloud_available'">
+                <p class="comp-att-status">没能识别出文字，可以补识别或换张清楚的照片。</p>
+                <van-button size="small" plain @click="retryPhotoInCloud">云端补识别</van-button>
+              </div>
               <span v-else-if="photoInfo" class="comp-att-status">{{ emptyPhotoHint }}</span>
             </div>
             <button v-if="!photoLoading" type="button" class="comp-att-clear pressable"

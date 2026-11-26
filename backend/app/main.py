@@ -10,7 +10,7 @@ import sqlite3
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, File, Header, HTTPException, Query, Request, UploadFile
+from fastapi import FastAPI, File, Form, Header, HTTPException, Query, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
@@ -305,6 +305,7 @@ def web_lookup_herb(body: WebLookupBody,
 
 @app.post("/api/v1/custom-recipe/parse-image")
 async def parse_recipe_image(file: UploadFile = File(..., description="药方照片或截图"),
+                             allow_cloud: bool = Form(False, description="允许对公开图片使用云端补识别"),
                              x_ai_key: str | None = Header(None, alias="X-AI-Key")):
     """拍照/截图识别方子：把图里的文字抠出来，再抽药材+克重。
 
@@ -322,7 +323,7 @@ async def parse_recipe_image(file: UploadFile = File(..., description="药方照
     if len(data) > herb_svc.MAX_IMAGE_BYTES:
         raise HTTPException(413, "图片过大，请压缩到 8MB 以内")
 
-    result = herb_svc.parse_recipe_image(data, mime, api_key=x_ai_key)
+    result = herb_svc.parse_recipe_image(data, mime, api_key=x_ai_key, allow_cloud=allow_cloud)
     if result["status"] == "error":
         raise HTTPException(502, result.get("error") or "识别失败")
 

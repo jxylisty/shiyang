@@ -1399,11 +1399,11 @@ _OCR_PROMPT = (
 
 
 def extract_text_from_image(image_bytes: bytes, mime: str = "image/jpeg",
-                            api_key: str | None = None) -> dict:
+                            api_key: str | None = None, *, allow_cloud: bool = True) -> dict:
     """把图片里的文字抽出来（OCR）。本地 RapidOCR 优先，视觉模型兜底。
 
     返回 {
-      "status": "ok" | "no_text" | "error",
+      "status": "ok" | "no_text" | "cloud_available" | "error",
       "text": str | None,       # 识别到的原文
       "model": str,             # 实际使用的引擎
       "error": str | None,
@@ -1417,11 +1417,17 @@ def extract_text_from_image(image_bytes: bytes, mime: str = "image/jpeg",
     if local is not None and local["text"].strip():
         return {"status": "ok", "text": local["text"][:3000],
                 "model": local["engine"], "error": None}
-    # RapidOCR 跑通但没认出字 → 直接判 no_text，不必再花一次 API 调用
-    if local is not None and not local["text"].strip():
+    configured = bool((os.environ.get("SHIYANG_VISION_MODEL") or "").strip())
+    if configured and not allow_cloud:
+        return {"status": "cloud_available", "text": None,
+                "model": local["engine"] if local is not None else None, "error": None}
+    if local is not None and not configured:
         return {"status": "no_text", "text": None, "model": local["engine"], "error": None}
+    if not allow_cloud:
+        return {"status": "error", "text": None, "model": None,
+                "error": "图片未能识别，请换张更清楚的照片，或手动输入药材"}
 
-    # ② 视觉模型兜底（RapidOCR 未安装/异常时；手写体、竖排也能救）
+    # ② 用户允许后，无法本地识别的图片可以尝试视觉模型
     return _ocr_with_vision(image_bytes, mime, api_key)
 
 
@@ -1431,30 +1437,33 @@ def _ocr_with_vision(image_bytes: bytes, mime: str, api_key: str | None) -> dict
 
     b64 = base64.b64encode(image_bytes).decode("ascii")
     key = (api_key or "").strip() or os.environ.get("SHIYANG_AI_KEY") or "zerogate"
+    configured_model = (os.environ.get("SHIYANG_VISION_MODEL") or "").strip()
+    model = configured_model or VISION_MODEL
     try:
         r = requests.post(
             f"{AI_BASE_URL.rstrip('/')}/chat/completions",
             headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
             json={
-                "model": VISION_MODEL,
+                "model": model,
                 "messages": [{"role": "user", "content": [
                     {"type": "text", "text": _OCR_PROMPT},
                     {"type": "image_url",
                      "image_url": {"url": f"data:{mime};base64,{b64}"}},
                 ]}],
                 "temperature": 0,
+                "max_tokens": 1400,
                 "stream": False,
             },
-            timeout=VISION_TIMEOUT,
+            timeout=(5, 30) if configured_model else VISION_TIMEOUT,
         )
         r.raise_for_status()
         text = (r.json()["choices"][0]["message"].get("content") or "").strip()
     except Exception as e:
         # 不把底层服务地址与原始 HTTP 错误抛给用户，但区分限流与其它故障
         if "429" in str(e):
-            return {"status": "error", "text": None, "model": VISION_MODEL,
+            return {"status": "error", "text": None, "model": model,
                     "error": "识别请求太多了，请等十几秒再试"}
-        return {"status": "error", "text": None, "model": VISION_MODEL,
+        return {"status": "error", "text": None, "model": model,
                 "error": "图片识别服务暂时不可用，请稍后重试，或直接手动输入"}
 
     # 模型偶尔会用 ``` 包裹
@@ -1462,16 +1471,16 @@ def _ocr_with_vision(image_bytes: bytes, mime: str, api_key: str | None) -> dict
         text = text.strip("`").strip()
 
     if not text:
-        return {"status": "no_text", "text": None, "model": VISION_MODEL, "error": None}
-    return {"status": "ok", "text": text[:3000], "model": VISION_MODEL, "error": None}
+        return {"status": "no_text", "text": None, "model": model, "error": None}
+    return {"status": "ok", "text": text[:3000], "model": model, "error": None}
 
 
 def parse_recipe_image(image_bytes: bytes, mime: str = "image/jpeg",
-                       api_key: str | None = None) -> dict:
+                       api_key: str | None = None, *, allow_cloud: bool = True) -> dict:
     """拍照/截图识别方子：OCR 取文字 → 复用 parse_formula_text 抽药材+克重。
 
     返回 {
-      "status": "ok" | "no_text" | "no_herbs" | "error",
+      "status": "ok" | "no_text" | "no_herbs" | "cloud_available" | "error",
       "text": str | None,                        # 识别出的原文（供用户核对）
       "herbs": [{name, grams, verified}],        # 已核对数据源的药材
       "rejected": [{name, reason}],
@@ -1479,7 +1488,7 @@ def parse_recipe_image(image_bytes: bytes, mime: str = "image/jpeg",
       "error": str | None,
     }
     """
-    ocr = extract_text_from_image(image_bytes, mime, api_key)
+    ocr = extract_text_from_image(image_bytes, mime, api_key, allow_cloud=allow_cloud)
     if ocr["status"] != "ok":
         return {"status": ocr["status"], "text": None, "herbs": [], "rejected": [],
                 "model": ocr["model"], "error": ocr["error"]}
