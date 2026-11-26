@@ -42,7 +42,7 @@ function webRecording(signal, ready) {
         }
         signal.addEventListener('abort', cancel, { once: true })
         recorder.start()
-        ready(finish)
+        ready(finish, stream)
       } catch (error) {
         cleanup()
         reject(error)
@@ -115,7 +115,7 @@ function nativeRecording(plus, signal, ready) {
           removeRecording(plus, filePath)
         }
       }, failed)
-      ready(finish)
+      ready(finish, null)
     } catch {
       failed()
     }

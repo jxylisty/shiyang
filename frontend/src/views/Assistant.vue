@@ -620,7 +620,7 @@ onBeforeUnmount(() => { clearTick(); abort?.() })
     <div class="as-input card">
       <div class="as-voice-hint">
         <Mic :size="14" :stroke-width="2.3" />
-        <span>试试语音问</span>
+        <span>按住说话试试</span>
       </div>
       <div class="as-input-row">
         <textarea
@@ -631,7 +631,7 @@ onBeforeUnmount(() => { clearTick(); abort?.() })
           @input="autoResize"
           @keydown.enter.exact.prevent="send()"
         />
-        <VoiceInput v-model="input" append :disabled="sending" :icon-size="24" class="as-voice-btn" />
+        <VoiceInput v-model="input" append hold :disabled="sending" :icon-size="24" class="as-voice-btn" />
         <button class="as-send pressable" :disabled="sending || !input.trim()" @click="send()" aria-label="发送问题">
           <AppIcon name="chevron" :size="18" :stroke-width="2.4" />
         </button>
