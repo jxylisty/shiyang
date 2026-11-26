@@ -1,12 +1,13 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { LoaderCircle, Mic, Square, X } from '@lucide/vue'
+import { Check, LoaderCircle, Mic, Square, X } from '@lucide/vue'
 import { showToast } from 'vant'
 import { transcribeVoice } from '../api'
 import { captureVoice } from '../utils/voiceCapture'
 import VoiceWave from './VoiceWave.vue'
 
 const SLIDE_CANCEL_PX = 60
+const BOTTOM_ZONE_HEIGHT = 170
 
 const props = defineProps({
   modelValue: { type: String, default: '' },
@@ -22,7 +23,8 @@ const emit = defineEmits(['update:modelValue'])
 
 const phase = ref('idle')
 const stream = ref(null)
-const slideCancel = ref(false)
+const zone = ref('send')
+const slideCancel = computed(() => zone.value === 'cancel')
 const elapsedSec = ref(0)
 
 const label = computed(() => {
@@ -48,7 +50,9 @@ const formattedTime = computed(() => {
 
 const overlayHint = computed(() => {
   if (!props.hold) return '正在录音，点按结束'
-  return slideCancel.value ? '松开取消' : '松开结束，上滑取消'
+  if (zone.value === 'cancel') return '松开取消'
+  if (zone.value === 'text') return '松开转文字'
+  return '松开转文字，上滑取消'
 })
 
 let session = null
@@ -65,10 +69,19 @@ function clearSessionTimers(target) {
   target.tick = null
 }
 
+function resolveHoldZone(clientX, clientY) {
+  const vw = window.innerWidth || 0
+  const vh = window.innerHeight || 0
+  if (vh > 0 && clientY > vh - BOTTOM_ZONE_HEIGHT) {
+    return clientX < vw / 2 ? 'cancel' : 'text'
+  }
+  return (pointerStartY - clientY) >= SLIDE_CANCEL_PX ? 'cancel' : 'send'
+}
+
 function resetPointerState() {
   activePointerId = null
   pointerStartY = 0
-  slideCancel.value = false
+  zone.value = 'send'
 }
 
 function scheduleClearSuppressClick() {
@@ -90,7 +103,7 @@ function stop() {
   if (phase.value !== 'recording' || !session) return
   clearSessionTimers(session)
   stream.value = null
-  slideCancel.value = false
+  zone.value = 'send'
   phase.value = 'transcribing'
   try {
     session.stop()
@@ -106,7 +119,7 @@ function cancel() {
   session.controller.abort()
   session = null
   stream.value = null
-  slideCancel.value = false
+  zone.value = 'send'
   elapsedSec.value = 0
   phase.value = 'idle'
 }
@@ -127,7 +140,7 @@ async function start() {
   const { signal } = active.controller
   session = active
   phase.value = 'opening'
-  slideCancel.value = false
+  zone.value = 'send'
   elapsedSec.value = 0
   try {
     const audio = await captureVoice(signal, (stopRecording, mediaStream) => {
@@ -182,7 +195,7 @@ async function start() {
       phase.value = 'idle'
       session = null
       stream.value = null
-      slideCancel.value = false
+      zone.value = 'send'
       elapsedSec.value = 0
     }
   }
@@ -197,7 +210,7 @@ function onPointerDown(e) {
   suppressClick = true
   activePointerId = e.pointerId
   pointerStartY = e.clientY
-  slideCancel.value = false
+  zone.value = 'send'
   try {
     e.currentTarget?.setPointerCapture?.(e.pointerId)
   } catch { /* ignore */ }
@@ -207,14 +220,14 @@ function onPointerDown(e) {
 function onPointerMove(e) {
   if (!props.hold || e.pointerId !== activePointerId) return
   if (phase.value !== 'recording' && phase.value !== 'opening') return
-  slideCancel.value = (pointerStartY - e.clientY) >= SLIDE_CANCEL_PX
+  zone.value = resolveHoldZone(e.clientX, e.clientY)
 }
 
 function onPointerUp(e) {
   if (!props.hold || e.pointerId !== activePointerId) return
   e.preventDefault()
   releaseCapture(e.currentTarget, e.pointerId)
-  const shouldCancel = slideCancel.value
+  const shouldCancel = zone.value === 'cancel'
   resetPointerState()
   scheduleClearSuppressClick()
   if (phase.value === 'opening') {
@@ -239,7 +252,7 @@ function onPointerCancel(e) {
 function onPointerLeave(e) {
   if (!props.hold || e.pointerId !== activePointerId) return
   if (e.currentTarget?.hasPointerCapture?.(e.pointerId)) return
-  const slidUp = (pointerStartY - e.clientY) >= SLIDE_CANCEL_PX || slideCancel.value
+  const slidUp = resolveHoldZone(e.clientX, e.clientY) === 'cancel' || zone.value === 'cancel'
   resetPointerState()
   scheduleClearSuppressClick()
   if (phase.value === 'opening') {
@@ -329,6 +342,7 @@ onBeforeUnmount(() => {
         'is-compact': compact,
         'is-hold': hold,
         'is-cancel': hold && slideCancel,
+        'is-text': hold && zone === 'text',
       }"
       :disabled="phase === 'transcribing' || (disabled && phase === 'idle')"
       :aria-disabled="phase === 'opening' ? 'true' : undefined"
@@ -356,18 +370,16 @@ onBeforeUnmount(() => {
     <Teleport to="body">
       <Transition name="voice-sheet">
         <div
-          v-if="phase === 'recording'"
+          v-if="!hold && phase === 'recording'"
           class="voice-overlay"
-          :class="{ 'is-hold': hold, 'is-cancel': hold && slideCancel }"
           role="status"
           aria-live="polite"
         >
           <div class="vo-head">
             <span class="vo-state">
               <span class="vo-dot" aria-hidden="true" />
-              <X v-if="hold && slideCancel" :size="15" :stroke-width="2.4" />
-              <Mic v-else :size="15" :stroke-width="2.2" />
-              <span>{{ hold && slideCancel ? '准备取消' : '录音中' }}</span>
+              <Mic :size="15" :stroke-width="2.2" />
+              <span>录音中</span>
             </span>
             <span class="vo-timer">{{ formattedTime }}</span>
           </div>
@@ -375,12 +387,11 @@ onBeforeUnmount(() => {
           <VoiceWave
             :stream="stream"
             :active="phase === 'recording'"
-            :danger="hold && slideCancel"
           />
 
           <p class="vo-hint">{{ overlayHint }}</p>
 
-          <div v-if="!hold" class="vo-actions">
+          <div class="vo-actions">
             <button type="button" class="vo-btn vo-btn-cancel" @click.stop="cancel">
               <X :size="16" :stroke-width="2.2" />
               <span>取消</span>
@@ -389,6 +400,43 @@ onBeforeUnmount(() => {
               <Square :size="14" :stroke-width="2.4" />
               <span>结束录音</span>
             </button>
+          </div>
+        </div>
+      </Transition>
+
+      <Transition name="voice-wechat">
+        <div
+          v-if="hold && phase === 'recording'"
+          class="voice-wechat"
+          :class="{ 'is-cancel': zone === 'cancel', 'is-text': zone === 'text' }"
+          role="status"
+          aria-live="polite"
+        >
+          <div class="vw-stage">
+            <div class="vw-bubble">
+              <span class="vw-timer">{{ formattedTime }}</span>
+              <VoiceWave
+                :stream="stream"
+                :active="phase === 'recording'"
+                :danger="zone === 'cancel'"
+              />
+            </div>
+            <p class="vw-hint">{{ overlayHint }}</p>
+          </div>
+
+          <div class="vw-arcs" aria-hidden="true">
+            <div class="vw-arc vw-arc-cancel" :class="{ 'is-active': zone === 'cancel' }">
+              <span class="vw-arc-label">
+                <X :size="18" :stroke-width="2.4" />
+                <span>取消</span>
+              </span>
+            </div>
+            <div class="vw-arc vw-arc-text" :class="{ 'is-active': zone === 'text' }">
+              <span class="vw-arc-label">
+                <Check :size="18" :stroke-width="2.4" />
+                <span>滑到这里转文字</span>
+              </span>
+            </div>
           </div>
         </div>
       </Transition>
@@ -417,6 +465,7 @@ onBeforeUnmount(() => {
 .voice-button.is-opening { opacity: .58; cursor: default; }
 .voice-button.is-recording { background: var(--green-700); border-color: var(--green-700); color: white; }
 .voice-button.is-recording.is-cancel { background: var(--cinnabar); border-color: var(--cinnabar); color: #fdfaf1; }
+.voice-button.is-hold.is-recording.is-text { background: var(--green-800, #1b4336); border-color: var(--green-800, #1b4336); color: #fdfaf1; }
 .voice-status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 .voice-spin { animation: voice-spin .8s linear infinite; }
 
@@ -538,6 +587,166 @@ onBeforeUnmount(() => {
   transform: translateY(10px);
 }
 
+/* hold 模式微信式全屏浮层 */
+.voice-wechat {
+  position: fixed;
+  inset: 0;
+  background: rgba(16, 28, 22, 0.55);
+  z-index: 2200;
+  pointer-events: none;
+  overflow: hidden;
+}
+.vw-stage {
+  position: absolute;
+  top: 36%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.vw-bubble {
+  position: relative;
+  width: 240px;
+  max-width: calc(100vw - 32px);
+  padding: 24px 18px 14px;
+  border-radius: 18px;
+  background: linear-gradient(165deg, #1b4336 0%, var(--green-900) 100%);
+  border: 1px solid rgba(143, 201, 171, 0.28);
+  color: #fdfaf1;
+  box-shadow: 0 12px 32px -6px rgba(20, 51, 42, 0.44), 0 4px 12px rgba(20, 51, 42, 0.22);
+  transition: transform 180ms var(--ease-out-soft), opacity 180ms ease, background var(--dur-fast) ease, border-color var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
+}
+.vw-bubble::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -9px;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 9px solid var(--green-900);
+  transition: border-top-color var(--dur-fast) ease;
+}
+.voice-wechat.is-cancel .vw-bubble {
+  background: linear-gradient(165deg, var(--cinnabar) 0%, #86261e 100%);
+  border-color: rgba(253, 250, 241, 0.36);
+  box-shadow: 0 12px 32px -6px rgba(168, 52, 42, 0.46), 0 4px 12px rgba(168, 52, 42, 0.24);
+}
+.voice-wechat.is-cancel .vw-bubble::after {
+  border-top-color: #86261e;
+}
+.vw-timer {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.03em;
+  line-height: 1;
+  color: rgba(253, 250, 241, 0.86);
+}
+.vw-hint {
+  margin: 20px 0 0;
+  text-align: center;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: #fdfaf1;
+  white-space: nowrap;
+  text-shadow: 0 1px 4px rgba(16, 28, 22, 0.45);
+  transition: opacity 180ms ease;
+}
+.vw-arcs {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 170px;
+  overflow: hidden;
+  transition: transform 220ms var(--ease-out-soft), opacity 220ms ease;
+}
+.vw-arc {
+  position: absolute;
+  bottom: 0;
+  width: 58vw;
+  height: 170px;
+  border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+  background: rgba(253, 250, 241, 0.14);
+  color: #fdfaf1;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.3;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  transform-origin: center bottom;
+  transition: background var(--dur-fast) ease, transform var(--dur-fast) var(--ease-out-soft);
+}
+.vw-arc-cancel {
+  left: -10vw;
+  padding: 52px 10px 16px 10vw;
+}
+.vw-arc-text {
+  right: -10vw;
+  padding: 52px 10vw 16px 10px;
+}
+.vw-arc-label {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+}
+.vw-arc-cancel.is-active {
+  background: rgba(168, 52, 42, 0.85);
+  transform: scale(1.04);
+}
+.vw-arc-text.is-active {
+  background: rgba(27, 67, 54, 0.9);
+  transform: scale(1.04);
+}
+
+.voice-wechat-enter-active {
+  transition: opacity 180ms ease;
+}
+.voice-wechat-leave-active {
+  transition: opacity 150ms ease;
+}
+.voice-wechat-leave-active .vw-bubble,
+.voice-wechat-leave-active .vw-hint,
+.voice-wechat-leave-active .vw-arcs {
+  transition-duration: 150ms;
+}
+.voice-wechat-enter-from,
+.voice-wechat-leave-to {
+  opacity: 0;
+}
+.voice-wechat-enter-from .vw-bubble,
+.voice-wechat-leave-to .vw-bubble {
+  opacity: 0;
+  transform: scale(0.9) translateY(8px);
+}
+.voice-wechat-enter-from .vw-hint,
+.voice-wechat-leave-to .vw-hint {
+  opacity: 0;
+}
+.voice-wechat-enter-from .vw-arcs,
+.voice-wechat-leave-to .vw-arcs {
+  opacity: 0;
+  transform: translateY(24px);
+}
+
+:global(:root[data-fontsize="large"]) .vw-timer { font-size: 14px; }
+:global(:root[data-fontsize="large"]) .vw-hint,
+:global(:root[data-fontsize="large"]) .vw-arc { font-size: 19px; }
+:global(:root[data-fontsize="xlarge"]) .vw-timer { font-size: 15px; }
+:global(:root[data-fontsize="xlarge"]) .vw-hint { font-size: 21px; }
+:global(:root[data-fontsize="xlarge"]) .vw-arc { font-size: 20px; }
+
 @keyframes voice-spin { to { transform: rotate(360deg); } }
 @keyframes voPulse {
   0%, 100% { transform: scale(0.85); opacity: 0.55; }
@@ -547,6 +756,19 @@ onBeforeUnmount(() => {
   .voice-spin,
   .vo-dot { animation: none; }
   .voice-sheet-enter-active,
-  .voice-sheet-leave-active { transition: none; }
+  .voice-sheet-leave-active,
+  .voice-wechat-enter-active,
+  .voice-wechat-leave-active,
+  .voice-wechat-enter-active .vw-bubble,
+  .voice-wechat-leave-active .vw-bubble,
+  .voice-wechat-enter-active .vw-hint,
+  .voice-wechat-leave-active .vw-hint,
+  .voice-wechat-enter-active .vw-arcs,
+  .voice-wechat-leave-active .vw-arcs,
+  .vw-bubble,
+  .vw-bubble::after,
+  .vw-hint,
+  .vw-arcs,
+  .vw-arc { transition: none; }
 }
 </style>
