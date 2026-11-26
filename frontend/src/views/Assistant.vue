@@ -8,6 +8,8 @@ import AppIcon from '../components/AppIcon.vue'
 import AgentAvatar from '../components/AgentAvatar.vue'
 import DisclaimerBanner from '../components/DisclaimerBanner.vue'
 import VoiceInput from '../components/VoiceInput.vue'
+import SpeakButton from '../components/SpeakButton.vue'
+import { isSpeechSupported, stopSpeak } from '../utils/speak'
 import { streamAssistantChat, getLocalConstitution, matImg } from '../api'
 import { PHARMACOPOEIA_FUNCTIONS } from '../utils/pharmacopoeiaFunctions'
 
@@ -19,6 +21,7 @@ const msgs = ref([])        // [{role:'user'|'assistant', content, citations?, n
 const input = ref('')
 const textareaRef = ref(null)
 const sending = ref(false)
+const speechSupported = isSpeechSupported()
 
 function autoResize() {
   const el = textareaRef.value
@@ -99,6 +102,7 @@ function save() {
 function clearAll() {
   if (msgs.value.length && !window.confirm('清空全部对话记录？')) return
   stopStream()
+  stopSpeak()
   msgs.value = []
   try { localStorage.removeItem(HISTORY_KEY) } catch { /* ignore */ }
 }
@@ -383,7 +387,7 @@ function segments(text, cites = []) {
 }
 
 onMounted(() => { load(); scrollBottom(true) })
-onBeforeUnmount(() => { clearTick(); abort?.() })
+onBeforeUnmount(() => { clearTick(); abort?.(); stopSpeak() })
 </script>
 
 <template>
@@ -434,8 +438,9 @@ onBeforeUnmount(() => { clearTick(); abort?.() })
           class="as-msg-avatar"
         />
 
-        <div class="as-bubble" :class="{ me: m.role === 'user', 'is-thinking': m.role === 'assistant' && m.streaming && !m.content }">
-          <!-- ============ AI 回复顶栏：青囊名号 + AI 生成标识 + 检索脉络胶囊 ============ -->
+        <div class="as-msg-col" :class="{ me: m.role === 'user', 'is-thinking': m.role === 'assistant' && m.streaming && !m.content }">
+          <div class="as-bubble" :class="{ me: m.role === 'user', 'is-thinking': m.role === 'assistant' && m.streaming && !m.content }">
+            <!-- ============ AI 回复顶栏：青囊名号 + AI 生成标识 + 检索脉络胶囊 ============ -->
           <div v-if="m.role === 'assistant'" class="as-meta-bar">
             <span class="as-agent-name">青囊</span>
             <span class="as-tag">
@@ -606,6 +611,17 @@ onBeforeUnmount(() => { clearTick(); abort?.() })
               <AppIcon name="chevron" :size="12" />
             </button>
           </div>
+          </div>
+          <div
+            v-if="speechSupported && m.role === 'assistant' && m.content && !m.streaming"
+            class="as-speak-bar"
+          >
+            <SpeakButton
+              :id="`assistant-msg-${i}`"
+              :text="m.content"
+              aria-label="朗读青囊回复"
+            />
+          </div>
         </div>
       </div>
 
@@ -693,10 +709,24 @@ onBeforeUnmount(() => { clearTick(); abort?.() })
 .as-row { display: flex; gap: 10px; align-items: flex-start; }
 .as-row.user { justify-content: flex-end; }
 .as-msg-avatar { margin-top: 2px; }
+.as-msg-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  max-width: min(84%, 620px);
+  min-width: 0;
+}
+.as-msg-col.me { align-items: flex-end; }
+.as-msg-col.is-thinking { width: min(84%, 500px); }
+.as-speak-bar {
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+}
 
 /* 气泡主体：统一采用宣纸卡色 var(--card)，兼容暗黑模式 */
 .as-bubble {
-  max-width: min(84%, 620px);
+  max-width: 100%;
   background: var(--card);
   border: 1px solid var(--card-border);
   border-radius: 14px;
@@ -708,7 +738,7 @@ onBeforeUnmount(() => { clearTick(); abort?.() })
   transition: border-color var(--dur-med) ease, box-shadow var(--dur-med) ease;
 }
 .as-bubble.is-thinking {
-  width: min(84%, 500px);
+  width: 100%;
   border-color: rgba(58, 122, 94, 0.28);
   box-shadow: var(--shadow);
 }
@@ -1309,7 +1339,7 @@ onBeforeUnmount(() => { clearTick(); abort?.() })
 
 /* 移动端窄屏步骤条自适应收紧 */
 @media (max-width: 520px) {
-  .as-bubble, .as-bubble.is-thinking { max-width: 89%; width: auto; }
+  .as-msg-col, .as-msg-col.is-thinking { max-width: 89%; width: auto; }
   .tk-steps { gap: 4px; }
   .tk-step { font-size: 11.5px; }
 }

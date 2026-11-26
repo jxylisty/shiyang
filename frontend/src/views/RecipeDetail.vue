@@ -15,7 +15,9 @@ import ExplainPanel from '../components/ExplainPanel.vue'
 import DisclaimerBanner from '../components/DisclaimerBanner.vue'
 import PlainCard from '../components/PlainCard.vue'
 import ProModeToggle from '../components/ProModeToggle.vue'
+import SpeakButton from '../components/SpeakButton.vue'
 import { proMode } from '../utils/proMode'
+import { stopSpeak } from '../utils/speak'
 
 // 专业模式开启后再加载图表，先显示方子详情。
 const NetworkGraph = defineAsyncComponent(() => import('../components/NetworkGraph.vue'))
@@ -85,7 +87,11 @@ onMounted(async () => {
   syncFavState()
   window.addEventListener('scroll', onScroll, { passive: true })
 })
-onBeforeUnmount(() => window.removeEventListener('scroll', onScroll))
+onBeforeUnmount(() => {
+  window.removeEventListener('scroll', onScroll)
+  stopSpeak()
+})
+watch(() => route.params.id, () => stopSpeak())
 
 let researchLoading = false
 watch([proMode, recipe], async ([enabled, current]) => {
@@ -154,6 +160,34 @@ const plainSummary = computed(() => {
     s += `，排名前列的成分入血检出倾向都不高`
   }
   return s + '。'
+})
+
+const methodSpeakText = computed(() => {
+  const r = recipe.value
+  if (!r) return ''
+  const parts = []
+  if (r.method?.trim()) parts.push(r.method.trim())
+  if (r.duration?.trim()) parts.push(`参考耗时：${r.duration.trim()}`)
+  return parts.join('。')
+})
+
+const suitableSpeakText = computed(() => {
+  const r = recipe.value
+  if (!r) return ''
+  const parts = []
+  if (r.constitutions_suitable?.length) {
+    parts.push(`适宜体质：${r.constitutions_suitable.join('、')}`)
+  }
+  if (r.constitutions_unsuitable?.length) {
+    parts.push(`不宜体质：${r.constitutions_unsuitable.join('、')}`)
+  }
+  if (r.population?.trim()) {
+    parts.push(`适合人群：${r.population.trim()}`)
+  }
+  if (r.contraindication?.trim()) {
+    parts.push(`注意与禁忌：${r.contraindication.trim()}`)
+  }
+  return parts.join('。')
 })
 
 function gotoLogin() {
@@ -268,7 +302,15 @@ async function toggleCheckin() {
                数据全部来自既有 analysis 字段，纯前端聚合，不新增接口；
                只讲结论与人话，详细数据留在下方专业模式层 -->
           <template v-if="plainSummary">
-            <div class="section-title">成分一句话</div>
+            <div class="section-title">
+              <span>成分一句话</span>
+              <SpeakButton
+                :id="`recipe-${recipe.id}-plain`"
+                :text="plainSummary"
+                aria-label="朗读成分一句话"
+                class="section-speak"
+              />
+            </div>
             <div class="card plain-comp-sum">
               <p class="pcs-line">{{ plainSummary }}</p>
               <p class="pcs-note">「入血概率」是模型预测的成分在血中被检出的倾向，不是口服吸收率，更不是疗效结论。</p>
@@ -308,14 +350,32 @@ async function toggleCheckin() {
           </template>
 
           <!-- 做法 -->
-          <div class="section-title">做法</div>
+          <div class="section-title">
+            <span>做法</span>
+            <SpeakButton
+              v-if="methodSpeakText"
+              :id="`recipe-${recipe.id}-method`"
+              :text="methodSpeakText"
+              aria-label="朗读做法"
+              class="section-speak"
+            />
+          </div>
           <div class="card">
             <p class="method">{{ recipe.method }}</p>
             <p v-if="recipe.duration" class="duration"><Clock :size="13" :stroke-width="2" /> {{ recipe.duration }}</p>
           </div>
 
           <!-- 适宜与禁忌 -->
-          <div class="section-title">适宜 / 禁忌</div>
+          <div class="section-title">
+            <span>适宜 / 禁忌</span>
+            <SpeakButton
+              v-if="suitableSpeakText"
+              :id="`recipe-${recipe.id}-suitable`"
+              :text="suitableSpeakText"
+              aria-label="朗读适宜与禁忌"
+              class="section-speak"
+            />
+          </div>
           <div class="card">
             <p v-if="recipe.constitutions_suitable.length"><b>适宜体质：</b>{{ recipe.constitutions_suitable.join('、') }}</p>
             <p v-if="recipe.constitutions_unsuitable.length" style="margin-top:6px"><b>不宜体质：</b>{{ recipe.constitutions_unsuitable.join('、') }}</p>
@@ -592,4 +652,5 @@ async function toggleCheckin() {
 .back-top:active { scale: 0.9; }
 .fade-up-enter-active, .fade-up-leave-active { transition: opacity .25s ease, transform .25s var(--ease-out-soft); }
 .fade-up-enter-from, .fade-up-leave-to { opacity: 0; transform: translateY(10px); }
+.section-speak { margin-left: auto; }
 </style>

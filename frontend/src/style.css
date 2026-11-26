@@ -649,6 +649,7 @@ body {
 :root[data-fontsize="large"] .page .head h2 { font-size: 21px; }
 :root[data-fontsize="large"] .page .q-text { font-size: 20px; line-height: 1.65; }
 :root[data-fontsize="large"] .page .btn { font-size: 16px; min-height: 44px; padding: 10px 20px; }
+:root[data-fontsize="large"] .page .speak-btn { font-size: 15px; min-height: 44px; padding: 8px 15px; }
 :root[data-fontsize="large"] .page .tag,
 :root[data-fontsize="large"] .page .as-chip,
 :root[data-fontsize="large"] .page .cat-tab { font-size: 13.5px; padding: 4px 12px; }
@@ -685,6 +686,7 @@ body {
 :root[data-fontsize="xlarge"] .page .head h2 { font-size: 22.5px; }
 :root[data-fontsize="xlarge"] .page .q-text { font-size: 22px; line-height: 1.7; }
 :root[data-fontsize="xlarge"] .page .btn { font-size: 17px; min-height: 48px; padding: 11px 22px; }
+:root[data-fontsize="xlarge"] .page .speak-btn { font-size: 16px; min-height: 48px; padding: 9px 17px; }
 :root[data-fontsize="xlarge"] .page .tag,
 :root[data-fontsize="xlarge"] .page .as-chip,
 :root[data-fontsize="xlarge"] .page .cat-tab { font-size: 14.5px; padding: 5px 13px; }

@@ -7,6 +7,8 @@ import { getQuestionnaire, submitQuiz, saveRecord, isLoggedIn, listFamilyMembers
 import { recordQuizSnapshot } from '../utils/guestArchive'
 import RecipeRow from '../components/RecipeRow.vue'
 import AppIcon from '../components/AppIcon.vue'
+import SpeakButton from '../components/SpeakButton.vue'
+import { isSpeechSupported, stopSpeak } from '../utils/speak'
 
 const items = ref({})          // {code: [题...]}
 const order = ref([])          // 维度顺序
@@ -36,6 +38,8 @@ const OPTIONS = [
   { label: '没有', v: 1 }, { label: '很少', v: 2 }, { label: '有时', v: 3 },
   { label: '经常', v: 4 }, { label: '总是', v: 5 },
 ]
+const speechSupported = isSpeechSupported()
+const OPTION_LABELS = OPTIONS.map((o) => o.label).join('、')
 const NAME = { pinghe: '平和', qixu: '气虚', yangxu: '阳虚', yinxu: '阴虚', tanshi: '痰湿', shire: '湿热', xueyu: '血瘀', qiyu: '气郁', tebing: '特禀' }
 const ORDER_KEYS = ['pinghe', 'qixu', 'yangxu', 'yinxu', 'tanshi', 'shire', 'xueyu', 'qiyu', 'tebing']
 
@@ -65,6 +69,11 @@ watch(answers, saveProgress, { deep: true })
 
 const cur = () => flat.value[idx.value]
 const answeredCount = () => flat.value.filter(x => answers.value[x.code]?.[x.di] !== null).length
+const questionSpeakText = computed(() => {
+  const c = cur()
+  if (!c?.q) return ''
+  return `第${idx.value + 1}题：${c.q}。选项有：${OPTION_LABELS}`
+})
 
 // 答题卡核心统计与分组
 const firstUnansweredIdx = computed(() => {
@@ -133,6 +142,7 @@ onUnmounted(() => {
   if (advanceTimer) clearTimeout(advanceTimer)
   if (pickTimer) clearTimeout(pickTimer)
   if (scoresCancel) scoresCancel()
+  stopSpeak()
 })
 
 function buzz(ms) {
@@ -194,6 +204,7 @@ function restoreProgress() {
 }
 
 async function restart() {
+  stopSpeak()
   if (answeredCount() > 0) {
     try {
       await showConfirmDialog({
@@ -227,6 +238,7 @@ function animateScores(results) {
 }
 
 async function submit() {
+  stopSpeak()
   submitting.value = true; error.value = ''
   try {
     const res = (await submitQuiz(answers.value)).data.data
@@ -402,6 +414,15 @@ const lrDate = computed(() => {
             <span class="q-status-badge" :class="answers[cur().code][cur().di] !== null ? 'done' : 'pending'">
               {{ answers[cur().code][cur().di] !== null ? '已作答' : '待作答' }}
             </span>
+          </div>
+
+          <div v-if="speechSupported" class="q-speak-row">
+            <SpeakButton
+              :id="`quiz-q-${idx}`"
+              :text="questionSpeakText"
+              label="朗读本题"
+              aria-label="朗读当前题目与选项"
+            />
           </div>
 
           <p class="q-text">{{ cur().q }}</p>
@@ -639,6 +660,11 @@ const lrDate = computed(() => {
   align-items: center;
   gap: 8px;
   margin-bottom: 12px;
+}
+.q-speak-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
 }
 .q-num-tag {
   font-size: 12px;
