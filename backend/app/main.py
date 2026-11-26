@@ -252,6 +252,8 @@ def analyze_custom_recipe(body: CustomRecipeBody,
     if len(herbs_input) > 20:
         raise HTTPException(400, "最多支持 20 味药材")
     result = herb_svc.analyze_recipe(herbs_input, api_key=x_ai_key)
+    if plain.custom_reference_only():
+        result["plain"] = plain.custom_reference(result["herbs"])
     # 补上声明与数据来源
     result["sources_note"] = (
         "成分/靶点/疾病数据来自 HERB 数据库（herb.ac.cn, CC BY-NC 4.0）；"
@@ -350,12 +352,17 @@ def custom_recipe_plain(body: CustomPlainBody,
     """自定义方子「说人话」解读：AI 依据已查到的传统功效改写成白话（标注 AI 生成、未审校）"""
     if not body.herbs or len(body.herbs) > 20:
         raise HTTPException(400, "药材数量需在 1–20 味之间")
+    names = [h.name.strip() for h in body.herbs if h.name.strip()]
+    if not names:
+        raise HTTPException(400, "没有可解读的药材")
+    if plain.custom_reference_only():
+        return ok(plain.custom_reference(herb_svc.cached_reference_details(names)))
     try:
         result = plain.custom_plain([h.model_dump() for h in body.herbs], api_key=x_ai_key)
     except ValueError as e:
         raise HTTPException(400, str(e))
-    except RuntimeError as e:
-        raise HTTPException(502, str(e))
+    except RuntimeError:
+        result = plain.custom_reference(herb_svc.cached_reference_details(names))
     return ok(result)
 
 

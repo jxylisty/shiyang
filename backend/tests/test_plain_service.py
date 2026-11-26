@@ -55,7 +55,7 @@ def test_recipe_plain_endpoint_reads_json(tmp_path, monkeypatch):
 def test_custom_plain_endpoint(monkeypatch):
     calls = []
 
-    def fake(payload, api_key=None):
+    def fake(payload, api_key=None, **kwargs):
         calls.append(payload)
         return json.dumps(GOOD, ensure_ascii=False)
 
@@ -71,9 +71,54 @@ def test_custom_plain_endpoint(monkeypatch):
     assert len(calls) == 1  # 相同组合命中缓存
 
 
-def test_custom_plain_model_failure_returns_502(monkeypatch):
+def test_custom_plain_model_failure_returns_existing_references(monkeypatch):
     monkeypatch.setattr(plain, "_call_model", lambda *a, **k: "不是 JSON")
     monkeypatch.setattr(plain, "_custom_cache", {})
     c = TestClient(main.app)
     r = c.post("/api/v1/custom-recipe/plain", json={"herbs": [{"name": "菊花"}]})
-    assert r.status_code == 502
+    assert r.status_code == 200
+    assert r.json()["data"]["source"] == "reference"
+
+
+def test_preview_plain_uses_database_references_without_calling_model(monkeypatch):
+    monkeypatch.setenv("SHIYANG_CUSTOM_PLAIN_REFERENCE_ONLY", "1")
+    monkeypatch.setattr(plain, "_call_model", lambda *a, **k: pytest.fail("model called in preview"))
+    monkeypatch.setattr(main.herb_svc, "cached_reference_details", lambda names: [
+        {"name_cn": "菊花", "functions_cn": "清热、平肝明目", "functions_cn_source": "curated"},
+    ], raising=False)
+    c = TestClient(main.app)
+    data = c.post("/api/v1/custom-recipe/plain", json={"herbs": [
+        {"name": "菊花", "functions": "不会核验的客户端文案"},
+        {"name": "库外药材", "functions": "降糖"},
+    ]}).json()["data"]
+    assert data["source"] == "reference"
+    assert [i["name"] for i in data["ingredients"]] == ["菊花"]
+    assert "清热" in data["ingredients"][0]["role"]
+    assert "库外药材" not in json.dumps(data, ensure_ascii=False)
+
+
+def test_preview_analyze_includes_plain_reference_card(monkeypatch):
+    monkeypatch.setenv("SHIYANG_CUSTOM_PLAIN_REFERENCE_ONLY", "1")
+    monkeypatch.setattr(plain, "_call_model", lambda *a, **k: pytest.fail("model called in preview"))
+    monkeypatch.setattr(main.herb_svc, "analyze_recipe", lambda *a, **k: {
+        "status": "ok", "herbs": [{"name_cn": "陈皮", "functions_cn": "理气健脾",
+                                    "functions_cn_source": "curated"}],
+        "not_found": ["库外药材"],
+    })
+    c = TestClient(main.app)
+    data = c.post("/api/v1/custom-recipe/analyze",
+                  json={"herbs": [{"name": "陈皮"}, {"name": "库外药材"}]}).json()["data"]
+    assert data["plain"]["source"] == "reference"
+    assert [i["name"] for i in data["plain"]["ingredients"]] == ["陈皮"]
+    assert data["not_found"] == ["库外药材"]
+
+
+def test_cached_references_exclude_negative_matches(monkeypatch):
+    monkeypatch.setattr(main.herb_svc, "_kb_herb_dict", lambda: {})
+    cached = {
+        "人参": {"herb_name": "人参", "herb_id": "HERB1", "function_en": "To reinforce the vital energy."},
+        "玛咖": {"herb_name": "玛咖", "herb_id": None},
+    }
+    monkeypatch.setattr(main.herb_svc, "_cache_get", cached.get)
+    card = plain.custom_reference(main.herb_svc.cached_reference_details(["人参", "玛咖"]))
+    assert [item["name"] for item in card["ingredients"]] == ["人参"]

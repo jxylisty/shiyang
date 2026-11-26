@@ -6,8 +6,8 @@
 收进「专业模式」。本服务负责把方子的传统功效翻译成普通人能看懂的话。
 
 数据性质（AGENTS.md §2.3/§2.6）：
-- 全部内容为 **AI 生成**，输入仅限方子库里已有的传统定位、配料传统功效、禁忌字段，
-  不喂模型预测数值，避免把预测分写成功效；前端必须显示「AI 生成」标注。
+- AI 改写仅使用方子库里已有的传统资料。自定义方子也可显示依据已收录单味资料整理的
+  简明卡片，两种来源分别标注。
 - 内容尚未经医药背景人员审校，接口返回 reviewed=False，前端如实提示。
 
 存储：
@@ -27,6 +27,7 @@ PLAIN_JSON = Path(__file__).resolve().parents[3] / "data" / "recipe_plain_ai.jso
 AI_BASE_URL = os.environ.get("SHIYANG_AI_BASE_URL") or "http://127.0.0.1:7863/v1"
 AI_MODEL = os.environ.get("SHIYANG_AI_MODEL") or "deepseek-v4-flash"
 AI_TIMEOUT = 45
+CUSTOM_AI_TIMEOUT = (2, 6)
 
 # 红线词：命中即判生成失败（不做替换，避免改坏语义后仍上线）
 BANNED = ("治疗", "疗效", "治愈", "根治", "抗癌", "防癌", "药到病除", "包治", "特效", "处方")
@@ -105,7 +106,7 @@ def build_custom_input(herbs: list[dict]) -> dict:
 
 # ---------------- 模型调用与校验 ----------------
 
-def _call_model(payload: dict, api_key: str | None = None) -> str:
+def _call_model(payload: dict, api_key: str | None = None, *, timeout=AI_TIMEOUT) -> str:
     key = (api_key or "").strip() or os.environ.get("SHIYANG_AI_KEY") or "zerogate"
     r = requests.post(
         f"{AI_BASE_URL.rstrip('/')}/chat/completions",
@@ -119,7 +120,7 @@ def _call_model(payload: dict, api_key: str | None = None) -> str:
             "temperature": 0.3,
             "stream": False,
         },
-        timeout=AI_TIMEOUT,
+        timeout=timeout,
     )
     r.raise_for_status()
     return (r.json()["choices"][0]["message"]["content"] or "").strip()
@@ -159,13 +160,13 @@ def parse_and_validate(raw: str, material_names: list[str]) -> dict:
     return out
 
 
-def generate(payload: dict, api_key: str | None = None, retries: int = 1) -> dict:
+def generate(payload: dict, api_key: str | None = None, retries: int = 1, *, timeout=AI_TIMEOUT) -> dict:
     """调模型生成白话解读，校验失败重试一次。返回解读 dict（不含元数据）。"""
     names = [m["名称"] for m in payload.get("配料", [])]
     last = None
     for _ in range(retries + 1):
         try:
-            return parse_and_validate(_call_model(payload, api_key), names)
+            return parse_and_validate(_call_model(payload, api_key, timeout=timeout), names)
         except Exception as e:  # 网络/解析/红线都走重试
             last = e
     raise RuntimeError(f"白话解读生成失败：{last}")
@@ -210,15 +211,57 @@ def get_recipe_plain(recipe_id: int) -> dict | None:
 _custom_cache: dict[str, dict] = {}
 _CUSTOM_CACHE_MAX = 200
 
+_TRADITIONAL_ROLES = (
+    (("健脾", "消食", "strengthen spleen", "promote digestion"), "在传统记载里多用于帮助消化"),
+    (("deficiency syndrome of the spleen",), "传统资料有关于脾胃偏弱的记载"),
+    (("清热", "疏散风热", "clear heat", "dispel wind-heat"), "传统上用于清热，俗称清火"),
+    (("补气", "益气", "元气", "tonify qi", "replenish qi", "reinforce the vital energy"), "传统上用于补气，也就是常说的补元气"),
+    (("养阴", "滋阴", "益精", "nourish yin"), "属于传统资料里常见的滋养用料"),
+    (("润肺", "润燥", "生津", "moisten lung", "engender fluid"), "传统上用于润燥、生津"),
+    (("理气", "行气", "regulate qi", "move qi"), "传统上用于理气"),
+    (("安神", "宁心", "calm the spirit"), "传统上用于宁心安神"),
+    (("固精", "缩尿", "涩精", "astringe"), "传统上用于收涩，有收敛的意思"),
+    (("frequent urination",), "传统资料有关于小便频繁的记载"),
+)
+
+
+def custom_reference_only() -> bool:
+    return os.environ.get("SHIYANG_CUSTOM_PLAIN_REFERENCE_ONLY") == "1"
+
+
+def custom_reference(details: list[dict]) -> dict:
+    """按已核对的单味资料整理。仅释义常见术语，不推断整方效果。"""
+    ingredients = {}
+    for detail in details:
+        name = detail.get("name_cn") or detail.get("herb_name")
+        if not name:
+            continue
+        function = (detail.get("functions_cn") if detail.get("functions_cn_source") == "curated"
+                    else detail.get("function_en"))
+        function = function.lower() if isinstance(function, str) else ""
+        role = next((wording for terms, wording in _TRADITIONAL_ROLES
+                     if any(term in function for term in terms)), "现有资料里暂缺适合简述的传统用途")
+        ingredients[name] = {"name": name, "role": role}
+
+    return {
+        "source": "reference",
+        "model": None,
+        "reviewed": False,
+        "headline": "这份方子的配料资料" if ingredients else "暂未查到可整理的配料资料",
+        "suits": "下方是查到的单味资料。整份方子是否适合你，还要结合用量和个人情况判断。",
+        "caution": "未收录的配料请先核对名称。怀孕、正在用药或有慢病的人，使用前请先咨询专业人员。",
+        "ingredients": list(ingredients.values()),
+    }
+
 
 def custom_plain(herbs: list[dict], api_key: str | None = None) -> dict:
     payload = build_custom_input(herbs)
     if not payload["配料"]:
         raise ValueError("没有可解读的药材")
-    key = json.dumps(sorted((m["名称"], m.get("克重") or 0) for m in payload["配料"]), ensure_ascii=False)
+    key = json.dumps(payload, ensure_ascii=False, sort_keys=True)
     if key in _custom_cache:
         return _custom_cache[key]
-    content = generate(payload, api_key)
+    content = generate(payload, api_key, retries=0, timeout=CUSTOM_AI_TIMEOUT)
     result = {**content, "source": "ai", "model": AI_MODEL, "reviewed": False}
     if len(_custom_cache) >= _CUSTOM_CACHE_MAX:
         _custom_cache.pop(next(iter(_custom_cache)))

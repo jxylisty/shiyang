@@ -317,7 +317,13 @@ async function runCustomAnalyze() {
       customHerbs.value,
       customClaim.value || null,
     )).data.data
-    runCustomPlain()
+    if ('plain' in customResult.value) {
+      customPlain.value = customResult.value.plain
+      customPlainError.value = ''
+      customPlainLoading.value = false
+    } else {
+      runCustomPlain()
+    }
   } catch (e) {
     customError.value = e?.response?.data?.detail || '分析失败，请检查网络后重试'
   } finally { customLoading.value = false }

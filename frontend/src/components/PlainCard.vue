@@ -1,6 +1,6 @@
 <script setup>
 // 「说人话」白话解读卡（大众层主视觉）
-// 内容为 AI 生成：必须显示来源标注与未审校提示（AGENTS.md §2.6），不得移除
+// AI 改写与基于已收录资料的简明整理分别标注来源
 import { Sparkles } from '@lucide/vue'
 
 defineProps({
@@ -24,7 +24,7 @@ defineProps({
     <template v-else-if="plain">
       <p class="pc-head">{{ plain.headline }}</p>
       <div class="pc-row">
-        <span class="pc-label ok">适合</span>
+        <span class="pc-label ok">{{ plain.source === 'reference' ? '资料范围' : '适合' }}</span>
         <p>{{ plain.suits }}</p>
       </div>
       <div class="pc-row">
@@ -32,12 +32,13 @@ defineProps({
         <p>{{ plain.caution }}</p>
       </div>
       <template v-if="plain.ingredients?.length">
-        <p class="pc-sub">每样料起什么作用</p>
+        <p class="pc-sub">{{ plain.source === 'reference' ? '单味配料的传统记载' : '每样料起什么作用' }}</p>
         <div v-for="it in plain.ingredients" :key="it.name" class="pc-ing">
           <b>{{ it.name }}</b><span>{{ it.role }}</span>
         </div>
       </template>
-      <p class="pc-src">
+      <p v-if="plain.source === 'reference'" class="pc-src">根据已收录的单味传统资料整理，仅供参考</p>
+      <p v-else class="pc-src">
         <Sparkles :size="12" :stroke-width="2.2" />
         AI 根据传统资料改写{{ plain.reviewed ? '，已经人工审校' : '，尚未经医药专业人员审校' }}，仅供参考
       </p>

@@ -298,6 +298,20 @@ def _cache_get(herb_name: str) -> dict | None:
         conn.close()
 
 
+def cached_reference_details(names: list[str]) -> list[dict]:
+    """只读本地知识库和已有的 HERB 缓存，供公开白话卡使用。"""
+    knowledge_base = _kb_herb_dict()
+    details = []
+    for name in names:
+        curated = knowledge_base.get(name)
+        if curated:
+            details.append({"name_cn": curated["name"], "functions_cn": curated["functions"],
+                            "functions_cn_source": "curated"})
+        elif (cached := _cache_get(name)) and cached.get("herb_id"):
+            details.append(cached)
+    return details
+
+
 def _cache_put(data: dict) -> None:
     """写入缓存（INSERT OR REPLACE）。
     HERB 返回的 summary 行里任何文本列都可能是 {link, title} dict（不同药材字段
